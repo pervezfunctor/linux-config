@@ -21,5 +21,6 @@
             ]
         }
     },
-    "update.mode": "manual"
+    "update.mode": "manual",
+    "git.autofetch": true
 }

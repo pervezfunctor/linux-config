@@ -1,5 +1,4 @@
 {
-    "workbench.colorTheme": "Gruvbox Dark Hard",
     "editor.fontFamily": "JetBrainsMono Nerd Font",
     "editor.fontSize": 14,
     "editor.tabSize": 4,
@@ -13,15 +12,8 @@
     "security.workspace.trust.enabled": true,
     "editor.smoothScrolling": true,
     "editor.minimap.enabled": false,
-    "terminal.integrated.defaultProfile.linux": "bash",
-    "terminal.integrated.profiles.linux": {
-        "bash": {
-            "path": "host-spawn",
-            "args": [
-                "bash"
-            ]
-        }
-    },
     "update.mode": "manual",
-    "git.autofetch": true
+    "git.autofetch": true,
+    "workbench.colorTheme": "Everforest Dark",
+    "workbench.sideBar.location": "right"
 }

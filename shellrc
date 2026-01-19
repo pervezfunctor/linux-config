@@ -1,9 +1,11 @@
 #! /usr/bin/env bash
 
-export PATH="$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PATH"
+export PATH="$HOME/.opencode/bin:$PATH:$HOME/bin:$HOME/.local/bin:$PATH"
+
 export XDG_DATA_DIRS="/home/pervez/.local/share/flatpak/exports/share:$XDG_DATA_DIRS"
-export EDITOR="flatpak run com.visualstudio.code --wait"
-export VISUAL="flatpak run com.visualstudio.code --wait"
+
+export EDITOR="code --wait"
+export VISUAL="code --wait"
 # export EDITOR="zed --wait"
 # export EDITOR="nvim"
 
@@ -33,14 +35,12 @@ is_zsh && eval "$(fzf --zsh)"
 is_bash && eval "$(zoxide init bash)"
 is_zsh && eval "$(zoxide init zsh)"
 
-alias c='flatpak run com.visualstudio.code'
-alias code='flatpak run com.visualstudio.code'
+alias c='code'
 alias g='git'
 alias h='btm'
 alias i='pikman install'
 alias u="pikman update && pikman upgrade"
 alias p='pikman'
-alias pi="pixi global install"
 alias t='tmux'
 alias v='nvim'
 alias s='rg'
@@ -51,11 +51,11 @@ alias ce='chezmoi edit'
 alias ca='chezmoi apply'
 alias cs='chezmoi status'
 alias cu='chezmoi update'
-alias cc='chezmoi cd'
 alias cw='$HOME/.local/share/chezmoi/scripts/chezmoi-sync & disown'
 alias cA='chezmoi add'
 alias cf='chezmoi forget'
-alias ced="EDITOR='flatpak run com.visualstudio.code --wait' chezmoi edit"
+alias ccd='chezmoi cd'
+alias ced="EDITOR='code --wait' chezmoi edit"
 
 if ! has_cmd bat && has_cmd batcat; then
     alias b='batcat'
@@ -83,13 +83,13 @@ if ! has_cmd rustc; then
     [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
 fi
 
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
 system_update() {
     pikman update && pikman upgrade
     pikman --flatpak update --user -y
     pikman --flatpak update -y
 
-    has_cmd pixi && pixi self-update
-    has_cmd pixi && pixi global update
     has_cmd mise && mise self-update
     has_cmd mise && mise upgrade --bump
     chezmoi update
@@ -109,4 +109,3 @@ alias utlp='systemctl --user stop'
 alias utlr='systemctl --user restart'
 alias utlg='systemctl --user list-units'
 alias utlf='systemctl --user list-units --all --state=failed'
-

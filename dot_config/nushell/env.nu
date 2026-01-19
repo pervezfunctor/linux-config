@@ -1,6 +1,7 @@
-$env.EDITOR = ["flatpak", "run", "com.visualstudio.code", "--wait"]
-$env.VISUAL = ["flatpak", "run", "com.visualstudio.code", "--wait"]
-$env.PATH = ($env.PATH | prepend [$"($env.HOME)/bin", $"($env.HOME)/.local/bin"])
+$env.EDITOR = ["code", "--wait"]
+$env.VISUAL = ["code", "--wait"]
+
+$env.PATH = ($env.PATH | prepend [$"($env.HOME)/bin", $"($env.HOME)/.local/bin", $"($env.HOME)/.opencode/bin"])
 
 if ("~/.local/bin/mise" | path expand | path exists) {
     let mise_path = ($nu.default-config-dir | path join mise.nu)
@@ -10,12 +11,12 @@ if ("~/.local/bin/mise" | path expand | path exists) {
 starship init nu | save -f ($nu.default-config-dir | path join starship.nu)
 zoxide init nushell | save -f ($nu.default-config-dir | path join zoxide.nu)
 
-alias c = flatpak run com.visualstudio.code
-alias code = flatpak run com.visualstudio.code
+alias c = code
 alias g = git
 alias h = btm
-alias i = pickman install
-alias p = pickman
+alias i = pikman install
+alias u = pikman update && pikman upgrade
+alias p = pikman
 alias t = tmux
 alias v = nvim
 alias s = rg
@@ -39,13 +40,13 @@ alias ce = chezmoi edit
 alias ca = chezmoi apply
 alias cs = chezmoi status
 alias cu = chezmoi update
-alias cc = chezmoi cd
+alias ccd = chezmoi cd
 alias cw = ~/.local/share/chezmoi/scripts/chezmoi-sync # & disown
 alias cA = chezmoi add
 alias cf = chezmoi forget
 
 def ced [] {
-    EDITOR='flatpak run com.visualstudio.code --wait' chezmoi edit
+    EDITOR='code --wait' chezmoi edit
 }
 
 alias stls = sudo systemctl status

@@ -3,6 +3,7 @@
 export PATH="$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PATH"
 export XDG_DATA_DIRS="/home/pervez/.local/share/flatpak/exports/share:$XDG_DATA_DIRS"
 export EDITOR="flatpak run com.visualstudio.code --wait"
+export VISUAL="flatpak run com.visualstudio.code --wait"
 # export EDITOR="zed --wait"
 # export EDITOR="nvim"
 

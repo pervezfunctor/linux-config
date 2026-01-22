@@ -322,10 +322,11 @@ vscode_install() {
 dialog_choices() {
     local -a dialog_items=(
         "system_packages" "Install essential packages" "on"
-        "devtools" "Setup devtools" "on"
+        "devtools" "Install devtools(vscode, node etc)" "on"
         "dotfiles" "Setup dotfiles with chezmoi" "on"
-        "mangowc" "Setup mangowc" "off"
+        "mangowc" "Install mangowc" "off"
         "zed" "Install zed" "off"
+        "emacs" "Setup emacs" "off"
     )
 
     local selected_output
@@ -375,6 +376,7 @@ main() {
     prompt_yn "Do you want to setup dotfiles with chezmoi?" && dotfiles_install
     prompt_yn "Do you want to setup mangowc?" && mangowc_install
     prompt_yn "Do you want to install zed?" && zed_install
+    prompt_yn "Do you want to setup emacs?" && emacs_install
 
     if ! prompt_yn "Do you want to setup dotfiles with chezmoi?"; then
         return 0

@@ -14,6 +14,8 @@
     "editor.minimap.enabled": false,
     "update.mode": "manual",
     "git.autofetch": true,
-    "workbench.colorTheme": "Everforest Dark",
-    "workbench.sideBar.location": "right"
+    "workbench.colorTheme": "Gruvbox Dark Hard",
+    "workbench.sideBar.location": "right",
+    "bashIde.shellcheckPath": "shellcheck",
+    "bashIde.shfmt.path": "shfmt"
 }

@@ -76,8 +76,8 @@ jupyter-lab() {
 }
 
 if has_cmd mise; then
-    is_bash && eval "$(~/.local/bin/mise activate bash)"
-    is_zsh && eval "$(~/.local/bin/mise activate zsh)"
+    is_bash && eval "$(~/.local/bin/mise activate bash --shims)"
+    is_zsh && eval "$(~/.local/bin/mise activate zsh --shims)"
 fi
 
 if ! has_cmd rustc; then

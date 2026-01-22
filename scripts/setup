@@ -265,6 +265,7 @@ devtools_install() {
     has_cmd claude || curl -fsSL https://claude.ai/install.sh | bash
     devpod_install
     vscode_install
+    rust_install
 }
 
 zed_install() {

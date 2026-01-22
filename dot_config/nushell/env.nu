@@ -69,3 +69,5 @@ alias utlr = systemctl --user restart
 alias utlg = systemctl --user list-units
 alias utlf = systemctl --user list-units --all --state=failed
 
+let mise_path = $nu.default-config-dir | path join mise.nu
+^mise activate nu | save $mise_path --force

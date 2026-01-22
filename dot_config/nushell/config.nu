@@ -23,17 +23,22 @@ def jupyter-lab [] {
     ^$jupyter lab
 }
 
-def 'has_cmd' [ app: string ] {
-  (which $app | is-not-empty)
+if ($nu.home-dir | path join .cargo | path join env.nu | path exists) {
+    source ($nu.home-dir | path join .cargo | path join env.nu)
 }
 
-if ("~/.cargo/env.nu" | path expand | path exists) {
-    source ~/.cargo/env.nu
+if ($nu.default-config-dir | path join mise.nu | path exists) {
+    use ($nu.default-config-dir | path join mise.nu)
 }
 
-if ("~/.config/nushell/mise.nu" | path expand | path exists) {
-    use ~/.config/nushell/mise.nu
+if ($nu.default-config-dir | path join starship.nu | path exists) {
+    source ($nu.default-config-dir | path join starship.nu)
 }
 
-source ~/.config/nushell/starship.nu
-source ~/.config/nushell/zoxide.nu
+if ($nu.default-config-dir | path join zoxide.nu | path exists) {
+    source ($nu.default-config-dir | path join zoxide.nu)
+}
+
+def has_cmd [ app: string ] {
+    (which $app | is-not-empty)
+}

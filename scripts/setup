@@ -37,63 +37,34 @@ error() {
 
 system_packages_install() {
     local -a packages=(
-        bat
         bibata-cursor-theme
-        btm
-        carapace
-        cmake
-        direnv
         distrobox
-        duf
-        eza
-        fd-find
-        fzf
         gcc
-        gdu
-        gh
         git
-        git-delta
         gnome-keyring
-        gum
-        htop
-        imagemagick
         incus
-        jq
-        just
-        lazygit
         libsecret-tools
         luarocks
         make
         micro
         mpv
         neovim
-        node-mermaid
         nushell
-        papers
         pass
         pika-refind-btrfs-hooks
         qt5ct
         qt6ct
         rclone
         refind-btrfs
-        ripgrep
         rsync
-        shellcheck
-        shfmt
         snapper
         snapper-gui
-        starship
         tar
         tmux
-        trash-cli
         tree
-        tree-sitter-cli
         unzip
         virt-manager
-        xh
-        yazi
         zig
-        zoxide
         zsh
         zstd
     )
@@ -122,6 +93,7 @@ flatpaks_install() {
     local -a flatpaks=(
         com.github.tchx84.Flatseal
         sh.loft.devpod
+        org.gnome.Papers
     )
 
     log "Installing flatpaks(vscode etc)"
@@ -285,7 +257,6 @@ brew_install() {
 
     brew tap ublue-os/tap
     brew install --cask visual-studio-code-linux
-    brew install bash-language-server @google/gemini-cli opencode-ai tectonic
 }
 
 volta_install() {
@@ -296,8 +267,64 @@ volta_install() {
 
     curl https://get.volta.sh | bash
 
-    log "To install node with volta:"
-    log "\tvolta install node@latest"
+    volta install node@latest
+
+    local -a pkgs=(
+        @mermaid-js/mermaid-cli
+        @google/gemini-cli
+        opencode-ai
+    )
+    for pkg in "${pkgs[@]}"; do
+        log "Installing $pkg"
+        npm install -g "$pkg"
+    done
+}
+
+pixi_install() {
+    has_cmd pixi && {
+        log "pixi is already installed"
+        return
+    }
+
+    log "Installing pixi"
+    curl -fsSL https://pixi.sh/install.sh | sh
+    local -a pkgs=(
+        bash-language-server
+        bat
+        bottom
+        carapace
+        cmake
+        direnv
+        duf
+        eza
+        fd-find
+        fzf
+        gdu
+        gh
+        git-delta
+        go-gum
+        go-shfmt
+        gum
+        imagemagick
+        jq
+        just
+        lazygit
+        mask
+        ripgrep
+        shellcheck
+        starship
+        tectonic
+        television
+        trash-cli
+        tree-sitter-cli
+        xh
+        yazi
+        zoxide
+    )
+    for pkg in "${pkgs[@]}"; do
+        log "Installing $pkg"
+        ~/.pixi/bin/pixi global install "$pkg"
+    done
 }
 
 dialog_choices() {
@@ -313,6 +340,7 @@ dialog_choices() {
         "incus" "Setup incus" "on"
         "devpod" "Setup devpod" "on"
         "volta" "Install volta" "on"
+        "pixi" "Install pixi" "on"
         "zed" "Install zed" "off"
         "astro" "Setup astro(nvim)" "off"
         "rust" "Install rust" "off"
@@ -363,6 +391,7 @@ main() {
     prompt_yn "Do you want to install flatpaks?" && flatpaks_install
     prompt_yn "Do you want to install brew?" && brew_install
     prompt_yn "Do you want to install volta?" && volta_install
+    prompt_yn "Do you want to install pixi?" && pixi_install
     prompt_yn "Do you want to setup snapper(btrfs snapshots)?" && snapper_install
     prompt_yn "Do you want to install zed?" && zed_install
     prompt_yn "Do you want to setup astro(nvim)?" && astro_install

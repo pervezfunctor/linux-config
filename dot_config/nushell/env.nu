@@ -2,7 +2,7 @@ $env.EDITOR = ["code", "--wait"]
 $env.VISUAL = ["code", "--wait"]
 
 $env.VOLTA_HOME = ($env.HOME | path join .volta)
-$env.PATH = ($env.PATH | prepend [$"($env.HOME)/bin", $"($env.HOME)/.local/bin", $"($env.HOME)/.opencode/bin", $"($env.VOLTA_HOME)/bin", /home/linuxbrew/.linuxbrew/bin])
+$env.PATH = ($env.PATH | prepend [$"($env.HOME)/.pixi/bin", $"($env.HOME)/bin", $"($env.HOME)/.local/bin", $"($env.HOME)/.opencode/bin", $"($env.VOLTA_HOME)/bin", /home/linuxbrew/.linuxbrew/bin])
 
 if ("~/.local/bin/mise" | path expand | path exists) {
     let mise_path = ($nu.default-config-dir | path join mise.nu)
@@ -21,6 +21,7 @@ def u [] {
     pikman upgrade
 }
 alias p = pikman
+alias pi = pixi global install
 alias t = tmux
 alias v = nvim
 alias s = rg

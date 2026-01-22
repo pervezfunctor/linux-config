@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 export VOLTA_HOME="$HOME/.volta"
-export PATH="$HOME/.opencode/bin:$PATH:$HOME/bin:$HOME/.local/bin:$VOLTA_HOME/bin:$PATH"
+export PATH="$HOME/.pixi/bin:$HOME/.opencode/bin:$PATH:$HOME/bin:$HOME/.local/bin:$VOLTA_HOME/bin:$PATH"
 
 export XDG_DATA_DIRS="/home/pervez/.local/share/flatpak/exports/share:$XDG_DATA_DIRS"
 
@@ -42,6 +42,7 @@ alias h='btm'
 alias i='pikman install'
 alias u="pikman update && pikman upgrade"
 alias p='pikman'
+alias pi="pixi global install"
 alias t='tmux'
 alias v='nvim'
 alias s='rg'
@@ -91,6 +92,8 @@ system_update() {
     pikman --flatpak update --user -y
     pikman --flatpak update -y
 
+    has_cmd pixi && pixi self-update
+    has_cmd pixi && pixi global update
     has_cmd mise && mise self-update
     has_cmd mise && mise upgrade --bump
     chezmoi update

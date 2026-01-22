@@ -208,6 +208,8 @@ devtools_install() {
         curl https://mise.run | sh
     }
 
+    eval "$(~/.local/bin/mise activate bash)"
+
     mise use -g pixi node@latest uv
 
     local -a npm_pkgs=(
@@ -321,8 +323,8 @@ vscode_install() {
     done
 }
 
-dialog_choices() {
-    local -a dialog_items=(
+whiptail_choices() {
+    local -a whiptail_items=(
         "system_packages" "Install essential packages" "on"
         "devtools" "Install devtools(vscode, node etc)" "on"
         "dotfiles" "Setup dotfiles with chezmoi" "on"
@@ -332,7 +334,7 @@ dialog_choices() {
     )
 
     local selected_output
-    selected_output=$(dialog --stdout --checklist "Select tasks to execute:" 25 60 19 "${dialog_items[@]}")
+    selected_output=$(whiptail --stdout --checklist "Select tasks to execute:" 25 60 19 "${whiptail_items[@]}")
 
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
@@ -368,8 +370,8 @@ main() {
 
     mkdir -p ~/Pictures/Screenshots
 
-    if command -v dialog >/dev/null 2>&1; then
-        dialog_choices || return 1
+    if command -v whiptail >/dev/null 2>&1; then
+        whiptail_choices || return 1
         return 0
     fi
 

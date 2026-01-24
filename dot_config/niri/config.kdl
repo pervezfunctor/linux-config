@@ -80,10 +80,11 @@ layer-rule {
 
 spawn-sh-at-startup "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
 spawn-at-startup "/usr/bin/mate-polkit"
-spawn-at-startup "pikabar"
 spawn-at-startup "systemctl" "--user" "enable" "--now" "hypridle"
 spawn-at-startup "swww-daemon"
 spawn-sh-at-startup "gnome-keyring-daemon --start --components=pkcs11,secrets,ssh"
+//  spawn-at-startup "pikabar"
+spawn-sh-at-startup "dms run"
 
 environment {
     LD_PRELOAD ""
@@ -160,10 +161,14 @@ window-rule {
 }
 
 binds {
+    // Mod+D { spawn "pikabar-launcher"; }
+    // Super+Alt+L { spawn "pikabar-lock"; }
+
+    Mod+D { spawn-sh "dms ipc call spotlight toggle"; }
+    Super+Alt+L { spawn-sh "dms ipc call lock lock"; }
+
     Mod+Shift+Slash { show-hotkey-overlay; }
     Mod+Return { spawn "kitty"; }
-    Mod+D { spawn "pikabar-launcher"; }
-    Super+Alt+L { spawn "pikabar-lock"; }
 
     XF86AudioRaiseVolume allow-when-locked=true { spawn "pamixer" "-i" "5"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "pamixer" "-d" "5"; }

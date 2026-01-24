@@ -9,10 +9,12 @@ dir_exists() {
 }
 
 is_pikaos() {
+    # shellcheck disable=SC1091
     . /etc/os-release && [ "$ID" = "pika" ]
 }
 
 is_fedora() {
+    # shellcheck disable=SC1091
     . /etc/os-release && [ "$ID" = "fedora" ]
 }
 
@@ -37,14 +39,72 @@ prompt_yn() {
 
 log() {
     echo -e "\033[0;32m→ $1\033[0m"
+    sleep 0.5
 }
 
 warn() {
     echo -e "\033[0;33m! $1\033[0m"
+    sleep 0.2
 }
 
 error() {
     echo -e "\033[0;31m✗ $1\033[0m"
+    sleep 0.2
+}
+
+snapper_setup() {
+    if sudo snapper list-configs | grep -q "/"; then
+        log "Snapper is already setup for /"
+        return
+    fi
+
+    sudo snapper create-config /
+    sudo mkdir -p /var/lib/refind-btrfs
+    sudo chmod 755 /var/lib/refind-btrfs
+    sudo systemctl enable refind-btrfs --now
+}
+
+brew_install() {
+    has_cmd brew && return
+
+    log "Installing brew"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+}
+
+mangowc_install() {
+    log "Installing mangowc and dms"
+    if is_fedora; then
+        sudo dnf install -y mangowc dms
+    elif is_pikaos; then
+        pikman install mangowc dms
+    else
+        error "Unsupported distro"
+        return 1
+    fi
+}
+
+incus_setup() {
+    log "Setting up incus"
+    sudo usermod -aG incus "$USER"
+    sudo usermod -aG incus-admin "$USER"
+    sudo systemctl enable --now incus.socket
+    sudo incus admin init --minimal
+}
+
+flatpaks_install() {
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
+
+    local -a flatpaks=(
+        com.github.tchx84.Flatseal
+        sh.loft.devpod
+        org.gnome.Papers
+    )
+
+    log "Installing flatpaks(vscode etc)"
+    for pkg in "${flatpaks[@]}"; do
+        flatpak install -y --user flathub "$pkg"
+    done
 }
 
 system_packages_install() {
@@ -61,7 +121,6 @@ system_packages_install() {
         make
         micro
         mpv
-        neovim
         pass
         qt5ct
         qt6ct
@@ -94,52 +153,52 @@ system_packages_install() {
         sudo apt update && sudo apt upgrade -y
         log "Installing essential packages"
         sudo apt install -y "${packages[@]}" "${pika_pkgs[@]}"
-        snapper_install
+        snapper_setup
     else
         sudo dnf update -y
         sudo dnf copr enable avengemedia/dms
         sudo dnf install -y "${packages[@]}"
-        sudo dnf install -y niri dms sddm sddm-themes
+        sudo dnf install -y niri dms sddm sddm-themes nu
         systemctl --user add-wants niri.service dms
     fi
 
+    incus_setup
     flatpaks_install
-    incus_install
-}
 
-mangowc_install() {
-    log "Installing mangowc and dms"
-    if is_fedora; then
-        sudo dnf install -y mangowc dms
-    elif is_pikaos; then
-        pikman install mangowc dms
-    else
-        error "Unsupported distro"
-        return 1
-    fi
-}
+    brew_install
+    brew tap ublue-os/tap
+    brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
+    brew install pixi
 
-incus_install() {
-    log "Setting up incus"
-    sudo usermod -aG incus "$USER"
-    sudo usermod -aG incus-admin "$USER"
-    sudo systemctl enable --now incus.socket
-    sudo incus admin init --minimal
-}
-
-flatpaks_install() {
-    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
-
-    local -a flatpaks=(
-        com.github.tchx84.Flatseal
-        sh.loft.devpod
-        org.gnome.Papers
+    local -a pixi_pkgs=(
+        bash-language-server
+        tectonic
+        fd
+        bat
+        bottom
+        carapace
+        direnv
+        duf
+        eza
+        fzf
+        gdu
+        gh
+        go-gum
+        go-shfmt
+        jq
+        just
+        lazygit
+        mask
+        ripgrep
+        shellcheck
+        television
+        xh
+        yazi
+        zoxide
     )
 
-    log "Installing flatpaks(vscode etc)"
-    for pkg in "${flatpaks[@]}"; do
-        flatpak install -y --user flathub "$pkg"
-    done
+    pixi global install "${pixi_pkgs[@]}"
+    has_cmd starship || pixi global install starship
 }
 
 emacs_install() {
@@ -159,12 +218,13 @@ rust_install() {
     curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | sh
 }
 
-nushell_install() {
+nushell_setup() {
+    is_pikaos && return
+
     log "Setting up nushell"
     grep -q "nushell" /etc/shells || {
         echo "/usr/bin/nu" | sudo tee -a /etc/shells
     }
-    chsh -s /usr/bin/nu "$USER"
 }
 
 devpod_install() {
@@ -197,12 +257,12 @@ astro_install() {
     rm -rf ~/.config/nvim/.git
 }
 
-zshrc_install() {
+zshrc_setup() {
     log "Setting zsh as default shell"
     chsh -s "$(which zsh)"
 }
 
-bashrc_install() {
+bashrc_setup() {
     log "Setting up bashrc"
     grep -q "chezmoi/shellrc" ~/.bashrc || {
         echo "source ~/.local/share/chezmoi/shellrc" >>~/.bashrc
@@ -218,9 +278,9 @@ dotfiles_install() {
     log "Setting up dotfiles with chezmoi"
     sh -c "$(curl -fsLS get.chezmoi.io/lb)" -- init --apply https://github.com/pervezfunctor/niri-config.git
 
-    zshrc_install
-    bashrc_install
-    nushell_install
+    zshrc_setup
+    bashrc_setup
+    nushell_setup
     astro_install
 }
 
@@ -229,9 +289,25 @@ devtools_install() {
         curl https://mise.run | sh
     }
 
-    eval "$(~/.local/bin/mise activate bash)"
+    brew install uv mise neovim
+    brew install --cask visual-studio-code-linux
 
-    mise use -g pixi node@latest uv
+    local -a extensions=(
+        hverlin.mise-vscode
+        jdinhlife.gruvbox
+        mads-hartmann.bash-ide-vscode
+        TheNuProjectContributors.vscode-nushell-lang
+        timonwong.shellcheck
+    )
+
+    log "Installing vscode extensions"
+    for ext in "${extensions[@]}"; do
+        log "Installing $ext"
+        code --install-extension "$ext"
+    done
+
+    eval "$(~/.local/bin/mise activate bash)"
+    mise use -g node@latest
 
     local -a npm_pkgs=(
         @mermaid-js/mermaid-cli
@@ -242,36 +318,6 @@ devtools_install() {
         log "Installing $pkg"
         npm install -g "$pkg"
     done
-
-    local -a pixi_pkgs=(
-        bash-language-server
-        tectonic
-        fd
-        bat
-        bottom
-        carapace
-        direnv
-        duf
-        eza
-        fzf
-        gdu
-        gh
-        go-gum
-        go-shfmt
-        jq
-        just
-        lazygit
-        mask
-        ripgrep
-        shellcheck
-        television
-        xh
-        yazi
-        zoxide
-    )
-
-    pixi global install "${pixi_pkgs[@]}"
-    has_cmd starship || pixi global install starship
 
     dir_exists ~/jupyter-lab || {
         mkdir -p ~/jupyter-lab
@@ -286,7 +332,6 @@ devtools_install() {
 
     has_cmd claude || curl -fsSL https://claude.ai/install.sh | bash
     devpod_install
-    vscode_install
     rust_install
 }
 
@@ -298,52 +343,6 @@ zed_install() {
 
     log "Installing zed"
     curl -f https://zed.dev/install.sh | sh
-}
-
-snapper_install() {
-    if sudo snapper list-configs | grep -q "/"; then
-        log "Snapper is already setup for /"
-        return
-    fi
-
-    sudo snapper create-config /
-    sudo mkdir -p /var/lib/refind-btrfs
-    sudo chmod 755 /var/lib/refind-btrfs
-    sudo systemctl enable refind-btrfs --now
-}
-
-brew_install() {
-    has_cmd brew || {
-        log "Installing brew"
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    }
-    brew tap ublue-os/tap
-    brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
-}
-
-vscode_install() {
-    has_cmd code && {
-        log "vscode is already installed"
-        return
-    }
-
-    brew_install
-    brew install --cask visual-studio-code-linux
-
-    local -a vscode_exts=(
-        hverlin.mise-vscode
-        jdinhlife.gruvbox
-        mads-hartmann.bash-ide-vscode
-        TheNuProjectContributors.vscode-nushell-lang
-        timonwong.shellcheck
-    )
-
-    log "Installing vscode extensions"
-    for ext in "${vscode_exts[@]}"; do
-        log "Installing $ext"
-        code --install-extension "$ext"
-    done
 }
 
 whiptail_choices() {
@@ -383,13 +382,23 @@ whiptail_choices() {
     done
 }
 
+prompts() {
+    prompt_yn "Do you want to install essential packages?" && system_packages_install
+    prompt_yn "Do you want to setup devtools?" && devtools_install
+    prompt_yn "Do you want to setup dotfiles with chezmoi?" && dotfiles_install
+    prompt_yn "Do you want to setup mangowc?" && mangowc_install
+    prompt_yn "Do you want to install zed?" && zed_install
+    prompt_yn "Do you want to setup emacs?" && emacs_install
+    prompt_yn "Do you want to setup dotfiles with chezmoi?" && dotfiles_install
+}
+
 main() {
     is_pikaos || is_fedora || {
         error "This script is only meant to be run on PikaOS/Fedora"
         return 1
     }
 
-    export PATH="$HOME/.opencode/bin:$PATH:$HOME/bin:$HOME/.local/bin:$PATH"
+    export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/bin:$HOME/.local/bin:$PATH"
 
     mkdir -p ~/Pictures/Screenshots
 
@@ -398,18 +407,7 @@ main() {
         return 0
     fi
 
-    prompt_yn "Do you want to install essential packages?" && system_packages_install
-    prompt_yn "Do you want to setup devtools?" && devtools_install
-    prompt_yn "Do you want to setup dotfiles with chezmoi?" && dotfiles_install
-    prompt_yn "Do you want to setup mangowc?" && mangowc_install
-    prompt_yn "Do you want to install zed?" && zed_install
-    prompt_yn "Do you want to setup emacs?" && emacs_install
-
-    if ! prompt_yn "Do you want to setup dotfiles with chezmoi?"; then
-        return 0
-    fi
-
-    dotfiles_install
+    prompts
 }
 
 main "$@"

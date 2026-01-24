@@ -1,1 +1,21 @@
+#! /usr/bin/env zsh
+
+bindkey -e
+zstyle :compinstall filename "$HOME/.zshrc"
+
+setopt AUTO_CD
+setopt AUTO_PUSHD
+setopt PUSHD_IGNORE_DUPS
+setopt PUSHD_SILENT
+setopt PUSHD_TO_HOME
+setopt EXTENDED_GLOB
+setopt AUTO_MENU            # Show completion menu on a successive tab press.
+setopt AUTO_LIST            # Automatically list choices on ambiguous completion.
+setopt prompt_subst
+
+autoload bashcompinit && bashcompinit
+
+autoload -Uz compinit
+compinit
+
 source ~/.local/share/chezmoi/shellrc

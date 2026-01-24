@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 export VOLTA_HOME="$HOME/.volta"
-export PATH="$HOME/.pixi/bin:$HOME/.opencode/bin:$PATH:$HOME/bin:$HOME/.local/bin:$VOLTA_HOME/bin:$PATH"
+export PATH="$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$VOLTA_HOME/bin:$PATH"
 
 export XDG_DATA_DIRS="/home/pervez/.local/share/flatpak/exports/share:$XDG_DATA_DIRS"
 
@@ -71,7 +71,8 @@ alias cw='$HOME/.local/share/chezmoi/scripts/chezmoi-sync & disown'
 alias cA='chezmoi add'
 alias cf='chezmoi forget'
 alias ccd='chezmoi cd'
-alias ced="EDITOR='code --wait' chezmoi edit"
+alias ced="EDITOR='code' chezmoi edit"
+alias ceD="EDITOR='code --wait' chezmoi edit"
 
 if ! has_cmd bat && has_cmd batcat; then
     alias b='batcat'

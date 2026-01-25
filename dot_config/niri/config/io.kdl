@@ -1,0 +1,42 @@
+input {
+    keyboard {
+        xkb {
+            layout "us"
+            options "ctrl:nocaps"
+        }
+        repeat-delay 300
+        repeat-rate 30
+    }
+
+    touchpad {
+        tap
+        natural-scroll
+    }
+
+    mouse {
+        accel-profile "flat"
+    }
+    // focus-follows-mouse max-scroll-amount="10%"
+}
+
+output "HDMI-A-1" {
+    mode "3840x2160@60"
+    scale 1.6
+    transform "normal"
+    position x=0 y=0
+}
+
+output "HDMI-A-2" {
+    mode "3840x2160@60"
+    scale 1.6
+    transform "normal"
+    position x=0 y=0
+}
+
+//output "DP-2" {
+//    mode "2560x1440@240"
+//    scale 1
+//    transform "normal"
+//    variable-refresh-rate on-demand=true
+//    position x=1920 y=0
+//}

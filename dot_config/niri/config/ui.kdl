@@ -1,0 +1,54 @@
+layout {
+    gaps 4
+    center-focused-column "never"
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+        proportion 1.0
+    }
+
+    focus-ring {
+        off
+    }
+
+    background-color "transparent"
+
+    default-column-width { proportion 0.5; }
+
+    border {
+        width 2
+        active-gradient from="#0DB7D4" to="#9778D0" angle=90
+        inactive-color "#04404A"
+    }
+
+    struts {
+        left 2
+        right 2
+        top 2
+        bottom 2
+    }
+}
+
+layer-rule {
+    match namespace="^swww-daemon$"
+    place-within-backdrop true
+}
+
+prefer-no-csd
+
+hotkey-overlay {
+    skip-at-startup
+}
+
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+// screenshot-path null
+// screenshot-notification-disable
+
+animations {
+    // Uncomment to turn off all animations.
+    // off
+
+    // Slow down all animations by this factor. Values below 1 speed them up instead.
+    // slowdown 3.0
+}

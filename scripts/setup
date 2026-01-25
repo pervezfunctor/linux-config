@@ -125,6 +125,8 @@ system_packages_install() {
         micro
         mpv
         pass
+        pipx
+        podman
         qt5ct
         qt6ct
         rclone
@@ -203,6 +205,8 @@ system_packages_install() {
 
     pixi global install "${pixi_pkgs[@]}"
     has_cmd starship || pixi global install starship
+
+    pipx install pywal pywalfox
 }
 
 emacs_install() {

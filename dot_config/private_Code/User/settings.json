@@ -14,7 +14,7 @@
     "editor.minimap.enabled": false,
     "update.mode": "manual",
     "git.autofetch": true,
-    "workbench.colorTheme": "Gruvbox Dark Hard",
+    "workbench.colorTheme": "Dynamic Base16 DankShell",
     "workbench.sideBar.location": "right",
     "bashIde.shellcheckPath": "shellcheck",
     "bashIde.shfmt.path": "shfmt"

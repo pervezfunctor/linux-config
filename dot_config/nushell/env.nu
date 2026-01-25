@@ -73,3 +73,5 @@ alias uv-marimo-standalone = uvx marimo edit --sandbox
 
 let mise_path = $nu.default-config-dir | path join mise.nu
 ^mise activate nu | save $mise_path --force
+
+nu ($nu.default-config-dir | path join generate-includes.nu)

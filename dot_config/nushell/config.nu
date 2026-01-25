@@ -23,22 +23,6 @@ def jupyter-lab [] {
     ^$jupyter lab
 }
 
-if ($nu.home-dir | path join .cargo | path join env.nu | path exists) {
-    source ($nu.home-dir | path join .cargo | path join env.nu)
-}
-
-if ($nu.default-config-dir | path join mise.nu | path exists) {
-    use ($nu.default-config-dir | path join mise.nu)
-}
-
-if ($nu.default-config-dir | path join starship.nu | path exists) {
-    source ($nu.default-config-dir | path join starship.nu)
-}
-
-if ($nu.default-config-dir | path join zoxide.nu | path exists) {
-    source ($nu.default-config-dir | path join zoxide.nu)
-}
-
 def has_cmd [ app: string ] {
     (which $app | is-not-empty)
 }
@@ -50,3 +34,5 @@ def uv-marimo-standalone [] {
 def uv-jupyter-standalone [] {
     uv tool run jupyter lab
 }
+
+source ($nu.default-config-dir | path join auto-includes.nu)

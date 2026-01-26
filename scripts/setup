@@ -13,9 +13,16 @@ is_pikaos() {
     . /etc/os-release && [ "$ID" = "pika" ]
 }
 
+is_trixie() {
+    grep -qi 'trixie' /etc/os-release /etc/debian_version 2>/dev/null
+}
+
+is_questing() {
+    grep -qi 'questing' /etc/os-release /etc/debian_version 2>/dev/null
+}
+
 is_fedora() {
-    # shellcheck disable=SC1091
-    . /etc/os-release && [ "$ID" = "fedora" ]
+    grep -q -i 'Fedora' /etc/redhat-release
 }
 
 prompt_yn() {
@@ -50,6 +57,11 @@ warn() {
 error() {
     echo -e "\033[0;31m✗ $1\033[0m"
     sleep 0.2
+}
+
+die() {
+    error "$1"
+    exit 1
 }
 
 snapper_setup() {
@@ -116,7 +128,7 @@ dms_setup() {
 }
 
 system_packages_install() {
-    local -a packages=(
+    local -a common_pkgs=(
         cmake
         distrobox
         flatpak
@@ -124,7 +136,6 @@ system_packages_install() {
         gcc
         git
         gnome-keyring
-        hypridle
         incus
         luarocks
         make
@@ -144,34 +155,45 @@ system_packages_install() {
         tree
         unzip
         virt-manager
-        zig
         zsh
         zstd
     )
-    local -a pika_pkgs=(
+    local -a apt_pkgs=(
         libsecret-tools
         bibata-cursor-theme
         imagemagick
-        nushell
-        pika-refind-btrfs-hooks
-        refind-btrfs
-        snapper-gui
         starship
     )
+    local -a pika_pkgs=(
+        snapper-gui
+        nushell
+        hypridle
+        pika-refind-btrfs-hooks
+        refind-btrfs
+        zig
+    )
 
-    if is_pikaos; then
+    if is_trixie || is_pikaos || is_questing; then
         log "Updating packages"
         sudo apt update && sudo apt upgrade -y
         log "Installing essential packages"
-        sudo apt install -y "${packages[@]}" "${pika_pkgs[@]}"
+        sudo add-apt-repository ppa:avengemedia/danklinux
+        sudo add-apt-repository ppa:avengemedia/dms
+        sudo apt install -y "${common_pkgs[@]}" "${apt_pkgs[@]}" niri dms
+    fi
+
+    if is_pikaos; then
+        sudo apt install -y "${pika_pkgs[@]}"
         snapper_setup
-    else
+    elif is_fedora; then
         sudo dnf update -y
         sudo dnf copr enable avengemedia/dms
         sudo dnf copr enable solopasha/hyprland
-        sudo dnf install -y "${packages[@]}"
+        sudo dnf install -y "${common_pkgs[@]}"
         sudo dnf install -y niri dms sddm sddm-themes nu hypridle
         systemctl --user add-wants niri.service dms
+    else
+        error "Unknown OS. Not installing packages."
     fi
 
     incus_setup

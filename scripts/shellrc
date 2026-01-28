@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 
+DOT_DIR="$HOME/.local/share/chezmoi"
+
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$VOLTA_HOME/bin:$PATH"
 
@@ -75,7 +77,7 @@ alias ce='chezmoi edit'
 alias ca='chezmoi apply'
 alias cs='chezmoi status'
 alias cu='chezmoi update'
-alias cw='$HOME/.local/share/chezmoi/scripts/chezmoi-sync & disown'
+alias cw='"${DOT_DIR}"/scripts/chezmoi-sync & disown'
 alias cA='chezmoi add'
 alias cf='chezmoi forget'
 alias ccd='chezmoi cd'

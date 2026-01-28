@@ -1,5 +1,7 @@
 #! /usr/bin/env zsh
 
+DOT_DIR="$HOME/.local/share/chezmoi"
+
 bindkey -e
 zstyle :compinstall filename "$HOME/.zshrc"
 
@@ -9,8 +11,8 @@ setopt PUSHD_IGNORE_DUPS
 setopt PUSHD_SILENT
 setopt PUSHD_TO_HOME
 setopt EXTENDED_GLOB
-setopt AUTO_MENU            # Show completion menu on a successive tab press.
-setopt AUTO_LIST            # Automatically list choices on ambiguous completion.
+setopt AUTO_MENU
+setopt AUTO_LIST
 setopt prompt_subst
 
 autoload bashcompinit && bashcompinit
@@ -18,4 +20,4 @@ autoload bashcompinit && bashcompinit
 autoload -Uz compinit
 compinit
 
-source ~/.local/share/chezmoi/shellrc
+source "$DOT_DIR"/scripts/shellrc

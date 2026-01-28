@@ -207,6 +207,17 @@ virt_install() {
     si "${packages[@]}"
 }
 
+nix_install() {
+    has_cmd nix && {
+        log "nix is already installed"
+        return
+    }
+
+    log "Installing nix"
+    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --determinate --no-confirm
+    source_if_exists /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+}
+
 system_install() {
     update_packages
 
@@ -279,14 +290,13 @@ pixi_install() {
 
     local -a pixi_pkgs=(
         bash-language-server
-        tectonic
-        fd
         bat
         bottom
         carapace
         direnv
         duf
         eza
+        fd
         fzf
         gdu
         gh
@@ -299,6 +309,7 @@ pixi_install() {
         ripgrep
         shellcheck
         tealdeer
+        tectonic
         television
         xh
         yazi
@@ -381,8 +392,8 @@ zshrc_setup() {
 
 bashrc_setup() {
     log "Setting up bashrc"
-    grep -q "chezmoi/shellrc" ~/.bashrc || {
-        echo "source ~/.local/share/chezmoi/shellrc" >>~/.bashrc
+    grep -q "chezmoi/scripts/shellrc" ~/.bashrc || {
+        echo "source ~/.local/share/chezmoi/scripts/shellrc" >>~/.bashrc
     }
 }
 

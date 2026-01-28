@@ -265,8 +265,8 @@ system_install() {
         zig
     )
     local -a fedora_pkgs=(
-        sddm
-        sddm-themes
+        # sddm
+        # sddm-themes
         nu
     )
 
@@ -280,6 +280,7 @@ system_install() {
         snapper_setup
     elif is_fedora; then
         sudo dnf install -y "${common_pkgs[@]}" "${fedora_pkgs[@]}"
+        systemctl --user disable waybar.service || true
     fi
     pipx install pywal pywalfox
 

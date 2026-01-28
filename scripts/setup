@@ -431,7 +431,6 @@ devtools_install() {
     brew install --cask visual-studio-code-linux
 
     local -a extensions=(
-        hverlin.mise-vscode
         jdinhlife.gruvbox
         jnoortheen.nix-ide
         mads-hartmann.bash-ide-vscode

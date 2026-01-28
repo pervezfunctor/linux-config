@@ -205,6 +205,7 @@ virt_install() {
         incus
     )
     si "${packages[@]}"
+    incus_setup
 }
 
 nix_install() {
@@ -216,6 +217,7 @@ nix_install() {
     log "Installing nix"
     curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --determinate --no-confirm
     source_if_exists /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    nix run home-manager -- switch --flake ~/niri-config/home-manager\#"$USER" --impure --backup backup
 }
 
 system_install() {
@@ -240,6 +242,7 @@ system_install() {
         rclone
         rsync
         snapper
+        stow
         tar
         tmux
         trash-cli
@@ -280,7 +283,6 @@ system_install() {
     fi
     pipx install pywal pywalfox
 
-    incus_setup
     log "Updating locate database, this may take a while..."
     sudo updatedb
 }
@@ -392,8 +394,8 @@ zshrc_setup() {
 
 bashrc_setup() {
     log "Setting up bashrc"
-    grep -q "chezmoi/scripts/shellrc" ~/.bashrc || {
-        echo "source ~/.local/share/chezmoi/scripts/shellrc" >>~/.bashrc
+    grep -q "niri-config/scripts/shellrc" ~/.bashrc || {
+        echo "source ~/niri-config/scripts/shellrc" >>~/.bashrc
     }
 }
 
@@ -403,8 +405,15 @@ dotfiles_install() {
         return
     }
 
-    log "Setting up dotfiles with chezmoi"
-    sh -c "$(curl -fsLS get.chezmoi.io/lb)" -- init --apply https://github.com/pervezfunctor/niri-config.git
+    log "Setting up dotfiles"
+    trash ~/niri-config.bak || true
+    mv ~/niri-config ~/niri-config.bak 2>/dev/null || true
+    git clone --depth 1 https://github.com/pervezfunctor/niri-config.git ~/niri-config
+    cd ~/niri-config && {
+        stow --adopt .
+        git stash --include-untracked --message "Stashing untracked files before restore" || true
+        git restore .
+    }
 
     zshrc_setup
     bashrc_setup
@@ -424,6 +433,7 @@ devtools_install() {
     local -a extensions=(
         hverlin.mise-vscode
         jdinhlife.gruvbox
+        jnoortheen.nix-ide
         mads-hartmann.bash-ide-vscode
         TheNuProjectContributors.vscode-nushell-lang
         timonwong.shellcheck
@@ -484,11 +494,12 @@ whiptail_choices() {
         "system" "Install system packages" "on"
         "shell" "Install shell packages" "on"
         "devtools" "Install devtools(vscode, mise, node etc)" "on"
-        "dotfiles" "Setup dotfiles with chezmoi" "on"
+        "dotfiles" "Setup dotfiles with stow" "on"
         "flatpaks" "Install flatpaks" "on"
         "virt" "Install virtualization packages" "off"
         "zed" "Install zed" "off"
         "emacs" "Setup emacs" "off"
+        "nix" "Setup nix with home-manager" "off"
     )
 
     if is_fedora || is_questing; then
@@ -529,11 +540,12 @@ prompts() {
     prompt_yn "Do you want to install system packages?" && system_install
     prompt_yn "Do you want to install shell packages?" && shell_install
     prompt_yn "Do you want to setup devtools?" && devtools_install
-    prompt_yn "Do you want to setup dotfiles with chezmoi?" && dotfiles_install
+    prompt_yn "Do you want to setup dotfiles with stow?" && dotfiles_install
     prompt_yn "Do you want to install flatpaks?" && flatpaks_install
     prompt_yn "Do you want to install virtualization packages?" && virt_install
     prompt_yn "Do you want to install zed?" && zed_install
     prompt_yn "Do you want to setup emacs?" && emacs_install
+    prompt_yn "Do you want to setup nix with home-manager?" && nix_install
 
     if is_fedora || is_questing; then
         prompt_yn "Do you want to install niri?" && niri_install
@@ -552,7 +564,7 @@ main() {
         return 1
     }
 
-    export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PATH"
+    export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$HOME/.local/share/pnpm:$PATH"
 
     mkdir -p ~/Pictures/Screenshots
 

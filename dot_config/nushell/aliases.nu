@@ -27,19 +27,6 @@ alias gcm = git commit --message
 alias gia = git add
 alias gco = git checkout
 
-alias ce = chezmoi edit
-alias ca = chezmoi apply
-alias cs = chezmoi status
-alias cu = chezmoi update
-alias ccd = chezmoi cd
-alias cw = ~/.local/share/chezmoi/scripts/chezmoi-sync # & disown
-alias cA = chezmoi add
-alias cf = chezmoi forget
-
-def ced [] {
-    EDITOR='code --wait' chezmoi edit
-}
-
 alias stls = sudo systemctl status
 alias stle = sudo systemctl enable --now
 alias stld = sudo systemctl disable

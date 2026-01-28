@@ -5,12 +5,14 @@ def main [--verbose (-v)] {
         "~/.config/nushell/work.nu"
         "~/.config/nushell/personal.nu"
         "~/.config/nushell/secrets.nu"
+        "~/.local/share/pnpm"
     ]
 
     let tools = [
         [name, command];
         [starship, {|| starship init nu }],
         [zoxide, {|| zoxide init nushell }],
+        [carapace, {|| carapace init nu }],
         [mise, {|| ^mise activate nu }]
     ]
 

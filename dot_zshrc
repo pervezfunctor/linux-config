@@ -1,6 +1,6 @@
 #! /usr/bin/env zsh
 
-DOT_DIR="$HOME/.local/share/chezmoi"
+DOT_DIR="$HOME/niri-config"
 
 bindkey -e
 zstyle :compinstall filename "$HOME/.zshrc"
@@ -20,4 +20,4 @@ autoload bashcompinit && bashcompinit
 autoload -Uz compinit
 compinit
 
-source "$DOT_DIR"/scripts/shellrc
+source "$DOT_DIR/scripts/shellrc"

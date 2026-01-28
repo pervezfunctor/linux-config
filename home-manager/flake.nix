@@ -29,6 +29,9 @@
         "${vars.username}" = home-manager.lib.homeConfiguration {
           inherit system;
           specialArgs = { inherit inputs vars; };
+          imports = [
+            ./dev.nix
+          ];
         };
       };
     };

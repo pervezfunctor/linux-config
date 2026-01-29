@@ -16,7 +16,7 @@ def main [--verbose (-v)] {
     ]
 
     def vprint [message] {
-        if $verbose { print $"$message\n" }
+    if $verbose { print $"$message\n" }
     }
 
     vprint "Generating tool configs..."

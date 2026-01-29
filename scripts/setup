@@ -25,6 +25,14 @@ is_fedora() {
     [ -f /etc/redhat-release ] && grep -q -i 'Fedora' /etc/redhat-release
 }
 
+is_linux() {
+    [ "$(uname -s)" = "Linux" ]
+}
+
+is_mac() {
+    [ "$(uname -s)" = "Darwin" ]
+}
+
 prompt_yn() {
     local prompt="$1"
     local response
@@ -112,8 +120,11 @@ mangowc_install() {
         sudo dnf install -y mangowc
     else
         error "Unsupported OS. Not installing mangowc."
-        return 1
     fi
+    cd ~/niri-config && {
+        stow --adopt mangowc
+        git stash --include-untracked --message "Stashing mangowc dotfiles" || true
+    }
 }
 
 incus_setup() {
@@ -134,7 +145,7 @@ flatpaks_install() {
         io.github.kolunmi.Bazaar
     )
 
-    log "Installing flatpaks(vscode etc)"
+    log "Installing flatpaks..."
     for pkg in "${flatpaks[@]}"; do
         flatpak --user install -y flathub "$pkg"
     done
@@ -162,26 +173,27 @@ update_packages() {
 }
 
 niri_install() {
-    has_cmd niri && {
-        log "niri is already installed"
-        return
-    }
-
-    if is_pikaos; then
-        pikman install pika-niri-desktop-minimal pika-niri-settings
-    elif is_fedora; then
-        sudo dnf install -y niri
-    elif is_questing; then
-        sudo add-apt-repository ppa:avengemedia/danklinux
-        sudo add-apt-repository ppa:avengemedia/dms
-        sudo apt install -y niri dms
-    elif is_fedora; then
-        sudo dnf copr enable avengemedia/dms
-    else
-        error "OS not supported. Not installing niri."
-        return 1
+    if ! has_cmd niri; then
+        if is_pikaos; then
+            pikman install pika-niri-desktop-minimal pika-niri-settings
+        elif is_fedora; then
+            sudo dnf install -y niri
+        elif is_questing; then
+            sudo add-apt-repository ppa:avengemedia/danklinux
+            sudo add-apt-repository ppa:avengemedia/dms
+            sudo apt install -y niri dms
+        elif is_fedora; then
+            sudo dnf copr enable avengemedia/dms
+        else
+            error "OS not supported. Not installing niri."
+            return 1
+        fi
     fi
     systemctl --user add-wants niri.service dms || true
+    cd ~/niri-config && {
+        stow --adopt niri
+        git stash --include-untracked --message "Stashing niri dotfiles" || true
+    }
 }
 
 si() {
@@ -230,7 +242,6 @@ system_install() {
         gcc
         git
         gnome-keyring
-        luarocks
         make
         micro
         mpv
@@ -411,9 +422,8 @@ dotfiles_install() {
     mv ~/niri-config ~/niri-config.bak 2>/dev/null || true
     git clone --depth 1 https://github.com/pervezfunctor/niri-config.git ~/niri-config
     cd ~/niri-config && {
-        stow --adopt .
-        git stash --include-untracked --message "Stashing untracked files before restore" || true
-        git restore .
+        stow --adopt kitty
+        git stash --include-untracked --message "Stashing kitty dotfiles" || true
     }
 
     zshrc_setup
@@ -444,6 +454,10 @@ devtools_install() {
         log "Installing $ext"
         code --install-extension "$ext"
     done
+    cd ~/niri-config && {
+        stow --adopt vscode
+        git stash --include-untracked --message "Stashing vscode dotfiles" || true
+    }
 
     eval "$(~/.local/bin/mise activate bash)"
     mise use -g node@latest pnpm
@@ -487,16 +501,21 @@ zed_install() {
 
     log "Installing zed"
     curl -f https://zed.dev/install.sh | sh
+
+    cd ~/niri-config && {
+        stow --adopt zed
+        git stash --include-untracked --message "Stashing zed dotfiles" || true
+    }
 }
 
 whiptail_choices() {
     local -a whiptail_items=(
         "system" "Install system packages" "on"
-        "shell" "Install shell packages" "on"
-        "devtools" "Install devtools(vscode, mise, node etc)" "on"
         "dotfiles" "Setup dotfiles with stow" "on"
-        "flatpaks" "Install flatpaks" "on"
-        "virt" "Install virtualization packages" "off"
+        "shell" "Install shell tools" "on"
+        "devtools" "Install devtools(vscode, mise, node etc)" "on"
+        "flatpaks" "Install flatpaks(pdf reader, devpod)" "on"
+        "virt" "Install virtualization packages(distrobox, incus, virt-manager)" "off"
         "zed" "Install zed" "off"
         "emacs" "Setup emacs" "off"
         "nix" "Setup nix with home-manager" "off"
@@ -538,11 +557,11 @@ whiptail_choices() {
 
 prompts() {
     prompt_yn "Do you want to install system packages?" && system_install
-    prompt_yn "Do you want to install shell packages?" && shell_install
-    prompt_yn "Do you want to setup devtools?" && devtools_install
     prompt_yn "Do you want to setup dotfiles with stow?" && dotfiles_install
-    prompt_yn "Do you want to install flatpaks?" && flatpaks_install
-    prompt_yn "Do you want to install virtualization packages?" && virt_install
+    prompt_yn "Do you want to install shell tools?" && shell_install
+    prompt_yn "Do you want to setup devtools?" && devtools_install
+    prompt_yn "Do you want to install flatpaks(pdf reader, devpod)?" && flatpaks_install
+    prompt_yn "Do you want to install virtualization packages(distrobox, incus, virt-manager)?" && virt_install
     prompt_yn "Do you want to install zed?" && zed_install
     prompt_yn "Do you want to setup emacs?" && emacs_install
     prompt_yn "Do you want to setup nix with home-manager?" && nix_install
@@ -559,14 +578,22 @@ main() {
     rm -f "$HOME"/.niri-config-*.log
     keep_sudo_alive
 
-    is_pikaos || is_fedora || {
-        error "This script is only meant to be run on PikaOS/Fedora"
+    is_pikaos || is_fedora || is_trixie || is_questing || {
+        error "This script is only meant to be run on PikaOS/Fedora/Questing"
         return 1
     }
 
     export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$HOME/.local/share/pnpm:$PATH"
 
     mkdir -p ~/Pictures/Screenshots
+
+    if is_mac; then
+        shell_install
+        brew install stow rsync rclone tar tmux tree trash-cli unzip nushell
+        dotfiles_install
+        devtools_install
+        return 0
+    fi
 
     if command -v whiptail >/dev/null 2>&1; then
         whiptail_choices || return 1

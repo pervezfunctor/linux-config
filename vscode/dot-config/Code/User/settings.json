@@ -14,7 +14,7 @@
     "editor.minimap.enabled": false,
     "update.mode": "manual",
     "git.autofetch": true,
-    "workbench.colorTheme": "Dynamic Base16 DankShell",
+    "workbench.colorTheme": "Gruvbox Dark Medium",
     "bashIde.shellcheckPath": "shellcheck",
     "bashIde.shfmt.path": "shfmt",
     "docker.extension.enableComposeLanguageServer": false,
@@ -52,5 +52,6 @@
         "git show",
         "ls"
     ],
-    "kilo-code.deniedCommands": []
+    "kilo-code.deniedCommands": [],
+    "workbench.sideBar.location": "right"
 }

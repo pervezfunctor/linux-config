@@ -149,7 +149,7 @@ niri_install() {
             return 1
         fi
     fi
-    systemctl --user add-wants niri.service dms || true
+
     cd ~/niri-config && {
         log "Stowing niri dotfiles"
         stow --no-folding --adopt niri
@@ -157,6 +157,8 @@ niri_install() {
         mkdir -p ~/.config/niri/dms
         touch ~/.config/niri/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.kdl
     }
+
+    systemctl --user add-wants niri.service dms || true
 }
 
 mangowc_install() {
@@ -177,11 +179,12 @@ mangowc_install() {
     cd ~/niri-config && {
         log "Stowing mangowc dotfiles"
         stow --no-folding --adopt mangowc systemd
-        systemctl --user add-wants mango-session.target dms || true
         git stash --include-untracked --message "Stashing mangowc dotfiles" || true
         mkdir -p ~/.config/mango/dms
         touch ~/.config/mango/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
     }
+
+    systemctl --user add-wants mango-session.target dms || true
 }
 
 hyprland_install() {
@@ -200,7 +203,6 @@ hyprland_install() {
             error "Unsupported OS. Not installing hyprland."
             return
         fi
-        systemctl --user add-wants hyprland-session.target dms
     fi
 
     cd ~/niri-config && {
@@ -210,6 +212,8 @@ hyprland_install() {
         mkdir -p ~/.config/hypr/dms
         touch ~/.config/hypr/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
     }
+
+    systemctl --user add-wants hyprland-session.target dms
 }
 
 incus_setup() {

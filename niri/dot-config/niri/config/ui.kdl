@@ -31,11 +31,6 @@ layout {
     //    }
 }
 
-layer-rule {
-    match namespace="^swww-daemon$"
-    place-within-backdrop true
-}
-
 prefer-no-csd
 
 hotkey-overlay {

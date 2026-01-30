@@ -171,7 +171,7 @@ flatpaks_install() {
 dms_setup() {
     mkdir -p ~/.config/niri/dms ~/.config/mango/dms
     touch ~/.config/niri/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.kdl
-    touch ~/.config/mango/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.kdl
+    touch ~/.config/mango/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
     touch ~/.config/hypr/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
 }
 
@@ -536,9 +536,9 @@ whiptail_choices() {
         "system" "Install system packages" "on"
         "dotfiles" "Setup dotfiles with stow" "on"
         "shell" "Install shell tools" "on"
-        "devtools" "Install devtools(vscode, mise, node etc)" "on"
-        "flatpaks" "Install flatpaks(pdf reader, devpod)" "on"
-        "virt" "Install virtualization packages(distrobox, incus, virt-manager)" "off"
+        "devtools" "Install devtools(vscode, mise etc)" "on"
+        "flatpaks" "Install flatpaks(devpod, pdfreader etc)" "on"
+        "virt" "Install virtualization packages" "off"
         "zed" "Install zed" "off"
         "emacs" "Setup emacs" "off"
         "nix" "Setup nix with home-manager" "off"
@@ -583,8 +583,8 @@ prompts() {
     prompt_yn "Do you want to setup dotfiles with stow?" && dotfiles_install
     prompt_yn "Do you want to install shell tools?" && shell_install
     prompt_yn "Do you want to setup devtools?" && devtools_install
-    prompt_yn "Do you want to install flatpaks(pdf reader, devpod)?" && flatpaks_install
-    prompt_yn "Do you want to install virtualization packages(distrobox, incus, virt-manager)?" && virt_install
+    prompt_yn "Do you want to install flatpaks(devpod etc)?" && flatpaks_install
+    prompt_yn "Do you want to install virtualization packages?" && virt_install
     prompt_yn "Do you want to install zed?" && zed_install
     prompt_yn "Do you want to setup emacs?" && emacs_install
     prompt_yn "Do you want to setup nix with home-manager?" && nix_install

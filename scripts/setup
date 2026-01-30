@@ -152,7 +152,7 @@ niri_install() {
     systemctl --user add-wants niri.service dms || true
     cd ~/niri-config && {
         log "Stowing niri dotfiles"
-        stow --adopt niri
+        stow --no-folding --adopt niri
         git stash --include-untracked --message "Stashing niri dotfiles" || true
         mkdir -p ~/.config/niri/dms
         touch ~/.config/niri/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.kdl
@@ -176,7 +176,7 @@ mangowc_install() {
 
     cd ~/niri-config && {
         log "Stowing mangowc dotfiles"
-        stow --adopt mangowc systemd
+        stow --no-folding --adopt mangowc systemd
         systemctl --user add-wants mango-session.target dms || true
         git stash --include-untracked --message "Stashing mangowc dotfiles" || true
         mkdir -p ~/.config/mango/dms
@@ -205,7 +205,7 @@ hyprland_install() {
 
     cd ~/niri-config && {
         log "Stowing hyprland dotfiles"
-        stow --adopt hypr
+        stow --no-folding --adopt hypr
         git stash --include-untracked --message "Stashing hyprland dotfiles" || true
         mkdir -p ~/.config/hypr/dms
         touch ~/.config/hypr/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
@@ -437,7 +437,7 @@ nushell_setup() {
     fi
     cd ~/niri-config && {
         log "Stowing nushell dotfiles"
-        stow --adopt nushell
+        stow --no-folding --adopt nushell
         git stash --include-untracked --message "Stashing nushell dotfiles" || true
     }
 }
@@ -496,7 +496,7 @@ dotfiles_install() {
     mv ~/niri-config ~/niri-config.bak 2>/dev/null || true
     git clone --depth 1 https://github.com/pervezfunctor/niri-config.git ~/niri-config
     cd ~/niri-config && {
-        stow --adopt kitty zsh
+        stow --no-folding --adopt kitty zsh
         git stash --include-untracked --message "Stashing kitty,zsh dotfiles" || true
     }
 
@@ -532,7 +532,7 @@ devtools_install() {
     done
     cd ~/niri-config && {
         log "Stowing vscode dotfiles"
-        stow --adopt vscode
+        stow --no-folding --adopt vscode
         git stash --include-untracked --message "Stashing vscode dotfiles" || true
     }
 
@@ -587,7 +587,7 @@ zed_install() {
 
     cd ~/niri-config && {
         log "Stowing zed dotfiles"
-        stow --adopt zed
+        stow --no-folding --adopt zed
         git stash --include-untracked --message "Stashing zed dotfiles" || true
     }
 }

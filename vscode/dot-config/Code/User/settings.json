@@ -1,4 +1,5 @@
 {
+    "catppuccin.accentColor": "mauve",
     "editor.fontFamily": "JetBrainsMono Nerd Font",
     "editor.fontSize": 14,
     "editor.tabSize": 2,
@@ -18,7 +19,6 @@
     "bashIde.shellcheckPath": "shellcheck",
     "bashIde.shfmt.path": "shfmt",
     "docker.extension.enableComposeLanguageServer": false,
-    "mise.binPath": "/home/pervez/.local/bin/mise",
     "kilo-code.allowedCommands": [
         "awk",
         "bash",
@@ -52,6 +52,5 @@
         "git show",
         "ls"
     ],
-    "kilo-code.deniedCommands": [],
-    "workbench.sideBar.location": "right"
+    "kilo-code.deniedCommands": []
 }

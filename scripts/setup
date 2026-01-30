@@ -113,40 +113,81 @@ brew_install() {
     brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
 }
 
-mangowc_install() {
-    has_cmd mango && {
-        log "mangowc is already installed"
-        return
-    }
+wm_install() {
+    si mate-polkit
+}
 
-    log "Installing mangowc"
-    if is_pikaos; then
-        pikman install mangowc
-    elif is_fedora && prompt_yn "need terra repository for installing mango. This is NOT stable. Still enable it?"; then
-        sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release
-        sudo dnf install -y mangowc
-    else
-        error "Unsupported OS. Not installing mangowc."
+niri_install() {
+    log "Installing niri"
+    if ! has_cmd niri; then
+        wm_install
+        if is_pikaos; then
+            pikman install pika-niri-desktop-minimal pika-niri-settings dms
+        elif is_fedora; then
+            sudo dnf copr enable avengemedia/dms
+            sudo dnf install -y niri dms
+        elif is_questing; then
+            sudo add-apt-repository ppa:avengemedia/danklinux
+            sudo add-apt-repository ppa:avengemedia/dms
+            sudo apt install -y niri dms
+        else
+            error "OS not supported. Not installing niri."
+            return 1
+        fi
     fi
+    systemctl --user add-wants niri.service dms || true
+    cd ~/niri-config && {
+        log "Stowing niri dotfiles"
+        stow --adopt niri
+        git stash --include-untracked --message "Stashing niri dotfiles" || true
+        dms_setup
+    }
+}
+
+mangowc_install() {
+    if ! has_cmd mango; then
+        log "Installing mangowc"
+        wm_install
+        if is_pikaos; then
+            pikman install mangowc
+        elif is_fedora && prompt_yn "need terra repository for installing mango. This is NOT stable. Still enable it?"; then
+            sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release
+            sudo dnf copr enable avengemedia/dms
+            sudo dnf install -y mangowc dms
+        else
+            error "Unsupported OS. Not installing mangowc."
+        fi
+    fi
+
     cd ~/niri-config && {
         log "Stowing mangowc dotfiles"
         stow --adopt mangowc
         git stash --include-untracked --message "Stashing mangowc dotfiles" || true
+        dms_setup
     }
 }
 
 hyprland_install() {
-    has_cmd hyprctl && {
-        log "hyprland is already installed"
-        return
-    }
-
-    log "Installing hyprland"
-    if is_pikaos; then
-        pikman install pika-hyprland-desktop-minimal pika-hyprland-settings
-    else
-        error "Unsupported OS. Not installing hyprland."
+    if ! has_cmd hyprctl; then
+        log "Installing hyprland"
+        wm_install
+        if is_pikaos; then
+            pikman install pika-hyprland-desktop-minimal pika-hyprland-settings dms
+        elif is_fedora; then
+            sudo dnf copr enable solopasha/hyprland
+            sudo dnf copr enable avengemedia/dms
+            sudo dnf install -y hyprland dms
+        else
+            error "Unsupported OS. Not installing hyprland."
+            return
+        fi
     fi
+    cd ~/niri-config && {
+        log "Stowing hyprland dotfiles"
+        stow --adopt hypr
+        git stash --include-untracked --message "Stashing hyprland dotfiles" || true
+        dms_setup
+    }
 }
 
 incus_setup() {
@@ -195,32 +236,6 @@ update_packages() {
         error "OS not supported. Quitting."
         exit 1
     fi
-}
-
-niri_install() {
-    log "Installing niri"
-    if ! has_cmd niri; then
-        if is_pikaos; then
-            pikman install pika-niri-desktop-minimal pika-niri-settings
-        elif is_fedora; then
-            sudo dnf install -y niri
-        elif is_questing; then
-            sudo add-apt-repository ppa:avengemedia/danklinux
-            sudo add-apt-repository ppa:avengemedia/dms
-            sudo apt install -y niri dms
-        elif is_fedora; then
-            sudo dnf copr enable avengemedia/dms
-        else
-            error "OS not supported. Not installing niri."
-            return 1
-        fi
-    fi
-    systemctl --user add-wants niri.service dms || true
-    cd ~/niri-config && {
-        log "Stowing niri dotfiles"
-        stow --adopt niri
-        git stash --include-untracked --message "Stashing niri dotfiles" || true
-    }
 }
 
 si() {
@@ -485,7 +500,7 @@ devtools_install() {
 
     log "Installing devtools(mise, neovim, vscode etc)"
 
-    brew install uv mise neovim
+    brew install uv mise neovim topgrade
     brew install --cask visual-studio-code-linux
 
     local -a extensions=(
@@ -581,6 +596,7 @@ whiptail_choices() {
     fi
     if is_fedora || is_pikaos; then
         whiptail_items+=("mangowc" "Install mangowc" "off")
+        whiptail_items+=("hypr" "Install hyprland" "off")
     fi
 
     local selected_output
@@ -625,6 +641,7 @@ prompts() {
     fi
     if is_fedora || is_pikaos; then
         prompt_yn "Setup mangowc?" && mangowc_install
+        prompt_yn "Setup hyprland?" && hyprland_install
     fi
 }
 

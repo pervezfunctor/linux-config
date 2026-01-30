@@ -114,7 +114,21 @@ brew_install() {
 }
 
 wm_install() {
-    si mate-polkit
+    local -a pkgs=(
+        cliphist
+        grim
+        mate-polkit
+        pipewire
+        pipewire-pulse
+        slurp
+        wireplumber
+        wl-clipboard
+        xdg-desktop-portal-gnome
+        xdg-desktop-portal-gtk
+        xdg-desktop-portal-wlr
+    )
+
+    si "${pkgs[@]}"
 }
 
 niri_install() {
@@ -140,7 +154,8 @@ niri_install() {
         log "Stowing niri dotfiles"
         stow --adopt niri
         git stash --include-untracked --message "Stashing niri dotfiles" || true
-        dms_setup
+        mkdir -p ~/.config/niri/dms
+        touch ~/.config/niri/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.kdl
     }
 }
 
@@ -161,9 +176,11 @@ mangowc_install() {
 
     cd ~/niri-config && {
         log "Stowing mangowc dotfiles"
-        stow --adopt mangowc
+        stow --adopt mangowc systemd
+        systemctl --user add-wants mango-session.target dms || true
         git stash --include-untracked --message "Stashing mangowc dotfiles" || true
-        dms_setup
+        mkdir -p ~/.config/mango/dms
+        touch ~/.config/mango/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
     }
 }
 
@@ -173,20 +190,25 @@ hyprland_install() {
         wm_install
         if is_pikaos; then
             pikman install pika-hyprland-desktop-minimal pika-hyprland-settings dms
+            pikman install hyprpolkitagent
         elif is_fedora; then
             sudo dnf copr enable solopasha/hyprland
             sudo dnf copr enable avengemedia/dms
             sudo dnf install -y hyprland dms
+            sudo dnf install -y hyprpolkitagent
         else
             error "Unsupported OS. Not installing hyprland."
             return
         fi
+        systemctl --user add-wants hyprland-session.target dms
     fi
+
     cd ~/niri-config && {
         log "Stowing hyprland dotfiles"
         stow --adopt hypr
         git stash --include-untracked --message "Stashing hyprland dotfiles" || true
-        dms_setup
+        mkdir -p ~/.config/hypr/dms
+        touch ~/.config/hypr/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
     }
 }
 
@@ -213,14 +235,6 @@ flatpaks_install() {
     for pkg in "${flatpaks[@]}"; do
         flatpak --user install -y flathub "$pkg"
     done
-}
-
-dms_setup() {
-    log "Setting up dms"
-    mkdir -p ~/.config/niri/dms ~/.config/mango/dms ~/.config/hypr/dms
-    touch ~/.config/niri/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.kdl
-    touch ~/.config/mango/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
-    touch ~/.config/hypr/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
 }
 
 update_packages() {

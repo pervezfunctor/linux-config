@@ -1,0 +1,428 @@
+#!/usr/bin/env bash
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+dir_exists() {
+  [ -d "$1" ]
+}
+
+is_trixie() {
+  [ -f /etc/os-release ] && grep -qi 'trixie' /etc/os-release 2>/dev/null
+}
+
+is_questing() {
+  [ -f /etc/os-release ] && grep -qi 'questing' /etc/os-release 2>/dev/null
+}
+
+is_fedora() {
+  [ -f /etc/redhat-release ] && grep -q -i 'Fedora' /etc/redhat-release
+}
+
+is_linux() {
+  [ "$(uname -s)" = "Linux" ]
+}
+
+is_tw() {
+  [ -f /etc/os-release ] && grep -q 'Tumbleweed' /etc/os-release 2>/dev/null
+}
+
+is_arch() {
+  [ -f /etc/os-release ] && grep -q 'Arch Linux' /etc/os-release 2>/dev/null
+}
+
+prompt_yn() {
+  local prompt="$1"
+  local response
+  while true; do
+    read -rp "\033[0;36m? $prompt\033[0m \033[0;33m[y/N]\033[0m " response
+    case "$response" in
+    [yY][eE][sS] | [yY])
+      return 0
+      ;;
+    [nN][oO] | [nN] | "")
+      return 1
+      ;;
+    *)
+      warn "Please answer yes or no."
+      ;;
+    esac
+  done
+}
+
+log() {
+  local msg="$1"
+  echo -e "\033[0;32m→ $msg\033[0m"
+  echo "→ $msg" >>"$HOME/.niri-config-log.log"
+}
+
+warn() {
+  local msg="$1"
+  echo -e "\033[0;33m! $msg\033[0m"
+  echo "! $msg" >>"$HOME/.niri-config-warn.log"
+}
+
+error() {
+  local msg="$1"
+  echo -e "\033[0;31m✗ $msg\033[0m"
+  echo "✗ $msg" >>"$HOME/.niri-config-error.log"
+}
+
+die() {
+  error "$1"
+  exit 1
+}
+
+keep_sudo_alive() {
+  log "Keeping sudo alive"
+  sudo -v
+  while true; do
+    sudo -n true
+    sleep 60
+    kill -0 "$$" || exit
+  done 2>/dev/null &
+}
+
+brew_install() {
+  has_cmd brew && return
+
+  log "Installing brew"
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+}
+
+paru_install() {
+  has_cmd paru && return 0
+  log "Installing paru"
+
+  si base-devel
+  rm -rf /tmp/paru
+  git clone https://aur.archlinux.org/paru.git /tmp/paru && cd /tmp/paru && makepkg --syncdeps --noconfirm --install && cd - && frm /tmp/paru
+}
+
+incus_setup() {
+  log "Setting up incus"
+  sudo usermod -aG incus "$USER"
+  sudo usermod -aG incus-admin "$USER"
+  sudo systemctl enable --now incus.socket
+  sudo incus admin init --minimal
+}
+
+update_packages() {
+  log "Updating packages"
+
+  if is_fedora; then
+    sudo dnf update -y
+  elif is_trixie || is_questing; then
+    sudo apt update && sudo apt upgrade -y
+  elif is_tw; then
+    sudo zypper refresh && sudo zypper update
+  elif is_arch; then
+    sudo pacman -Syu
+  else
+    error "OS not supported. Quitting."
+    exit 1
+  fi
+}
+
+si() {
+  log "Installing $*"
+  if is_fedora; then
+    sudo dnf install -y "$@"
+  elif is_trixie || is_questing; then
+    sudo apt install -y "$@"
+  elif is_tw; then
+    sudo zypper --non-interactive --quiet install --auto-agree-with-licenses "$@"
+  elif is_arch; then
+    sudo pacman -S --quiet --noconfirm "$@"
+  else
+    error "OS not supported. Not installing $*."
+    return 1
+  fi
+}
+
+virt_install() {
+  log "Installing virtualization packages(distrobox, incus)"
+  local -a packages=(
+    podman
+    distrobox
+    incus
+  )
+  si "${packages[@]}"
+  incus_setup
+}
+
+nix_install() {
+  has_cmd nix && {
+    log "nix is already installed"
+    return
+  }
+
+  log "Installing nix"
+  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --determinate --no-confirm
+  # shellcheck disable=SC1091
+  source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+
+  log "Setting up home-manager"
+  nix run home-manager -- switch --flake ~/niri-config/home-manager\#"$USER" --impure
+}
+
+system_install() {
+  update_packages
+
+  local -a common_pkgs=(
+    cmake
+    gcc
+    git
+    make
+    micro
+    pass
+    rclone
+    rsync
+    stow
+    tar
+    tmux
+    trash-cli
+    tree
+    unzip
+    zsh
+    zstd
+  )
+
+  local -a tw_pkgs=(
+    gcc-c++
+    micro-editor
+    python313-pipx
+  )
+  local -a apt_pkgs=(
+    g++
+    imagemagick
+    starship
+    pipx
+  )
+  local -a fedora_pkgs=(
+    g++
+    nu
+    pipx
+  )
+  local -a arch_pkgs=(
+    g++
+    python-pipx
+  )
+
+  log "Installing system packages"
+  if is_trixie || is_questing; then
+    si "${common_pkgs[@]}" "${apt_pkgs[@]}"
+  fi
+
+  if is_fedora; then
+    si "${common_pkgs[@]}" "${fedora_pkgs[@]}"
+  elif is_tw; then
+    si "${common_pkgs[@]}" "${tw_pkgs[@]}"
+  elif is_arch; then
+    si "${common_pkgs[@]}" "${arch_pkgs[@]}"
+  fi
+
+  log "Updating locate database, this may take a while..."
+  sudo updatedb
+}
+
+pixi_install() {
+  log "Installing pixi and shell tools with pixi"
+
+  brew install pixi
+
+  local -a pixi_pkgs=(
+    bash-language-server
+    bat
+    bottom
+    carapace
+    direnv
+    duf
+    eza
+    fd
+    fzf
+    gdu
+    gh
+    go-gum
+    go-shfmt
+    jq
+    just
+    lazygit
+    mask
+    ripgrep
+    shellcheck
+    tealdeer
+    tectonic
+    television
+    xh
+    yazi
+    zoxide
+  )
+
+  pixi global install "${pixi_pkgs[@]}"
+  has_cmd starship || pixi global install starship
+  ~/.pixi/bin/tldr --update
+}
+
+shell_install() {
+  brew_install
+  pixi_install
+}
+
+rust_install() {
+  has_cmd rustup && {
+    log "rustup is already installed"
+    return
+  }
+
+  log "Installing rustup"
+  curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | sh
+}
+
+nushell_setup() {
+  cd ~/niri-config && {
+    log "Stowing nushell dotfiles"
+    stow --no-folding --adopt nushell
+    git stash --include-untracked --message "Stashing nushell dotfiles" || true
+  }
+}
+
+astro_install() {
+  if dir_exists ~/.config/nvim; then
+    prompt_yn "Found existing nvim config. Do you want to trash and replace with AstroNvim?" || return 0
+  fi
+
+  log "Installing AstroNvim"
+  trash ~/.config/nvim.bak || true
+  mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null || true
+  mkdir ~/.config/nvim 2>/dev/null || true
+  mv ~/.local/share/nvim ~/.local/share/nvim.bak 2>/dev/null || true
+  mv ~/.local/state/nvim ~/.local/state/nvim.bak 2>/dev/null || true
+  mv ~/.cache/nvim ~/.cache/nvim.bak 2>/dev/null || true
+  git clone --depth 1 https://github.com/AstroNvim/template ~/.config/nvim
+  rm -rf ~/.config/nvim/.git
+}
+
+zshrc_setup() {
+  log "Setting zsh as default shell"
+  chsh -s "$(which zsh)"
+}
+
+bashrc_setup() {
+  log "Setting up bashrc"
+  grep -q "niri-config/bin/shellrc" ~/.bashrc || {
+    echo "source ~/niri-config/bin/shellrc" >>~/.bashrc
+  }
+}
+
+dotfiles_install() {
+  cd || {
+    error "Failed to change to home directory"
+    return
+  }
+
+  log "Setting up dotfiles"
+  trash ~/niri-config.bak || true
+  mv ~/niri-config ~/niri-config.bak 2>/dev/null || true
+  git clone --depth 1 https://github.com/pervezfunctor/niri-config.git ~/niri-config
+  cd ~/niri-config && {
+    stow --no-folding --adopt zsh
+    git stash --include-untracked --message "Stashing zsh dotfiles" || true
+  }
+
+  bashrc_setup
+  nushell_setup
+  astro_install
+  zshrc_setup
+}
+
+devtools_install() {
+  has_cmd mise || {
+    curl https://mise.run | sh
+  }
+
+  log "Installing devtools(mise, neovim etc)"
+
+  brew install uv mise neovim topgrade
+
+  eval "$(~/.local/bin/mise activate bash)"
+  log "Installing pnpm"
+  mise use -g node@latest pnpm
+  pnpm setup
+
+  local -a npm_pkgs=(
+    @mermaid-js/mermaid-cli
+    @google/gemini-cli
+    opencode-ai
+  )
+
+  log "Installing pnpm packages"
+  for pkg in "${npm_pkgs[@]}"; do
+    log "Installing $pkg"
+    pnpm install -g "$pkg"
+  done
+
+  log "Installing claude"
+  has_cmd claude || curl -fsSL https://claude.ai/install.sh | bash
+  rust_install
+}
+
+motltbot_install() {
+  log "Installing moltbot"
+  curl -fsSL https://molt.bot/install.sh | bash
+}
+
+whiptail_choices() {
+  local -a whiptail_items=(
+    "system" "Install system packages" "on"
+    "dotfiles" "Setup dotfiles with stow" "on"
+    "shell" "Install shell tools" "on"
+    "devtools" "Install devtools(mise, neovim etc)" "on"
+    "virt" "Install virtualization packages" "off"
+    "nix" "Setup nix with home-manager" "off"
+  )
+
+  local selected_output
+  selected_output=$(whiptail --checklist "Select tasks to execute:" 25 60 19 "${whiptail_items[@]}" 3>&1 1>&2 2>&3)
+
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    warn "Setup cancelled."
+    return 1
+  fi
+
+  local -a selected_tasks=()
+  if [ -n "$selected_output" ]; then
+    read -ra selected_tasks <<<"$selected_output"
+  fi
+
+  if [ ${#selected_tasks[@]} -eq 0 ]; then
+    log "No tasks selected."
+    return 0
+  fi
+
+  for task in "${selected_tasks[@]}"; do
+    task=${task//\"/}
+    log "Executing: $task"
+    "${task}_install"
+  done
+}
+
+main() {
+  rm -f "$HOME"/.niri-config-*.log
+  keep_sudo_alive
+
+  is_fedora || is_trixie || is_questing || is_tw || is_arch || {
+    error "This script is only meant to be run on Fedora/Questing/Tumbeweed/Arch"
+    return 1
+  }
+
+  export PATH="/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$HOME/.local/share/pnpm:$PATH"
+
+  has_cmd whiptail || si whiptail
+  whiptail_choices || return 1
+}
+
+main "$@"

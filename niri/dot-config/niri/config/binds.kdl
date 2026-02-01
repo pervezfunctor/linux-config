@@ -51,25 +51,27 @@ binds {
     Mod+Page_Up        { focus-workspace-up; }
     Mod+U              { focus-workspace-down; }
     Mod+I              { focus-workspace-up; }
+
     Mod+Shift+Page_Down { move-column-to-workspace-down; }
     Mod+Shift+Page_Up   { move-column-to-workspace-up; }
     Mod+Shift+U         { move-column-to-workspace-down; }
     Mod+Shift+I         { move-column-to-workspace-up; }
 
     // Use these for moving between monitors instead?
-    Mod+Ctrl+Up   { focus-workspace-up; }
-    Mod+Ctrl+Down  { focus-workspace-down; }
-    Mod+Ctrl+Shift+Up   { focus-workspace-up; }
-    Mod+Ctrl+Shift+Down  { focus-workspace-down; }
-    Mod+Ctrl+Left   { focus-workspace-up; }
-    Mod+Ctrl+Right  { focus-workspace-down; }
-    Mod+Ctrl+Shift+Left   { focus-workspace-up; }
-    Mod+Ctrl+Shift+Right  { focus-workspace-down; }
+    Mod+Ctrl+Up         { focus-workspace-up; }
+    Mod+Ctrl+Down       { focus-workspace-down; }
+    Mod+Ctrl+Left       { focus-workspace-up; }
+    Mod+Ctrl+Right      { focus-workspace-down; }
 
-    Mod+Ctrl+Page_Down { move-workspace-down; }
-    Mod+Ctrl+Page_Up   { move-workspace-up; }
-    Mod+Ctrl+U         { move-workspace-down; }
-    Mod+Ctrl+I         { move-workspace-up; }
+    Mod+Ctrl+Shift+Up       { move-column-to-workspace-up; }
+    Mod+Ctrl+Shift+Down     { move-column-to-workspace-down; }
+    Mod+Ctrl+Shift+Left     { move-column-to-workspace-up; }
+    Mod+Ctrl+Shift+Right    { move-column-to-workspace-down; }
+
+    Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
+    Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
+    Mod+Ctrl+U         { move-column-to-workspace-down; }
+    Mod+Ctrl+I         { move-column-to-workspace-up; }
 
     Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
     Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }

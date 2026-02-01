@@ -31,7 +31,7 @@ nix_install() {
   }
 
   log "Setting up home-manager"
-  nix run home-manager -- switch --flake ~/niri-config/home-manager\#"$USER" --impure
+  nix run home-manager -- switch --flake ~/.local/share/linux-config/home-manager\#"$USER" --impure
 }
 
 system_install() {
@@ -131,7 +131,7 @@ rust_install() {
 }
 
 nushell_setup() {
-  cd ~/niri-config && {
+  cd ~/.local/share/linux-config && {
     log "Stowing nushell dotfiles"
     stow --no-folding --adopt nushell
     git stash --include-untracked --message "Stashing nushell dotfiles" || true
@@ -159,7 +159,7 @@ nvim_install() {
 }
 
 zshrc_setup() {
-  cd ~/niri-config && {
+  cd ~/.local/share/linux-config && {
     log "Stowing zsh dotfiles"
     stow --no-folding --adopt zsh
     git stash --include-untracked --message "Stashing zsh dotfiles" || true
@@ -171,15 +171,15 @@ zshrc_setup() {
 
 bashrc_setup() {
   log "Setting up bashrc"
-  grep -q "niri-config/shellrc" ~/.bashrc || {
-    echo "source ~/niri-config/shellrc" >>~/.bashrc
+  grep -q "linux-config/shellrc" ~/.bashrc || {
+    echo "source ~/.local/share/linux-config/shellrc" >>~/.bashrc
   }
 }
 
 dotfiles_install() {
-  dir_exists ~/niri-config || dotfiles_clone
-  cd ~/niri-config || {
-    error "Failed to change to niri-config directory"
+  dir_exists ~/.local/share/linux-config || dotfiles_clone
+  cd ~/.local/share/linux-config || {
+    error "Failed to change to linux-config directory"
     return 1
   }
 

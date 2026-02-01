@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export DOT_DIR="$HOME/niri-config"
+export DOT_DIR="$HOME/.local/share/linux-config"
 
 has_cmd() {
   command -v "$1" >/dev/null 2>&1
@@ -72,19 +72,19 @@ prompt_yn() {
 log() {
   local msg="$1"
   echo -e "\033[0;32m→ $msg\033[0m"
-  echo "→ $msg" >>"$HOME/.niri-config-log.log"
+  echo "→ $msg" >>"$HOME/.linux-config-log.log"
 }
 
 warn() {
   local msg="$1"
   echo -e "\033[0;33m! $msg\033[0m"
-  echo "! $msg" >>"$HOME/.niri-config-warn.log"
+  echo "! $msg" >>"$HOME/.linux-config-warn.log"
 }
 
 error() {
   local msg="$1"
   echo -e "\033[0;31m✗ $msg\033[0m"
-  echo "✗ $msg" >>"$HOME/.niri-config-error.log"
+  echo "✗ $msg" >>"$HOME/.linux-config-error.log"
 }
 
 die() {
@@ -157,8 +157,8 @@ brew_install() {
 }
 
 dotfiles_clone() {
-  dir_exists ~/niri-config && {
-    log "$HOME/niri-config already exists. Skipping clone."
+  dir_exists ~/.local/share/linux-config && {
+    log "$HOME/.local/share/linux-config already exists. Skipping clone."
     return
   }
 
@@ -168,13 +168,13 @@ dotfiles_clone() {
   }
 
   log "Cloning dotfiles"
-  git clone --depth 1 https://github.com/pervezfunctor/niri-config.git ~/niri-config
+  git clone --depth 1 https://github.com/pervezfunctor/linux-config.git ~/.local/share/linux-config
 }
 
 bootstrap() {
   export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$HOME/.local/share/pnpm:$PATH"
 
-  rm -f "$HOME"/.niri-config-*.log
+  rm -f "$HOME"/.linux-config-*.log
   keep_sudo_alive
 
   is_fedora || is_trixie || is_questing || is_tw || is_arch || {

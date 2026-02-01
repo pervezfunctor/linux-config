@@ -1,4 +1,4 @@
--d ~/niri-config
+-d ~/.local/share/linux-config
 --dotfiles
 -t ~/
 

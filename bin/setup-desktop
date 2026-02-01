@@ -80,7 +80,7 @@ niri_install() {
     fi
   fi
 
-  cd ~/niri-config && {
+  cd ~/.local/share/linux-config && {
     log "Stowing niri dotfiles"
     stow --no-folding --adopt niri
     git stash --include-untracked --message "Stashing niri dotfiles" || true
@@ -108,7 +108,7 @@ mangowc_install() {
     fi
   fi
 
-  cd ~/niri-config && {
+  cd ~/.local/share/linux-config && {
     log "Stowing mangowc dotfiles"
     stow --no-folding --adopt mango systemd
     git stash --include-untracked --message "Stashing mangowc dotfiles"
@@ -143,7 +143,7 @@ hyprland_install() {
     fi
   fi
 
-  cd ~/niri-config && {
+  cd ~/.local/share/linux-config && {
     log "Stowing hyprland dotfiles"
     stow --no-folding --adopt hypr
     git stash --include-untracked --message "Stashing hyprland dotfiles"
@@ -235,7 +235,7 @@ vscode_install() {
     log "Installing $ext"
     code --install-extension "$ext"
   done
-  cd ~/niri-config && {
+  cd ~/.local/share/linux-config && {
     log "Stowing vscode dotfiles"
     stow --no-folding --adopt vscode
     git stash --include-untracked --message "Stashing vscode dotfiles" || true
@@ -251,7 +251,7 @@ zed_install() {
   log "Installing zed"
   curl -f https://zed.dev/install.sh | sh
 
-  cd ~/niri-config && {
+  cd ~/.local/share/linux-config && {
     log "Stowing zed dotfiles"
     stow --no-folding --adopt zed
     git stash --include-untracked --message "Stashing zed dotfiles" || true

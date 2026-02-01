@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-DOT_DIR="$HOME/niri-config"
+DOT_DIR="$HOME/.local/share/linux-config"
 
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$DOT_DIR/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$VOLTA_HOME/bin:$PATH"

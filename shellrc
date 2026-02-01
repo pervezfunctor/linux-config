@@ -37,17 +37,58 @@ if [ -d "$HOME/.local/share/pnpm" ]; then
     esac
 fi
 
-is_zsh && eval "$(starship init zsh)"
-is_bash && eval "$(starship init bash)"
+if has_cmd starship; then
+    is_zsh && eval "$(starship init zsh)"
+    is_bash && eval "$(starship init bash)"
+fi
 
-is_bash && eval "$(fzf --bash)"
-is_zsh && eval "$(fzf --zsh)"
+if has_cmd fzf; then
+    is_bash && eval "$(fzf --bash)"
+    is_zsh && eval "$(fzf --zsh)"
+fi
 
-is_bash && eval "$(zoxide init bash)"
-is_zsh && eval "$(zoxide init zsh)"
+if has_cmd zoxide; then
+    is_bash && eval "$(zoxide init bash)"
+    is_zsh && eval "$(zoxide init zsh)"
+fi
 
-# shellcheck disable=SC1090
-source <(carapace _carapace)
+if has_cmd carapace; then
+    # shellcheck disable=SC1090
+    source <(carapace _carapace)
+fi
+
+if ! has_cmd bat && has_cmd batcat; then
+    alias b='batcat'
+    alias cat='batcat'
+fi
+
+alias ls="eza --icons --group-directories-first"
+has_cmd fd-find && alias fd='fd-find'
+has_cmd fdfind && alias fd="fdfind"
+
+if has_cmd uv; then
+    uv-jupyter-standalone() {
+        uv tool run jupyter lab
+    }
+
+    uv-marimo-standalone() {
+        uvx --with pyzmq --from "marimo[sandbox]" marimo edit --sandbox
+    }
+fi
+
+if has_cmd mise; then
+    is_bash && eval "$(~/.local/bin/mise activate bash --shims)"
+    is_zsh && eval "$(~/.local/bin/mise activate zsh --shims)"
+fi
+
+if ! has_cmd rustc; then
+    # shellcheck disable=SC1091
+    [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
+fi
+
+if has_cmd /home/linuxbrew/.linuxbrew/bin/brew; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
 
 alias c='code'
 alias g='git'
@@ -76,56 +117,6 @@ alias gcm='git commit --message'
 alias gia='git add'
 alias gco='git checkout'
 alias dms-logs='journalctl --user -u dms -f'
-
-if ! has_cmd bat && has_cmd batcat; then
-    alias b='batcat'
-    alias cat='batcat'
-fi
-
-alias ls="eza --icons --group-directories-first"
-has_cmd fd-find && alias fd='fd-find'
-has_cmd fdfind && alias fd="fdfind"
-
-jupyter-lab() {
-    cd ~/jupyter-lab || {
-        echo "Error: Directory ~/jupyter-lab does not exist."
-        return
-    }
-    .venv/bin/jupyter lab
-}
-
-uv-jupyter-standalone() {
-    uv tool run jupyter lab
-}
-
-uv-marimo-standalone() {
-    uvx --with pyzmq --from "marimo[sandbox]" marimo edit --sandbox
-}
-
-if has_cmd mise; then
-    is_bash && eval "$(~/.local/bin/mise activate bash --shims)"
-    is_zsh && eval "$(~/.local/bin/mise activate zsh --shims)"
-fi
-
-if ! has_cmd rustc; then
-    # shellcheck disable=SC1091
-    [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
-fi
-
-if has_cmd /home/linuxbrew/.linuxbrew/bin/brew; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-fi
-
-system_update() {
-    pikman update && pikman upgrade
-    pikman --flatpak update --user -y
-    pikman --flatpak update -y
-
-    has_cmd pixi && pixi self-update
-    has_cmd pixi && pixi global update
-    has_cmd mise && mise self-update
-    has_cmd mise && mise upgrade --bump
-}
 
 alias stls='sudo systemctl status'
 alias stle='sudo systemctl enable --now'

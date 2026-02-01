@@ -1,0 +1,278 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC1091
+source "$(dirname "${BASH_SOURCE[0]}")/bootstrap"
+
+incus_setup() {
+  log "Setting up incus"
+  sudo usermod -aG incus "$USER"
+  sudo usermod -aG incus-admin "$USER"
+  sudo systemctl enable --now incus.socket
+  sudo incus admin init --minimal
+}
+
+incus_install() {
+  if has_cmd incus; then
+    log "incus is already installed"
+    return
+  fi
+
+  log "Installing incus"
+  si incus
+  incus_setup
+}
+
+nix_install() {
+  has_cmd nix || {
+    log "Installing nix"
+    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --determinate --no-confirm
+    # shellcheck disable=SC1091
+    source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+  }
+
+  log "Setting up home-manager"
+  nix run home-manager -- switch --flake ~/niri-config/home-manager\#"$USER" --impure
+}
+
+system_install() {
+  update_packages
+
+  local -a pkgs=(
+    cmake
+    gcc
+    git
+    make
+    micro
+    rclone
+    rsync
+    stow
+    tar
+    tmux
+    trash-cli
+    tree
+    unzip
+    zsh
+    zstd
+  )
+
+  is_tw && pkgs+=(gcc-c++ micro-editor python313-pipx)
+  is_apt && pkgs+=(g++ imagemagick starship pipx)
+  is_fedora && pkgs+=(g++ nu pipx)
+  is_arch && pkgs+=(g++ python-pipx)
+
+  log "Installing system packages"
+  si "${pkgs[@]}"
+
+  log "Updating locate database, this may take a while..."
+  sudo updatedb
+}
+
+pixi_install() {
+  log "Installing pixi and shell tools with pixi"
+
+  has_cmd brew || {
+    error "brew is not installed. Please install brew first."
+    return 1
+  }
+
+  brew install pixi
+
+  has_cmd pixi || {
+    error "pixi is not installed. Please install pixi first."
+    return 1
+  }
+
+  local -a pixi_pkgs=(
+    bash-language-server
+    bat
+    bottom
+    carapace
+    direnv
+    duf
+    eza
+    fd
+    fzf
+    gdu
+    gh
+    go-gum
+    go-shfmt
+    jq
+    just
+    lazygit
+    mask
+    ripgrep
+    shellcheck
+    tealdeer
+    tectonic
+    television
+    xh
+    yazi
+    zoxide
+  )
+
+  pixi global install "${pixi_pkgs[@]}"
+  has_cmd starship || pixi global install starship
+  ~/.pixi/bin/tldr --update
+}
+
+shell_install() {
+  brew_install
+  pixi_install
+}
+
+rust_install() {
+  has_cmd rustup && {
+    log "rustup is already installed"
+    return
+  }
+
+  log "Installing rustup"
+  curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | sh
+}
+
+nushell_setup() {
+  cd ~/niri-config && {
+    log "Stowing nushell dotfiles"
+    stow --no-folding --adopt nushell
+    git stash --include-untracked --message "Stashing nushell dotfiles" || true
+  }
+}
+
+nvim_install() {
+  has_cmd nvim || {
+    brew install nvim
+  }
+
+  if dir_exists ~/.config/nvim; then
+    prompt_yn "Found existing nvim config. Do you want to trash and replace with AstroNvim?" || return 1
+  fi
+
+  log "Installing AstroNvim"
+  trash ~/.config/nvim.bak || true
+  mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null || true
+  mkdir ~/.config/nvim 2>/dev/null || true
+  mv ~/.local/share/nvim ~/.local/share/nvim.bak 2>/dev/null || true
+  mv ~/.local/state/nvim ~/.local/state/nvim.bak 2>/dev/null || true
+  mv ~/.cache/nvim ~/.cache/nvim.bak 2>/dev/null || true
+  git clone --depth 1 https://github.com/AstroNvim/template ~/.config/nvim
+  rm -rf ~/.config/nvim/.git
+}
+
+zshrc_setup() {
+  cd ~/niri-config && {
+    log "Stowing zsh dotfiles"
+    stow --no-folding --adopt zsh
+    git stash --include-untracked --message "Stashing zsh dotfiles" || true
+  }
+
+  log "Setting zsh as default shell"
+  chsh -s "$(which zsh)"
+}
+
+bashrc_setup() {
+  log "Setting up bashrc"
+  grep -q "niri-config/shellrc" ~/.bashrc || {
+    echo "source ~/niri-config/shellrc" >>~/.bashrc
+  }
+}
+
+dotfiles_install() {
+  dir_exists ~/niri-config || dotfiles_clone
+  cd ~/niri-config || {
+    error "Failed to change to niri-config directory"
+    return 1
+  }
+
+  bashrc_setup
+  nushell_setup
+  zshrc_setup
+}
+
+devtools_install() {
+  has_cmd mise || {
+    curl https://mise.run | sh
+  }
+
+  log "Installing devtools(mise, uv etc)"
+
+  brew install uv mise
+
+  eval "$(~/.local/bin/mise activate bash)"
+  log "Installing pnpm"
+  mise use -g node@latest pnpm
+  pnpm setup
+
+  local -a npm_pkgs=(
+    @mermaid-js/mermaid-cli
+    @google/gemini-cli
+    opencode-ai
+  )
+
+  log "Installing pnpm packages"
+  for pkg in "${npm_pkgs[@]}"; do
+    log "Installing $pkg"
+    pnpm install -g "$pkg"
+  done
+
+  rust_install
+}
+
+claude_install() {
+  has_cmd claude && {
+    log "claude is already installed"
+    return
+  }
+
+  log "Installing claude"
+  has_cmd claude || curl -fsSL https://claude.ai/install.sh | bash
+}
+
+motltbot_install() {
+  log "Installing moltbot"
+  curl -fsSL https://molt.bot/install.sh | bash
+}
+
+setup-shell() {
+  local -a whiptail_items=(
+    "system" "Install system packages" "on"
+    "dotfiles" "Setup dotfiles with stow" "on"
+    "shell" "Install shell tools" "on"
+    "devtools" "Install devtools(mise, uv etc)" "on"
+    "nvim" "Install Neovim" "off"
+    "claude" "Install claude" "off"
+    "incus" "Install incus" "off"
+    "nix" "Setup nix with home-manager" "off"
+    "moltbot" "Install moltbot" "off"
+  )
+
+  bootstrap
+
+  local selected_output
+  selected_output=$(whiptail --checklist "Select tasks to execute:" 25 60 19 "${whiptail_items[@]}" 3>&1 1>&2 2>&3)
+
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    warn "Setup cancelled."
+    return 1
+  fi
+
+  local -a selected_tasks=()
+  if [ -n "$selected_output" ]; then
+    read -ra selected_tasks <<<"$selected_output"
+  fi
+
+  if [ ${#selected_tasks[@]} -eq 0 ]; then
+    log "No tasks selected."
+    return 0
+  fi
+
+  for task in "${selected_tasks[@]}"; do
+    task=${task//\"/}
+    log "Executing: $task"
+    "${task}_install"
+  done
+}
+
+if [ "${BASH_SOURCE[0]}" == "${0}" ]; then
+  setup-shell "$@"
+fi

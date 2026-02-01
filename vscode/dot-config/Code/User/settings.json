@@ -10,6 +10,8 @@
     "files.trimTrailingWhitespace": true,
     "editor.renderWhitespace": "trailing",
     "files.insertFinalNewline": true,
+    "bashIde.shfmt.path": "/home/pervez/.pixi/bin/shfmt",
+    "bashIde.shellcheckPath": "/home/pervez/.pixi/bin/shellcheck",
     "security.workspace.trust.enabled": true,
     "editor.smoothScrolling": true,
     "editor.minimap.enabled": false,

@@ -1,0 +1,327 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC1091
+source "$(dirname "${BASH_SOURCE[0]}")/bootstrap"
+
+snapper_setup() {
+  has_cmd snapper || {
+    log "Snapper is not installed. Skipping setup."
+    return
+  }
+
+  if sudo snapper list-configs | grep -q "/"; then
+    log "Snapper is already setup for /"
+    return
+  fi
+
+  log "Setting up snapper"
+  sudo snapper create-config /
+  sudo mkdir -p /var/lib/refind-btrfs
+  sudo chmod 755 /var/lib/refind-btrfs
+  sudo systemctl enable refind-btrfs --now
+}
+
+wm_install() {
+  local -a pkgs=(
+    cliphist
+    grim
+    gvfs
+    imv
+    mate-polkit
+    mpv
+    nautilus
+    pipewire
+    pipewire-pulse
+    qt5ct
+    qt6ct
+    qt6-multimedia
+    slurp
+    wireplumber
+    wl-clipboard
+    xdg-desktop-portal-gnome
+    xdg-desktop-portal-gtk
+    xdg-desktop-portal-wlr
+  )
+
+  is_ubuntu && pkgs+=(bibata-cursor-theme)
+  is_fedora && pkgs+=(gvfs-smb bibata-cursor-theme)
+  is_tw && pkgs+=(pipewire-pulseaudio)
+  is_arch && pkgs+=(pipewire-jack)
+  si "${pkgs[@]}"
+
+  is_arch && paru_install
+
+  mkdir -p ~/Pictures/Screenshots ~/Pictures/Wallpapers
+}
+
+niri_install() {
+  log "Installing niri"
+  if ! has_cmd niri; then
+    wm_install
+    if is_pikaos; then
+      pikman install pika-niri-desktop-minimal pika-niri-settings dms
+    elif is_fedora; then
+      sudo dnf copr enable avengemedia/dms
+      si niri dms
+    elif is_questing; then
+      sudo add-apt-repository ppa:avengemedia/danklinux
+      sudo add-apt-repository ppa:avengemedia/dms
+      sudo apt update
+      si niri dms
+    elif is_tw; then
+      sudo zypper addrepo https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo
+      sudo zypper refresh
+      si niri dms
+    elif is_arch; then
+      paru -S niri dms-shell-bin
+    else
+      error "OS not supported. Not installing niri."
+      return 1
+    fi
+  fi
+
+  cd ~/niri-config && {
+    log "Stowing niri dotfiles"
+    stow --no-folding --adopt niri
+    git stash --include-untracked --message "Stashing niri dotfiles" || true
+    mkdir -p ~/.config/niri/dms
+    touch ~/.config/niri/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.kdl
+  }
+
+  systemctl --user add-wants niri.service dms || true
+}
+
+mangowc_install() {
+  if ! has_cmd mango; then
+    log "Installing mangowc"
+    wm_install
+    if is_pikaos; then
+      pikman install mangowc
+    elif is_arch; then
+      paru -S mangowc-git dms-shell-bin
+    elif is_fedora && prompt_yn "need terra repository for installing mango. This is NOT stable. Still enable it?"; then
+      sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release
+      sudo dnf copr enable avengemedia/dms
+      si mangowc dms
+    else
+      error "Unsupported OS. Not installing mangowc."
+    fi
+  fi
+
+  cd ~/niri-config && {
+    log "Stowing mangowc dotfiles"
+    stow --no-folding --adopt mango systemd
+    git stash --include-untracked --message "Stashing mangowc dotfiles"
+    mkdir -p ~/.config/mango/dms
+    touch ~/.config/mango/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
+    systemctl --user add-wants hyprland-session.target dms
+  }
+  systemctl --user add-wants wm-session.target dms
+}
+
+hyprland_install() {
+  if ! has_cmd hyprctl; then
+    log "Installing hyprland"
+    wm_install
+    if is_pikaos; then
+      pikman install pika-hyprland-desktop-minimal pika-hyprland-settings dms
+      pikman install hyprpolkitagent
+    # elif is_fedora; then
+    #   sudo dnf copr enable solopasha/hyprland
+    #   sudo dnf copr enable avengemedia/dms
+    #   si hyprland dms
+    #   si hyprpolkitagent
+    elif is_arch; then
+      paru -S hyprland dms-shell-bin
+    elif is_tw; then
+      sudo zypper addrepo https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo
+      sudo zypper refresh
+      si hyprland dms hyprpolkitagent
+    else
+      error "Unsupported OS. Not installing hyprland."
+      return
+    fi
+  fi
+
+  cd ~/niri-config && {
+    log "Stowing hyprland dotfiles"
+    stow --no-folding --adopt hypr
+    git stash --include-untracked --message "Stashing hyprland dotfiles"
+    mkdir -p ~/.config/hypr/dms
+    touch ~/.config/hypr/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
+    systemctl --user add-wants hyprland-session.target dms
+  }
+  systemctl --user add-wants wm-session.target dms
+}
+
+flatpaks_install() {
+  has_cmd flatpak || si flatpak
+
+  log "Adding flathub remote"
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
+
+  local -a flatpaks=(
+    com.github.tchx84.Flatseal
+    sh.loft.devpod
+    org.gnome.Papers
+    io.github.kolunmi.Bazaar
+  )
+
+  log "Installing flatpaks..."
+  for pkg in "${flatpaks[@]}"; do
+    flatpak --user install -y flathub "$pkg"
+  done
+}
+
+system_install() {
+  update_packages
+
+  local -a pkgs=(
+    flatpak
+    gnome-keyring
+    pass
+    plocate
+  )
+
+  is_tw && pkgs+=(gopass)
+  is_apt && pkgs+=(libsecret-tools)
+  is_pikaos && pkgs+=(
+    snapper-gui
+    pika-refind-btrfs-hooks
+    refind-btrfs
+  )
+
+  log "Installing system packages"
+  si "${pkgs[@]}"
+
+  is_pikaos && snapper_setup
+
+  log "Installing pywal packages"
+  pipx install pywal pywalfox
+}
+
+distrobox_install() {
+  log "Installing distrobox"
+  local -a packages=(
+    podman
+    distrobox
+  )
+  si "${packages[@]}"
+}
+
+vscode_install() {
+  has_cmd code && {
+    log "vscode is already installed"
+    return
+  }
+
+  has_cmd brew || brew_install
+
+  log "Installing vscode"
+  brew tap ublue-os/tap
+  brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
+  brew install --cask visual-studio-code-linux
+
+  local -a extensions=(
+    jdinhlife.gruvbox
+    jnoortheen.nix-ide
+    mads-hartmann.bash-ide-vscode
+    TheNuProjectContributors.vscode-nushell-lang
+    timonwong.shellcheck
+  )
+
+  log "Installing vscode extensions"
+  for ext in "${extensions[@]}"; do
+    log "Installing $ext"
+    code --install-extension "$ext"
+  done
+  cd ~/niri-config && {
+    log "Stowing vscode dotfiles"
+    stow --no-folding --adopt vscode
+    git stash --include-untracked --message "Stashing vscode dotfiles" || true
+  }
+}
+
+zed_install() {
+  has_cmd zed && {
+    log "zed is already installed"
+    return
+  }
+
+  log "Installing zed"
+  curl -f https://zed.dev/install.sh | sh
+
+  cd ~/niri-config && {
+    log "Stowing zed dotfiles"
+    stow --no-folding --adopt zed
+    git stash --include-untracked --message "Stashing zed dotfiles" || true
+  }
+}
+
+virt_install() {
+  log "Installing virt-manager"
+  local -a packages=(virt-manager virt-install)
+  si "${packages[@]}"
+
+  local -a groups=(libvirt qemu libvirt-qemu kvm libvirtd)
+  for group in "${groups[@]}"; do
+    sudo usermod -aG "$group" "$USER" 2>/dev/null || true
+  done
+
+  sudo systemctl enable --now libvirtd
+  sudo systemctl enable --now virtlogd
+
+  has_cmd authselect && sudo authselect enable-feature with-libvirt
+}
+
+setup-desktop() {
+  local -a whiptail_items=(
+    "system" "Install desktop system packages" "on"
+    "flatpaks" "Install flatpaks" "on"
+    "vscode" "Install vscode" "off"
+    "distrobox" "Install distrobox" "off"
+    "virt" "Install virt-manager" "off"
+    "zed" "Install zed" "off"
+  )
+
+  if is_fedora || is_questing || is_pikaos || is_tw || is_arch; then
+    whiptail_items+=("niri" "Install niri" "off")
+  fi
+  if is_fedora || is_pikaos || is_arch; then
+    whiptail_items+=("mangowc" "Install mangowc" "off")
+  fi
+  if is_pikaos || is_tw || is_arch; then
+    whiptail_items+=("hypr" "Install hyprland" "off")
+  fi
+
+  bootstrap
+
+  local selected_output
+  selected_output=$(whiptail --checklist "Select desktop tasks to execute:" 25 60 19 "${whiptail_items[@]}" 3>&1 1>&2 2>&3)
+
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    warn "Setup cancelled."
+    return 1
+  fi
+
+  local -a selected_tasks=()
+  if [ -n "$selected_output" ]; then
+    read -ra selected_tasks <<<"$selected_output"
+  fi
+
+  if [ ${#selected_tasks[@]} -eq 0 ]; then
+    log "No tasks selected."
+    return 0
+  fi
+
+  for task in "${selected_tasks[@]}"; do
+    task=${task//\"/}
+    log "Executing: $task"
+    "${task}_install"
+  done
+}
+
+if [ "${BASH_SOURCE[0]}" == "${0}" ]; then
+  setup-desktop "$@"
+fi

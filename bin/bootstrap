@@ -1,195 +1,200 @@
 #!/usr/bin/env bash
 
-export DOT_DIR="$HOME/.local/share/linux-config"
+{
+  export DOT_DIR="$HOME/.local/share/linux-config"
 
-has_cmd() {
-  command -v "$1" >/dev/null 2>&1
-}
+  has_cmd() {
+    command -v "$1" >/dev/null 2>&1
+  }
 
-dir_exists() {
-  [ -d "$1" ]
-}
+  dir_exists() {
+    [ -d "$1" ]
+  }
 
-is_trixie() {
-  [ -f /etc/os-release ] && grep -qi 'trixie' /etc/os-release 2>/dev/null
-}
+  is_trixie() {
+    [ -f /etc/os-release ] && grep -qi 'trixie' /etc/os-release 2>/dev/null
+  }
 
-is_questing() {
-  [ -f /etc/os-release ] && grep -qi 'questing' /etc/os-release 2>/dev/null
-}
+  is_questing() {
+    [ -f /etc/os-release ] && grep -qi 'questing' /etc/os-release 2>/dev/null
+  }
 
-is_fedora() {
-  [ -f /etc/redhat-release ] && grep -q -i 'Fedora' /etc/redhat-release
-}
+  is_fedora() {
+    [ -f /etc/redhat-release ] && grep -q -i 'Fedora' /etc/redhat-release
+  }
 
-is_linux() {
-  [ "$(uname -s)" = "Linux" ]
-}
+  is_linux() {
+    [ "$(uname -s)" = "Linux" ]
+  }
 
-is_tw() {
-  [ -f /etc/os-release ] && grep -q 'Tumbleweed' /etc/os-release 2>/dev/null
-}
+  is_tw() {
+    [ -f /etc/os-release ] && grep -q 'Tumbleweed' /etc/os-release 2>/dev/null
+  }
 
-is_mac() {
-  [ "$(uname -s)" = "Darwin" ]
-}
+  is_mac() {
+    [ "$(uname -s)" = "Darwin" ]
+  }
 
-is_arch() {
-  [ -f /etc/os-release ] && grep -q 'Arch Linux' /etc/os-release 2>/dev/null
-}
+  is_arch() {
+    [ -f /etc/os-release ] && grep -q 'Arch Linux' /etc/os-release 2>/dev/null
+  }
 
-is_pikaos() {
-  [ -f /etc/os-release ] && grep -q 'pika' /etc/os-release 2>/dev/null
-}
+  is_pikaos() {
+    [ -f /etc/os-release ] && grep -q 'pika' /etc/os-release 2>/dev/null
+  }
 
-is_apt() {
-  is_trixie || is_questing || is_pikaos
-}
+  is_apt() {
+    is_trixie || is_questing || is_pikaos
+  }
 
-is_ubuntu() {
-  [ -f /etc/os-release ] && grep -q 'Ubuntu' /etc/os-release 2>/dev/null
-}
+  is_ubuntu() {
+    [ -f /etc/os-release ] && grep -q 'Ubuntu' /etc/os-release 2>/dev/null
+  }
 
-prompt_yn() {
-  local prompt="$1"
-  local response
-  while true; do
-    read -rp "\033[0;36m? $prompt\033[0m \033[0;33m[y/N]\033[0m " response
-    case "$response" in
-    [yY][eE][sS] | [yY])
-      return 0
-      ;;
-    [nN][oO] | [nN] | "")
+  prompt_yn() {
+    local prompt="$1"
+    local response
+    while true; do
+      printf '\033[0;36m? %s\033[0m \033[0;33m[y/N]\033[0m ' "$prompt"
+      read -r response
+      case "$response" in
+      [yY][eE][sS] | [yY])
+        return 0
+        ;;
+      [nN][oO] | [nN] | "")
+        return 1
+        ;;
+      *)
+        warn "Please answer yes or no."
+        ;;
+      esac
+    done
+  }
+
+  log() {
+    local msg="$1"
+    echo -e "\033[0;32m→ $msg\033[0m"
+    echo "→ $msg" >>"$HOME/.linux-config-log.log"
+  }
+
+  warn() {
+    local msg="$1"
+    echo -e "\033[0;33m! $msg\033[0m"
+    echo "! $msg" >>"$HOME/.linux-config-warn.log"
+  }
+
+  error() {
+    local msg="$1"
+    echo -e "\033[0;31m✗ $msg\033[0m"
+    echo "✗ $msg" >>"$HOME/.linux-config-error.log"
+  }
+
+  die() {
+    error "$1"
+    exit 1
+  }
+
+  keep_sudo_alive() {
+    log "Keeping sudo alive"
+    sudo -v
+    while true; do
+      sudo -n true
+      sleep 60
+      kill -0 "$$" || exit
+    done 2>/dev/null &
+  }
+
+  paru_install() {
+    has_cmd paru && return 0
+    log "Installing paru"
+
+    si base-devel
+    rm -rf /tmp/paru
+    git clone https://aur.archlinux.org/paru.git /tmp/paru && cd /tmp/paru && makepkg --syncdeps --noconfirm --install && cd - && frm /tmp/paru
+  }
+
+  update_packages() {
+    log "Updating packages"
+
+    if is_fedora; then
+      sudo dnf update -y
+    elif is_trixie || is_questing; then
+      sudo apt update && sudo apt upgrade -y
+    elif is_tw; then
+      sudo zypper refresh && sudo zypper update
+    elif is_arch; then
+      sudo pacman -Syu
+    else
+      error "OS not supported. Quitting."
+      exit 1
+    fi
+  }
+
+  si() {
+    log "Installing $*"
+    if is_fedora; then
+      sudo dnf install -y "$@"
+    elif is_trixie || is_questing; then
+      sudo apt install -y "$@"
+    elif is_pikaos; then
+      pikman install "$@"
+    elif is_tw; then
+      sudo zypper --non-interactive --quiet install --auto-agree-with-licenses "$@"
+    elif is_arch; then
+      sudo pacman -S --quiet --noconfirm "$@"
+    else
+      error "OS not supported. Not installing $*."
       return 1
-      ;;
-    *)
-      warn "Please answer yes or no."
-      ;;
-    esac
-  done
-}
+    fi
+  }
 
-log() {
-  local msg="$1"
-  echo -e "\033[0;32m→ $msg\033[0m"
-  echo "→ $msg" >>"$HOME/.linux-config-log.log"
-}
+  brew_install() {
+    has_cmd brew && return
 
-warn() {
-  local msg="$1"
-  echo -e "\033[0;33m! $msg\033[0m"
-  echo "! $msg" >>"$HOME/.linux-config-warn.log"
-}
+    log "Installing brew"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-error() {
-  local msg="$1"
-  echo -e "\033[0;31m✗ $msg\033[0m"
-  echo "✗ $msg" >>"$HOME/.linux-config-error.log"
-}
+    has_cmd topgrade || brew install topgrade
+  }
 
-die() {
-  error "$1"
-  exit 1
-}
+  dotfiles_clone() {
+    dir_exists ~/.local/share/linux-config && {
+      log "$HOME/.local/share/linux-config already exists. Skipping clone."
+      return
+    }
 
-keep_sudo_alive() {
-  log "Keeping sudo alive"
-  sudo -v
-  while true; do
-    sudo -n true
-    sleep 60
-    kill -0 "$$" || exit
-  done 2>/dev/null &
-}
+    cd || {
+      error "Failed to change to home directory"
+      return
+    }
 
-paru_install() {
-  has_cmd paru && return 0
-  log "Installing paru"
+    log "Cloning dotfiles"
+    git clone --depth 1 https://github.com/pervezfunctor/linux-config.git ~/.local/share/linux-config
+  }
 
-  si base-devel
-  rm -rf /tmp/paru
-  git clone https://aur.archlinux.org/paru.git /tmp/paru && cd /tmp/paru && makepkg --syncdeps --noconfirm --install && cd - && frm /tmp/paru
-}
+  bootstrap() {
+    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$HOME/.local/share/pnpm:$PATH"
 
-update_packages() {
-  log "Updating packages"
+    rm -f "$HOME"/.linux-config-*.log
+    keep_sudo_alive
 
-  if is_fedora; then
-    sudo dnf update -y
-  elif is_trixie || is_questing; then
-    sudo apt update && sudo apt upgrade -y
-  elif is_tw; then
-    sudo zypper refresh && sudo zypper update
-  elif is_arch; then
-    sudo pacman -Syu
-  else
-    error "OS not supported. Quitting."
-    exit 1
+    is_fedora || is_trixie || is_questing || is_tw || is_arch || {
+      error "Only  Fedora, Questing, Tumbeweed, Arch supported. Quitting."
+      exit 1
+    }
+
+    log "Installing required packages..."
+    si git stow trash-cli whiptail
+
+    dotfiles_clone
+  }
+
+  if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ "$1" == "bootstrap" ] || [ "$1" == "shell" ] || [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
+    bootstrap "$@"
+    [ "$1" == "bootstrap" ] && return
+    [ "$1" == "shell" ] && "$DOT_DIR/bin/setup-shell" && return
+    [ "$1" == "desktop" ] && "$DOT_DIR/bin/setup-desktop" && return
+    [ "$1" == "all" ] && "$DOT_DIR/bin/setup-shell" && "$DOT_DIR/bin/setup-desktop" && return
   fi
 }
-
-si() {
-  log "Installing $*"
-  if is_fedora; then
-    sudo dnf install -y "$@"
-  elif is_trixie || is_questing; then
-    sudo apt install -y "$@"
-  elif is_pikaos; then
-    pikman install "$@"
-  elif is_tw; then
-    sudo zypper --non-interactive --quiet install --auto-agree-with-licenses "$@"
-  elif is_arch; then
-    sudo pacman -S --quiet --noconfirm "$@"
-  else
-    error "OS not supported. Not installing $*."
-    return 1
-  fi
-}
-
-brew_install() {
-  has_cmd brew && return
-
-  log "Installing brew"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
-  has_cmd topgrade || brew install topgrade
-}
-
-dotfiles_clone() {
-  dir_exists ~/.local/share/linux-config && {
-    log "$HOME/.local/share/linux-config already exists. Skipping clone."
-    return
-  }
-
-  cd || {
-    error "Failed to change to home directory"
-    return
-  }
-
-  log "Cloning dotfiles"
-  git clone --depth 1 https://github.com/pervezfunctor/linux-config.git ~/.local/share/linux-config
-}
-
-bootstrap() {
-  export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$HOME/.local/share/pnpm:$PATH"
-
-  rm -f "$HOME"/.linux-config-*.log
-  keep_sudo_alive
-
-  is_fedora || is_trixie || is_questing || is_tw || is_arch || {
-    error "Only  Fedora, Questing, Tumbeweed, Arch supported. Quitting."
-    exit 1
-  }
-
-  log "Installing required packages..."
-  si git stow trash-cli whiptail
-
-  dotfiles_clone
-}
-
-if [ "${BASH_SOURCE[0]}" == "${0}" ]; then
-  bootstrap "$@"
-  prompt_yn "Setup shell?" && "$DOT_DIR/bin/setup-shell"
-  prompt_yn "Setup desktop?" && "$DOT_DIR/bin/setup-desktop"
-fi

@@ -34,7 +34,6 @@ wm_install() {
     pipewire-pulse
     qt5ct
     qt6ct
-    qt6-multimedia
     slurp
     wireplumber
     wl-clipboard
@@ -42,9 +41,10 @@ wm_install() {
     xdg-desktop-portal-gtk
     xdg-desktop-portal-wlr
   )
+  # qt6-multimedia
 
   is_ubuntu && pkgs+=(bibata-cursor-theme)
-  is_fedora && pkgs+=(gvfs-smb bibata-cursor-theme)
+  is_fedora && pkgs+=(gvfs-smb)
   is_tw && pkgs+=(pipewire-pulseaudio)
   is_arch && pkgs+=(pipewire-jack)
   si "${pkgs[@]}"
@@ -266,7 +266,7 @@ zed_install() {
 
 virt_install() {
   log "Installing virt-manager"
-  local -a packages=(virt-manager virt-install)
+  local -a packages=(virt-manager virt-install virt-viewer)
   si "${packages[@]}"
 
   local -a groups=(libvirt qemu libvirt-qemu kvm libvirtd)

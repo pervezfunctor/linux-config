@@ -57,8 +57,8 @@ system_install() {
 
   is_tw && pkgs+=(gcc-c++ micro-editor python313-pipx)
   is_apt && pkgs+=(g++ imagemagick starship pipx)
-  is_fedora && pkgs+=(g++ nu pipx)
-  is_arch && pkgs+=(g++ python-pipx)
+  is_fedora && pkgs+=(g++ nu pipx nu)
+  is_arch && pkgs+=(g++ python-pipx nushell)
 
   log "Installing system packages"
   si "${pkgs[@]}"
@@ -112,6 +112,7 @@ pixi_install() {
 
   pixi global install "${pixi_pkgs[@]}"
   has_cmd starship || pixi global install starship
+  has_cmd nushell || pixi global install nushell
   ~/.pixi/bin/tldr --update
 }
 
@@ -131,6 +132,11 @@ rust_install() {
 }
 
 nushell_setup() {
+  if ! grep -q "$(which nu)" /etc/shells; then
+    # shellcheck disable=SC2005
+    echo "$(which nu)" | sudo tee -a /etc/shells
+  fi
+
   cd ~/.local/share/linux-config && {
     log "Stowing nushell dotfiles"
     stow --no-folding --adopt nushell

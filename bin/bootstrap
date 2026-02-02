@@ -192,9 +192,11 @@
 
   if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ "$1" == "bootstrap" ] || [ "$1" == "shell" ] || [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
     bootstrap "$@"
-    [ "$1" == "bootstrap" ] && return
-    [ "$1" == "shell" ] && "$DOT_DIR/bin/setup-shell" && return
-    [ "$1" == "desktop" ] && "$DOT_DIR/bin/setup-desktop" && return
-    [ "$1" == "all" ] && "$DOT_DIR/bin/setup-shell" && "$DOT_DIR/bin/setup-desktop" && return
+
+    if [ "$1" == "shell" ] || [ "$1" == "all" ]; then
+      "$DOT_DIR/bin/setup-shell"
+    elif [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
+      "$DOT_DIR/bin/setup-desktop" && "$DOT_DIR/bin/setup-desktop" && exit 0
+    fi
   fi
 }

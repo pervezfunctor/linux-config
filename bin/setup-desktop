@@ -27,6 +27,7 @@ wm_install() {
     grim
     gvfs
     imv
+    kitty
     mate-polkit
     mpv
     nautilus
@@ -167,10 +168,11 @@ flatpaks_install() {
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
 
   local -a flatpaks=(
+    app.zen_browser.zen
     com.github.tchx84.Flatseal
-    sh.loft.devpod
-    org.gnome.Papers
     io.github.kolunmi.Bazaar
+    org.gnome.Papers
+    sh.loft.devpod
   )
 
   log "Installing flatpaks..."
@@ -243,7 +245,7 @@ vscode_install() {
   done
   cd ~/.local/share/linux-config && {
     log "Stowing vscode dotfiles"
-    stow --no-folding --adopt vscode
+    stow --no-folding --adopt vscode kitty
     git stash --include-untracked --message "Stashing vscode dotfiles" || true
   }
 }

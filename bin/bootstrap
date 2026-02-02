@@ -185,18 +185,19 @@
     }
 
     log "Installing required packages..."
-    si git stow trash-cli whiptail
+    si git stow trash-cli whiptail unzip
 
     dotfiles_clone
   }
 
-  if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ "$1" == "bootstrap" ] || [ "$1" == "shell" ] || [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
+  if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ -z "$1" ]; then
     bootstrap "$@"
 
     if [ "$1" == "shell" ] || [ "$1" == "all" ]; then
       "$DOT_DIR/bin/setup-shell"
-    elif [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
-      "$DOT_DIR/bin/setup-desktop" && "$DOT_DIR/bin/setup-desktop" && exit 0
+    fi
+    if [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
+      "$DOT_DIR/bin/setup-desktop" && exit 0
     fi
   fi
 }

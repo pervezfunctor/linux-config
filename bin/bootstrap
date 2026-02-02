@@ -189,8 +189,7 @@
 
     dotfiles_clone
   }
-
-  if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ -z "$1" ]; then
+  if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ -n "$1" ]; then
     bootstrap "$@"
 
     if [ "$1" == "shell" ] || [ "$1" == "all" ]; then

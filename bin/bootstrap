@@ -158,6 +158,11 @@
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
     has_cmd topgrade || brew install topgrade
+
+    is_mac && {
+      brew install rclone rsync stow tar tmux trash-cli tree unzip zstd
+      brew install imagemagick starship nushell
+    }
   }
 
   dotfiles_clone() {
@@ -203,6 +208,9 @@
     if [ "$1" == "shell" ] || [ "$1" == "all" ]; then
       "$DOT_DIR/bin/setup-shell"
     fi
+
+    is_mac && exit 0
+
     if [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
       "$DOT_DIR/bin/setup-desktop" && exit 0
     fi

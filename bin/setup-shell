@@ -239,14 +239,18 @@ motltbot_install() {
 }
 
 setup-shell() {
-  local -a whiptail_items=(
+  local -a whiptail_items=()
+  is_linux && whiptail_items+=(
     "system" "Install system packages" "on"
+    "incus" "Install incus" "off"
+  )
+
+  whiptail_items+=(
     "dotfiles" "Setup dotfiles with stow" "on"
     "shell" "Install shell tools" "on"
     "devtools" "Install devtools(mise, uv etc)" "on"
     "nvim" "Install Neovim" "off"
     "claude" "Install claude" "off"
-    "incus" "Install incus" "off"
     "nix" "Setup nix with home-manager" "off"
     "moltbot" "Install moltbot" "off"
   )

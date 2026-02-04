@@ -7,11 +7,6 @@ export PATH="$DOT_DIR/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$VOLTA_HOME
 
 export XDG_DATA_DIRS="/home/pervez/.local/share/flatpak/exports/share:$XDG_DATA_DIRS"
 
-export EDITOR="code --wait"
-export VISUAL="code --wait"
-# export EDITOR="zed --wait"
-# export EDITOR="nvim"
-
 has_cmd() {
     command -v "$1" >/dev/null 2>&1
 }
@@ -23,6 +18,26 @@ is_zsh() {
 is_bash() {
     [ -n "$BASH_VERSION" ]
 }
+
+if has_cmd micro; then
+export EDITOR="micro"
+elif has_cmd nvim; then
+    export EDITOR="nvim"
+elif has_cmd vim; then
+    export EDITOR="vim"
+elif has_cmd vi; then
+    export EDITOR="vi"
+elif has_cmd nano; then
+    export EDITOR="nano"
+fi
+
+if has_cmd code; then
+    VISUAL="code --wait"
+elif has_cmd zed; then
+    VISUAL="zed --wait"
+elif flatpak list | grep -qi "com.visualstudio.code"; then
+    VISUAL="flatpak run com.visualstudio.code --wait"
+fi
 
 case $- in
 *i*) ;;

@@ -6,6 +6,7 @@ Exit codes:
   2 - missing credentials (environment variables)
   3 - one or more hosts failed during maintenance
 """
+
 from __future__ import annotations
 
 import argparse
@@ -197,9 +198,7 @@ def load_manifest(path: Path) -> tuple[BatchDefaults, list[HostConfig]]:
     defaults = BatchDefaults(
         user=_get_str(defaults_mapping, "user") or "root",
         guest_user=_get_str(defaults_mapping, "guest_user", "guest.user") or "root",
-        identity_file=_expand_path(
-            _get_str(defaults_mapping, "identity_file", "ssh.identity_file")
-        ),
+        identity_file=_expand_path(_get_str(defaults_mapping, "identity_file", "ssh.identity_file")),
         guest_identity_file=_expand_path(
             _get_str(defaults_mapping, "guest_identity_file", "guest.identity_file")
         ),
@@ -251,15 +250,17 @@ def load_manifest(path: Path) -> tuple[BatchDefaults, list[HostConfig]]:
             or defaults.guest_identity_file
         )
         ssh_extra = (
-            _get_str_list(entry_mapping, "ssh_extra_args", "ssh.extra_args")
-            or defaults.ssh_extra_args
+            _get_str_list(entry_mapping, "ssh_extra_args", "ssh.extra_args") or defaults.ssh_extra_args
         )
-        guest_ssh_extra = _get_str_list(
-            entry_mapping,
-            "guest_ssh_extra_args",
-            "guest.ssh_extra_args",
-            "guest.ssh.extra_args",
-        ) or defaults.guest_ssh_extra_args
+        guest_ssh_extra = (
+            _get_str_list(
+                entry_mapping,
+                "guest_ssh_extra_args",
+                "guest.ssh_extra_args",
+                "guest.ssh.extra_args",
+            )
+            or defaults.guest_ssh_extra_args
+        )
         api_node = _get_str(entry_mapping, "api_node", "api.node") or defaults.api_node
         api_port = _get_int(entry_mapping, "api_port", "api.port") or defaults.api_port
         api_insecure = _get_bool(entry_mapping, "api_insecure", "api.insecure")

@@ -11,6 +11,7 @@ This script performs the following steps:
 The workflow is intentionally verbose to keep operators informed about what is
 happening (network calls, SSH checks, etc.).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -621,9 +622,7 @@ def main() -> int:
         )
         update_host_inventory(host, entries, public_key_path)
         save_manifest(state, manifest_path)
-        questionary.print(
-            f"Configured {len(entries)} guests for host {host.name}", style="bold green"
-        )
+        questionary.print(f"Configured {len(entries)} guests for host {host.name}", style="bold green")
         return 0
     except WizardAbort:
         questionary.print("Aborted by user", style="bold yellow")

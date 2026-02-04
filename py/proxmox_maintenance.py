@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Proxmox fleet maintenance helper."""
+
 from __future__ import annotations
 
 import argparse
@@ -25,6 +26,7 @@ from remote_maintenance import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class VirtualMachine:
@@ -53,8 +55,7 @@ def shlex_join(parts: Sequence[str]) -> str:
 
 
 class Reconciler(Protocol):
-    async def reconcile(self) -> None:
-        ...
+    async def reconcile(self) -> None: ...
 
 
 class NodeRecord(BaseModel):
@@ -175,9 +176,7 @@ class ProxmoxAPIClient:
 
     async def fetch_vm_interfaces(self, vmid: str) -> list[GuestInterface]:
         node = await self._ensure_node()
-        payload = await self._request(
-            "POST", f"/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces"
-        )
+        payload = await self._request("POST", f"/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces")
         try:
             return INTERFACE_LIST_ADAPTER.validate_python(payload.get("data", []))
         except ValidationError as exc:
@@ -361,10 +360,7 @@ class ProxmoxAgent:
             logger.error("Cannot list VMs via API: %s", exc)
             vms = []
         await self._run_with_limit(
-            [
-                VirtualMachineAgent(vm, self.proxmox_session, self.api_client, self.guest_options)
-                for vm in vms
-            ]
+            [VirtualMachineAgent(vm, self.proxmox_session, self.api_client, self.guest_options) for vm in vms]
         )
         try:
             containers = await self.api_client.list_containers()

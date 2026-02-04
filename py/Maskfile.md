@@ -12,6 +12,12 @@ Run Ruff lint checks and attempt to fix any issues.
 uv run --extra dev ruff check --fix
 ```
 
+## check
+Run Ruff lint plus Pyright strict mode in one pass.
+```sh
+uv run --extra dev ruff check && uv run --extra dev pyright
+```
+
 ## format
 Format code using Ruff's formatter.
 ```sh

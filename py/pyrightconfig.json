@@ -17,11 +17,12 @@
   "pythonVersion": "3.12",
   "typeCheckingMode": "strict",
   "useLibraryCodeForTypes": true,
-  "reportMissingImports": true,
-  "reportMissingTypeStubs": true,
-  "reportUnknownParameterType": "warning",
-  "reportUnknownVariableType": "warning",
-  "reportUnknownMemberType": "warning",
-  "reportUnusedImport": "warning",
-  "reportUnusedClass": "warning"
+  "reportMissingImports": "error",
+  "reportMissingTypeStubs": "error",
+  "reportCallIssue": "error",
+  "reportUnknownParameterType": "error",
+  "reportUnknownVariableType": "error",
+  "reportUnknownMemberType": "error",
+  "reportUnusedImport": "error",
+  "reportUnusedClass": "error"
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Interactive wizard for managing proxmox_batch manifests."""
+
 from __future__ import annotations
 
 import argparse
@@ -184,9 +185,7 @@ def _load_defaults(defaults_raw: dict[str, Any]) -> DefaultsForm:
         "guest_identity_file",
         "guest.identity_file",
     )
-    guest_identity_file = (
-        _expect_str(guest_identity_value, "defaults.guest_identity_file") if found else None
-    )
+    guest_identity_file = _expect_str(guest_identity_value, "defaults.guest_identity_file") if found else None
 
     ssh_extra_value, found, _ = _extract(working, "ssh_extra_args", "ssh.extra_args")
     ssh_extra_args = _expect_str_list(ssh_extra_value, "defaults.ssh_extra_args") if found else []
@@ -197,9 +196,7 @@ def _load_defaults(defaults_raw: dict[str, Any]) -> DefaultsForm:
         "guest.ssh_extra_args",
         "guest.ssh.extra_args",
     )
-    guest_ssh_extra_args = (
-        _expect_str_list(guest_ssh_value, "defaults.guest_ssh_extra_args") if found else []
-    )
+    guest_ssh_extra_args = _expect_str_list(guest_ssh_value, "defaults.guest_ssh_extra_args") if found else []
 
     api_node_value, found, _ = _extract(working, "api_node", "api.node")
     api_node = _expect_str(api_node_value, "defaults.api_node") if found else None
@@ -334,9 +331,7 @@ def load_manifest_state(path: Path) -> ManifestState:
         raise ManifestError("[[hosts]] must be an array of tables")
 
     top_level_extras: dict[str, Any] = {
-        key: _to_mutable(value)
-        for key, value in raw_mapping.items()
-        if key not in {"defaults", "hosts"}
+        key: _to_mutable(value) for key, value in raw_mapping.items() if key not in {"defaults", "hosts"}
     }
 
     return ManifestState(defaults=defaults, hosts=hosts_entries, top_level_extras=top_level_extras)
@@ -600,8 +595,7 @@ def _clone_host(host: HostForm) -> HostForm:
         ssh_extra_args=None if host.ssh_extra_args is None else list(host.ssh_extra_args),
         guest_user=host.guest_user,
         guest_identity_file=host.guest_identity_file,
-        guest_ssh_extra_args=
-            None if host.guest_ssh_extra_args is None else list(host.guest_ssh_extra_args),
+        guest_ssh_extra_args=None if host.guest_ssh_extra_args is None else list(host.guest_ssh_extra_args),
         api_node=host.api_node,
         api_port=host.api_port,
         api_insecure=host.api_insecure,
@@ -657,9 +651,7 @@ class ManifestWizard:
                 return
             elif choice == "exit":
                 if self.dirty:
-                    confirm = questionary.confirm(
-                        "Discard unsaved changes?", default=False
-                    ).ask()
+                    confirm = questionary.confirm("Discard unsaved changes?", default=False).ask()
                     if not confirm:
                         continue
                 return
@@ -761,8 +753,7 @@ class ManifestWizard:
         choice = questionary.select(
             prompt,
             choices=[
-                questionary.Choice(_format_host_label(host), idx)
-                for idx, host in enumerate(self.state.hosts)
+                questionary.Choice(_format_host_label(host), idx) for idx, host in enumerate(self.state.hosts)
             ],
         ).ask()
         if choice is None:
@@ -805,9 +796,7 @@ class ManifestWizard:
         if index is None:
             return False
         host = self.state.hosts[index]
-        confirm = questionary.confirm(
-            f"Delete host '{host.name}'?", default=False
-        ).ask()
+        confirm = questionary.confirm(f"Delete host '{host.name}'?", default=False).ask()
         if confirm:
             self.state.hosts.pop(index)
             return True

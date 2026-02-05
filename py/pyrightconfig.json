@@ -5,7 +5,8 @@
   "exclude": [
     "**/__pycache__",
     "**/.venv",
-    "**/.git"
+    "**/.git",
+    "**/.pixi"
   ],
   "venvPath": ".",
   "venv": ".venv",

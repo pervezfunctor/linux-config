@@ -323,8 +323,8 @@ This repository uses the DMS (Desktop Management System) for various desktop fun
 
 The repository uses:
 - **pikman**: Custom package manager wrapper
-- **pixi**: Global package installation (`pixi global install`)
-- **uv**: Python package management (`uv tool run`, `uvx`)
+- **pixi**: Global package installation (`pixi global install`) and project-local Conda/PyPI envs (e.g. `py/pixi.lock`)
+- **uv**: Python package management (`uv tool run`, `uvx`); uv drives PyPI deps while pixi layers Conda packages + uv integration.
 
 ## Keybinding Conventions
 
@@ -348,6 +348,18 @@ Before committing changes:
 2. **Stow test**: Run `stow -n <appname>` to test without applying
 3. **Reload**: Reload affected applications (e.g., `niri msg reload-config`)
 4. **Functionality**: Test all modified features
+5. **pixi check**: From `py/`, run `pixi run check` after every change to execute the consolidated lint/type/test suite
+
+## Proxmox Automation CLI
+
+The Python helpers under `py/` are now exposed via a unified Typer CLI named `proxmoxctl`. Run it with `uv run proxmoxctl -- --help` to view available commands. Key subcommands:
+
+- `proxmoxctl maintenance run`: single-host lifecycle orchestration (wraps `proxmox_maintenance.py`).
+- `proxmoxctl batch run`: fan-out executor for every host defined in `proxmox-hosts.toml`.
+- `proxmoxctl wizard run`: launches the interactive manifest editor.
+- `proxmoxctl inventory configure`: guided guest discovery/credential capture.
+
+Legacy scripts (`proxmox_maintenance.py`, `proxmox_batch.py`, etc.) remain runnable for backwards compatibility, but new work should target `proxmoxctl` so we keep the UX consistent and typed via Pydantic.
 
 ## Git Workflow
 

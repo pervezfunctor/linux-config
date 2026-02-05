@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from unittest import mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from proxmox_maintenance import SSHSession, build_arg_parser, ensure_valid_host_argument
+from proxmox_maintenance import SSHSession, ensure_valid_host_argument
 
 
 @pytest.mark.asyncio
@@ -46,15 +45,10 @@ async def test_read_command_runs_even_in_dry_run(monkeypatch: MonkeyPatch) -> No
     assert fake_process.was_awaited
 
 
-def test_flag_like_host_triggers_friendly_error(monkeypatch: MonkeyPatch) -> None:
-    parser = build_arg_parser()
-    mock_error = mock.Mock(side_effect=SystemExit(2))
-    monkeypatch.setattr(parser, "error", mock_error)
-    with pytest.raises(SystemExit):
-        ensure_valid_host_argument(parser, "--help")
-    mock_error.assert_called_once()
+def test_flag_like_host_triggers_friendly_error() -> None:
+    with pytest.raises(ValueError):
+        ensure_valid_host_argument("--help")
 
 
 def test_valid_host_passes_validation() -> None:
-    parser = build_arg_parser()
-    ensure_valid_host_argument(parser, "proxmox.local")
+    assert ensure_valid_host_argument("  proxmox.local  ") == "proxmox.local"

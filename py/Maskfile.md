@@ -3,65 +3,65 @@
 ## lint
 Run Ruff lint checks.
 ```sh
-uv run --extra dev ruff check
+pixi run lint
 ```
 
 ## lint:fix
 Run Ruff lint checks and attempt to fix any issues.
 ```sh
-uv run --extra dev ruff check --fix
+pixi run lint-fix
 ```
 
 ## check
-Run Ruff lint plus Pyright strict mode in one pass.
+Run Pyright type checking followed by Ruff lint in one pass.
 ```sh
-uv run --extra dev ruff check && uv run --extra dev pyright
+pixi run check
 ```
 
 ## format
 Format code using Ruff's formatter.
 ```sh
-uv run --extra dev ruff format
+pixi run fmt
 ```
 
 ## test
 Execute unit tests for the Proxmox helpers.
 ```sh
-uv run --extra dev pytest
+pixi run test
 ```
 
 ## typecheck
 Run Pyright in strict mode.
 ```sh
-uv run --extra dev pyright
+pixi run typecheck
 ```
 
 ## proxmox:dry-run
 Example dry-run against a Proxmox host (override arguments as needed).
 ```sh
-uv run proxmox_maintenance.py "$@" --dry-run
+pixi run proxmox-dry-run -- "$@"
 ```
 
 ## proxmox:run
 Run the maintenance script with custom arguments passed through.
 ```sh
-uv run proxmox_maintenance.py "$@"
+pixi run proxmox-maintenance -- "$@"
 ```
 
 ## proxmox:batch
 Run maintenance across every host defined in the manifest (override args as needed).
 ```sh
-uv run proxmox_batch.py "$@"
+pixi run proxmox-batch -- "$@"
 ```
 
 ## proxmox:config
 Launch the interactive manifest wizard to add or edit host entries.
 ```sh
-uv run proxmox_config_wizard.py "$@"
+pixi run proxmox-wizard -- "$@"
 ```
 
 ## proxmox:inventory
 Discover guests on a host, verify SSH, and update the manifest with credentials.
 ```sh
-uv run proxmox_inventory_builder.py "$@"
+pixi run proxmox-inventory -- "$@"
 ```

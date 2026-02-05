@@ -3,18 +3,19 @@
 
 from __future__ import annotations
 
-import argparse
 import asyncio
-import logging
+import json
 import shlex
-import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Protocol
+from pathlib import Path
+from typing import Any, Protocol, cast
 
-import httpx
+import structlog
+import typer
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
+from logging_utils import configure_logging
 from remote_maintenance import (
     CommandExecutionError,
     GuestSSHOptions,
@@ -25,11 +26,43 @@ from remote_maintenance import (
     parse_os_release,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
+app = typer.Typer(add_completion=False, help="Proxmox guest lifecycle maintenance helper.")
 
 
-@dataclass
-class VirtualMachine:
+@dataclass(frozen=True)
+class MaintenanceRunOptions:
+    host: str
+    user: str
+    identity_file: Path | None
+    ssh_extra_args: tuple[str, ...]
+    guest_user: str
+    guest_identity_file: Path | None
+    guest_ssh_extra_args: tuple[str, ...]
+    max_parallel: int
+    dry_run: bool
+
+
+def _print_cli_notice() -> None:
+    logger.warning(
+        "legacy-cli-notice",
+        recommendation="Use `proxmoxctl maintenance run` for the consolidated CLI.",
+    )
+    
+
+def _expand_optional_path(value: str | Path | None) -> Path | None:
+    if value is None:
+        return None
+    if isinstance(value, Path):
+        return value.expanduser()
+    return Path(value).expanduser()
+
+
+class _InventoryRecord(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+
+class VirtualMachine(_InventoryRecord):
     vmid: str
     name: str
     status: str
@@ -39,8 +72,7 @@ class VirtualMachine:
         return self.status.lower() == "running"
 
 
-@dataclass
-class LXCContainer:
+class LXCContainer(_InventoryRecord):
     ctid: str
     name: str
     status: str
@@ -107,48 +139,26 @@ INTERFACE_LIST_ADAPTER = TypeAdapter(list[GuestInterface])
 NODE_LIST_ADAPTER = TypeAdapter(list[NodeRecord])
 
 
-class ProxmoxAPIError(RuntimeError):
-    """Raised when the Proxmox HTTP API call fails."""
+class ProxmoxCLIError(RuntimeError):
+    """Raised when inventory commands executed via SSH fail."""
 
 
-class ProxmoxAPIClient:
-    """Minimal Proxmox API helper that uses HTTP requests for inventory data."""
+class ProxmoxCLIClient:
+    """Inventory helper that shells out to Proxmox CLI tools over SSH."""
 
-    def __init__(
-        self,
-        *,
-        host: str,
-        port: int,
-        token_id: str,
-        token_secret: str,
-        node: str | None,
-        verify_ssl: bool,
-        timeout: float = 30.0,
-    ) -> None:
-        if not token_id or not token_secret:
-            raise ProxmoxAPIError("API token id/secret are required")
-        base_url = f"https://{host}:{port}/api2/json"
-        self._client = httpx.AsyncClient(
-            base_url=base_url,
-            headers={"Authorization": f"PVEAPIToken={token_id}={token_secret}"},
-            timeout=timeout,
-            verify=verify_ssl,
-        )
-        self._node = node
-
-    async def __aenter__(self) -> ProxmoxAPIClient:
-        return self
-
-    async def __aexit__(self, *exc_info: object) -> None:
-        await self._client.aclose()
+    def __init__(self, session: SSHSession) -> None:
+        self._session = session
 
     async def list_vms(self) -> list[VirtualMachine]:
-        node = await self._ensure_node()
-        payload = await self._request("GET", f"/nodes/{node}/qemu")
+        payload = await self._run_json(
+            shlex_join(["qm", "list", "--full", "--output-format", "json"]),
+            label="VM list",
+        )
+        data = self._extract_list(payload, label="VM list")
         try:
-            records = VM_LIST_ADAPTER.validate_python(payload.get("data", []))
+            records = VM_LIST_ADAPTER.validate_python(data)
         except ValidationError as exc:
-            raise ProxmoxAPIError(f"Invalid VM payload: {exc}") from exc
+            raise ProxmoxCLIError(f"Invalid VM payload: {exc}") from exc
         return [
             VirtualMachine(
                 vmid=str(record.vmid),
@@ -159,12 +169,15 @@ class ProxmoxAPIClient:
         ]
 
     async def list_containers(self) -> list[LXCContainer]:
-        node = await self._ensure_node()
-        payload = await self._request("GET", f"/nodes/{node}/lxc")
+        payload = await self._run_json(
+            shlex_join(["pct", "list", "--output-format", "json"]),
+            label="Container list",
+        )
+        data = self._extract_list(payload, label="Container list")
         try:
-            records = CONTAINER_LIST_ADAPTER.validate_python(payload.get("data", []))
+            records = CONTAINER_LIST_ADAPTER.validate_python(data)
         except ValidationError as exc:
-            raise ProxmoxAPIError(f"Invalid container payload: {exc}") from exc
+            raise ProxmoxCLIError(f"Invalid container payload: {exc}") from exc
         return [
             LXCContainer(
                 ctid=str(record.vmid),
@@ -175,36 +188,48 @@ class ProxmoxAPIClient:
         ]
 
     async def fetch_vm_interfaces(self, vmid: str) -> list[GuestInterface]:
-        node = await self._ensure_node()
-        payload = await self._request("POST", f"/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces")
+        payload = await self._run_json(
+            shlex_join(["qm", "agent", vmid, "network-get-interfaces"]),
+            label=f"VM {vmid} guest interfaces",
+        )
+        records = self._extract_agent_payload(payload)
         try:
-            return INTERFACE_LIST_ADAPTER.validate_python(payload.get("data", []))
+            return INTERFACE_LIST_ADAPTER.validate_python(records)
         except ValidationError as exc:
-            raise ProxmoxAPIError(f"Invalid interface payload: {exc}") from exc
+            raise ProxmoxCLIError(f"Invalid interface payload: {exc}") from exc
 
-    async def _request(self, method: str, path: str) -> Mapping[str, Any]:
+    async def _run_json(self, command: str, *, label: str) -> Any:
         try:
-            response = await self._client.request(method, path)
-            response.raise_for_status()
-        except httpx.HTTPError as exc:
-            raise ProxmoxAPIError(f"HTTP error calling Proxmox API: {exc}") from exc
+            result = await self._session.run(command, capture_output=True, mutable=False)
+        except CommandExecutionError as exc:
+            raise ProxmoxCLIError(f"{label} command failed: {exc}") from exc
+        text = result.stdout.strip()
+        if not text:
+            raise ProxmoxCLIError(f"{label} returned no data")
         try:
-            return response.json()
-        except ValueError as exc:
-            raise ProxmoxAPIError("Invalid JSON response from Proxmox API") from exc
+            return json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ProxmoxCLIError(f"{label} returned invalid JSON: {exc}") from exc
 
-    async def _ensure_node(self) -> str:
-        if self._node:
-            return self._node
-        payload = await self._request("GET", "/nodes")
-        try:
-            nodes = NODE_LIST_ADAPTER.validate_python(payload.get("data", []))
-        except ValidationError as exc:
-            raise ProxmoxAPIError(f"Invalid nodes payload: {exc}") from exc
-        if not nodes:
-            raise ProxmoxAPIError("Proxmox API returned no nodes; specify --api-node")
-        self._node = nodes[0].node
-        return self._node
+    def _extract_list(self, payload: Any, *, label: str) -> list[Any]:
+        if isinstance(payload, list):
+            return cast(list[Any], payload)
+        if isinstance(payload, Mapping):
+            mapping = cast(Mapping[str, Any], payload)
+            data = mapping.get("data")
+            if isinstance(data, list):
+                return cast(list[Any], data)
+        raise ProxmoxCLIError(f"{label} output could not be parsed as a list")
+
+    def _extract_agent_payload(self, payload: Any) -> Any:
+        if isinstance(payload, Mapping):
+            mapping = cast(Mapping[str, Any], payload)
+            if "result" in mapping:
+                return mapping["result"]
+            if "data" in mapping:
+                return mapping["data"]
+            return cast(Any, mapping)
+        return payload
 
 
 class VirtualMachineAgent:
@@ -212,16 +237,16 @@ class VirtualMachineAgent:
         self,
         vm: VirtualMachine,
         proxmox_session: SSHSession,
-        api_client: ProxmoxAPIClient,
+        inventory_client: ProxmoxCLIClient,
         guest_options: GuestSSHOptions,
     ) -> None:
         self.vm = vm
         self.proxmox_session = proxmox_session
-        self.api_client = api_client
+        self.inventory_client = inventory_client
         self.guest_options = guest_options
 
     async def reconcile(self) -> None:
-        logger.info("Processing VM %s (%s)", self.vm.name, self.vm.vmid)
+        logger.info("process-vm", name=self.vm.name, vmid=self.vm.vmid)
         was_running = self.vm.is_running
         if self.vm.is_running:
             await self.stop_vm()
@@ -237,32 +262,32 @@ class VirtualMachineAgent:
                 identifier=f"vm-{self.vm.vmid}",
             )
         else:
-            logger.warning("Unable to determine IP for VM %s", self.vm.vmid)
+            logger.warning("vm-ip-missing", vmid=self.vm.vmid)
         if not was_running:
             await self.stop_vm()
 
     async def stop_vm(self) -> None:
-        logger.info("Stopping VM %s", self.vm.vmid)
+        logger.info("stop-vm", vmid=self.vm.vmid)
         cmd = shlex_join(["qm", "shutdown", self.vm.vmid, "--timeout", "120"])
         await self.proxmox_session.run(cmd, capture_output=False, mutable=True)
         self.vm.status = "stopped"
 
     async def backup_vm(self) -> None:
-        logger.info("Backing up VM %s", self.vm.vmid)
+        logger.info("backup-vm", vmid=self.vm.vmid)
         cmd = shlex_join(["vzdump", self.vm.vmid, "--mode", "snapshot", "--compress", "zstd"])
         await self.proxmox_session.run(cmd, capture_output=False, mutable=True)
 
     async def start_vm(self) -> None:
-        logger.info("Starting VM %s", self.vm.vmid)
+        logger.info("start-vm", vmid=self.vm.vmid)
         cmd = shlex_join(["qm", "start", self.vm.vmid])
         await self.proxmox_session.run(cmd, capture_output=False, mutable=True)
         self.vm.status = "running"
 
     async def fetch_ip(self) -> str | None:
         try:
-            interfaces = await self.api_client.fetch_vm_interfaces(self.vm.vmid)
-        except ProxmoxAPIError as exc:
-            logger.error("Unable to fetch IP for VM %s: %s", self.vm.vmid, exc)
+            interfaces = await self.inventory_client.fetch_vm_interfaces(self.vm.vmid)
+        except ProxmoxCLIError as exc:
+            logger.error("vm-ip-fetch-error", vmid=self.vm.vmid, error=str(exc))
             return None
         for iface in interfaces:
             for address in iface.ip_addresses:
@@ -283,7 +308,7 @@ class ContainerAgent:
         self.guest_options = guest_options
 
     async def reconcile(self) -> None:
-        logger.info("Processing CT %s (%s)", self.container.name, self.container.ctid)
+        logger.info("process-ct", name=self.container.name, ctid=self.container.ctid)
         was_running = self.container.is_running
         if self.container.is_running:
             await self.stop()
@@ -299,7 +324,7 @@ class ContainerAgent:
                 identifier=f"ct-{self.container.ctid}",
             )
         else:
-            logger.warning("Unable to determine IP for CT %s", self.container.ctid)
+            logger.warning("ct-ip-missing", ctid=self.container.ctid)
         if not was_running:
             await self.stop()
 
@@ -322,7 +347,7 @@ class ContainerAgent:
         try:
             result = await self.proxmox_session.run(cmd, capture_output=True, mutable=False)
         except CommandExecutionError as exc:
-            logger.error("Unable to fetch container IP: %s", exc)
+            logger.error("ct-ip-fetch-error", ctid=self.container.ctid, error=str(exc))
             return None
         for token in result.stdout.split():
             if is_ipv4_address(token):
@@ -344,28 +369,36 @@ class ProxmoxAgent:
     def __init__(
         self,
         proxmox_session: SSHSession,
-        api_client: ProxmoxAPIClient,
+        inventory_client: ProxmoxCLIClient,
         guest_options: GuestSSHOptions,
         max_parallel: int,
     ) -> None:
         self.proxmox_session = proxmox_session
-        self.api_client = api_client
+        self.inventory_client = inventory_client
         self.guest_options = guest_options
         self.max_parallel = max(1, max_parallel)
 
     async def run(self) -> None:
         try:
-            vms = await self.api_client.list_vms()
-        except ProxmoxAPIError as exc:
-            logger.error("Cannot list VMs via API: %s", exc)
+            vms = await self.inventory_client.list_vms()
+        except ProxmoxCLIError as exc:
+            logger.error("vm-list-error", error=str(exc))
             vms = []
         await self._run_with_limit(
-            [VirtualMachineAgent(vm, self.proxmox_session, self.api_client, self.guest_options) for vm in vms]
+            [
+                VirtualMachineAgent(
+                    vm,
+                    self.proxmox_session,
+                    self.inventory_client,
+                    self.guest_options,
+                )
+                for vm in vms
+            ]
         )
         try:
-            containers = await self.api_client.list_containers()
-        except ProxmoxAPIError as exc:
-            logger.error("Cannot list containers via API: %s", exc)
+            containers = await self.inventory_client.list_containers()
+        except ProxmoxCLIError as exc:
+            logger.error("container-list-error", error=str(exc))
             containers = []
         await self._run_with_limit(
             [ContainerAgent(ct, self.proxmox_session, self.guest_options) for ct in containers]
@@ -384,117 +417,136 @@ class ProxmoxAgent:
         await asyncio.gather(*(worker(agent) for agent in agents))
 
     async def upgrade_proxmox_host(self) -> None:
-        logger.info("Upgrading Proxmox host")
+        logger.info("host-upgrade")
         try:
             release_content = await self.proxmox_session.run(
                 "cat /etc/os-release", capture_output=True, mutable=False
             )
         except CommandExecutionError as exc:
-            logger.error("Unable to read Proxmox OS release: %s", exc)
+            logger.error("host-os-release-error", error=str(exc))
             return
         os_release = parse_os_release(release_content.stdout)
         package_manager = determine_package_manager(os_release)
         if not package_manager:
-            logger.error("Unsupported Proxmox host OS")
+            logger.error("host-upgrade-unsupported")
             return
         command = build_upgrade_command(package_manager, use_sudo=False)
         try:
             await self.proxmox_session.run(command, capture_output=False, mutable=True)
         except CommandExecutionError as exc:
-            logger.error("Host upgrade failed: %s", exc)
+            logger.error("host-upgrade-failed", error=str(exc))
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Proxmox guest lifecycle maintenance")
-    parser.add_argument("host", help="Proxmox host IPv4/IPv6 or DNS")
-    parser.add_argument("--user", default="root", help="Proxmox SSH user (default: root)")
-    parser.add_argument("--identity-file", dest="identity_file", help="SSH identity for Proxmox host")
-    parser.add_argument("--guest-user", dest="guest_user", default="root", help="Guest SSH user")
-    parser.add_argument(
-        "--guest-identity-file", dest="guest_identity_file", help="Identity file for guest SSH"
-    )
-    parser.add_argument(
-        "--guest-ssh-extra-arg",
-        dest="guest_ssh_extra_args",
-        action="append",
-        default=[],
-        help="Additional ssh arguments for guest connections",
-    )
-    parser.add_argument(
-        "--ssh-extra-arg",
-        dest="ssh_extra_args",
-        action="append",
-        default=[],
-        help="Additional ssh arguments for Proxmox host connection",
-    )
-    parser.add_argument("--api-token-id", required=True, help="Proxmox API token id (user@realm!token)")
-    parser.add_argument("--api-token-secret", required=True, help="Proxmox API token secret")
-    parser.add_argument("--api-node", help="Proxmox node name (defaults to first available)")
-    parser.add_argument("--api-port", type=int, default=8006, help="Proxmox API port (default: 8006)")
-    parser.add_argument(
-        "--api-insecure",
-        action="store_true",
-        help="Disable TLS verification for the API (not recommended)",
-    )
-    parser.add_argument(
-        "--max-parallel", type=int, default=2, help="Maximum concurrent guest operations (default: 2)"
-    )
-    parser.add_argument("--dry-run", action="store_true", help="Log actions without changing state")
-    parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
-    return parser
-
-
-def ensure_valid_host_argument(parser: argparse.ArgumentParser, host: str) -> None:
+def ensure_valid_host_argument(host: str) -> str:
     trimmed = (host or "").strip()
     if not trimmed:
-        parser.error("Host/IP address is required (example: proxmox.example.com)")
+        raise ValueError("Host/IP address is required (example: proxmox.example.com)")
     if trimmed.startswith("-"):
-        parser.error(
+        raise ValueError(
             "Host parameter appears missing. Provide the Proxmox host before options, e.g. "
-            "`proxmox_maintenance.py proxmox.example --dry-run`. "
-            "To show help, run without the extra `--` (example: `proxmox_maintenance.py --help`)."
+            "`proxmox_maintenance proxmox.example --dry-run`. "
+            "To show help, run without the extra `--` (example: `proxmox_maintenance --help`)."
         )
+    return trimmed
 
 
-def configure_logging(verbose: bool) -> None:
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(level=level, format="%(asctime)s %(levelname)s %(message)s")
-
-
-async def async_main(argv: Sequence[str] | None = None) -> int:
-    parser = build_arg_parser()
-    args = parser.parse_args(argv)
-    ensure_valid_host_argument(parser, args.host)
-    configure_logging(args.verbose)
+async def run_with_options(options: MaintenanceRunOptions) -> int:
     host_session = SSHSession(
-        host=args.host,
-        user=args.user,
-        dry_run=args.dry_run,
-        identity_file=args.identity_file,
-        extra_args=tuple(args.ssh_extra_args),
+        host=options.host,
+        user=options.user,
+        dry_run=options.dry_run,
+        identity_file=str(options.identity_file) if options.identity_file else None,
+        extra_args=options.ssh_extra_args,
         description="proxmox",
     )
     guest_options = GuestSSHOptions(
-        user=args.guest_user,
-        identity_file=args.guest_identity_file,
-        extra_args=tuple(args.guest_ssh_extra_args),
+        user=options.guest_user,
+        identity_file=str(options.guest_identity_file) if options.guest_identity_file else None,
+        extra_args=options.guest_ssh_extra_args,
     )
-    async with ProxmoxAPIClient(
-        host=args.host,
-        port=args.api_port,
-        token_id=args.api_token_id,
-        token_secret=args.api_token_secret,
-        node=args.api_node,
-        verify_ssl=not args.api_insecure,
-    ) as api_client:
-        agent = ProxmoxAgent(host_session, api_client, guest_options, max_parallel=args.max_parallel)
-        await agent.run()
+    inventory_client = ProxmoxCLIClient(host_session)
+    agent = ProxmoxAgent(host_session, inventory_client, guest_options, max_parallel=options.max_parallel)
+    await agent.run()
     return 0
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    return asyncio.run(async_main(argv))
+def _host_argument(value: str) -> str:
+    try:
+        return ensure_valid_host_argument(value)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+
+
+_HOST_ARGUMENT = typer.Argument(
+    ...,
+    help="Proxmox host IPv4/IPv6 or DNS",
+    callback=_host_argument,
+)
+_USER_OPTION = typer.Option("root", "--user", "-u", help="Proxmox SSH user")
+_IDENTITY_FILE_OPTION = typer.Option(
+    None,
+    "--identity-file",
+    help="SSH identity for Proxmox host",
+)
+_GUEST_USER_OPTION = typer.Option("root", "--guest-user", help="Guest SSH user")
+_GUEST_IDENTITY_FILE_OPTION = typer.Option(
+    None,
+    "--guest-identity-file",
+    help="Guest SSH identity file",
+)
+_GUEST_SSH_EXTRA_ARG_OPTION = typer.Option(
+    None,
+    "--guest-ssh-extra-arg",
+    help="Additional ssh arguments for guest connections (repeatable)",
+)
+_SSH_EXTRA_ARG_OPTION = typer.Option(
+    None,
+    "--ssh-extra-arg",
+    help="Additional ssh arguments for Proxmox host connection (repeatable)",
+)
+_MAX_PARALLEL_OPTION = typer.Option(
+    2,
+    "--max-parallel",
+    min=1,
+    help="Maximum concurrent guest operations",
+)
+_DRY_RUN_OPTION = typer.Option(False, "--dry-run", help="Log actions without changing state")
+_VERBOSE_OPTION = typer.Option(False, "--verbose", "-v", help="Enable debug logging")
+
+
+@app.command("run", no_args_is_help=True)
+def cli_run(
+    host: str = _HOST_ARGUMENT,
+    user: str = _USER_OPTION,
+    identity_file: Path | None = _IDENTITY_FILE_OPTION,
+    guest_user: str = _GUEST_USER_OPTION,
+    guest_identity_file: Path | None = _GUEST_IDENTITY_FILE_OPTION,
+    guest_ssh_extra_arg: list[str] | None = _GUEST_SSH_EXTRA_ARG_OPTION,
+    ssh_extra_arg: list[str] | None = _SSH_EXTRA_ARG_OPTION,
+    max_parallel: int = _MAX_PARALLEL_OPTION,
+    dry_run: bool = _DRY_RUN_OPTION,
+    verbose: bool = _VERBOSE_OPTION,
+) -> None:
+    _print_cli_notice()
+    configure_logging(verbose)
+    options = MaintenanceRunOptions(
+        host=host,
+        user=user,
+        identity_file=_expand_optional_path(identity_file),
+        ssh_extra_args=tuple(ssh_extra_arg or []),
+        guest_user=guest_user,
+        guest_identity_file=_expand_optional_path(guest_identity_file),
+        guest_ssh_extra_args=tuple(guest_ssh_extra_arg or []),
+        max_parallel=max_parallel,
+        dry_run=dry_run,
+    )
+    exit_code = asyncio.run(run_with_options(options))
+    raise typer.Exit(exit_code)
+
+
+def main() -> None:
+    app()
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

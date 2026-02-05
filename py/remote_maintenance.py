@@ -1,14 +1,16 @@
 """Reusable SSH helpers for maintaining remote Linux guests."""
+
 from __future__ import annotations
 
 import asyncio
-import logging
 import sys
 from asyncio.subprocess import PIPE
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 
-logger = logging.getLogger(__name__)
+import structlog
+from pydantic import BaseModel, ConfigDict
+
+logger = structlog.get_logger(__name__)
 
 
 DEFAULT_SSH_OPTIONS: tuple[str, ...] = (
@@ -27,15 +29,17 @@ class CommandExecutionError(RuntimeError):
     """Raised when an SSH command fails."""
 
 
-@dataclass
-class CommandResult:
+class _RemoteModel(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+
+class CommandResult(_RemoteModel):
     stdout: str
     stderr: str
     returncode: int
 
 
-@dataclass
-class GuestSSHOptions:
+class GuestSSHOptions(_RemoteModel):
     user: str
     identity_file: str | None
     extra_args: tuple[str, ...]
@@ -77,9 +81,9 @@ class SSHSession:
         ssh_command.append(f"{self.user}@{self.host}")
         ssh_command.append(remote_cmd)
         if self.dry_run and mutable:
-            logger.info("[dry-run] %s -> %s", self.description, remote_cmd)
+            logger.info("ssh-dry-run", session=self.description, command=remote_cmd)
             return CommandResult(stdout="", stderr="", returncode=0)
-        logger.debug("%s$ %s", self.description, remote_cmd)
+        logger.debug("ssh-exec", session=self.description, command=remote_cmd)
         stdout_pipe = PIPE if capture_output else None
         process = await asyncio.create_subprocess_exec(
             *ssh_command,
@@ -95,16 +99,13 @@ class SSHSession:
         except TimeoutError as exc:  # pragma: no cover - rare path
             process.kill()
             await process.wait()
-            raise CommandExecutionError(
-                f"Command timed out on {self.description}: {remote_cmd}"
-            ) from exc
+            raise CommandExecutionError(f"Command timed out on {self.description}: {remote_cmd}") from exc
         stdout_text = stdout_bytes.decode() if stdout_bytes else ""
         stderr_text = stderr_bytes.decode() if stderr_bytes else ""
         return_code = process.returncode if process.returncode is not None else -1
         if check and return_code != 0:
             raise CommandExecutionError(
-                f"Command failed ({return_code}) on {self.description}: {remote_cmd}\n"
-                f"{stderr_text.strip()}"
+                f"Command failed ({return_code}) on {self.description}: {remote_cmd}\n{stderr_text.strip()}"
             )
         return CommandResult(stdout=stdout_text, stderr=stderr_text, returncode=return_code)
 
@@ -148,29 +149,28 @@ async def upgrade_guest_operating_system(session: SSHSession) -> bool:
     try:
         release_content = await session.run("cat /etc/os-release", capture_output=True, mutable=False)
     except CommandExecutionError as exc:
-        logger.error("Unable to read /etc/os-release on %s: %s", session.description, exc)
+        logger.error("guest-os-release-error", session=session.description, error=str(exc))
         return False
     os_release = parse_os_release(release_content.stdout)
     package_manager = determine_package_manager(os_release)
     if not package_manager:
-        logger.warning("Unsupported OS for %s", session.description)
+        logger.warning("guest-os-unsupported", session=session.description)
         return False
     command = build_upgrade_command(package_manager, session.user != "root")
     try:
         await session.run(command, capture_output=False, mutable=True)
     except CommandExecutionError as exc:
-        logger.error("Upgrade failed on %s: %s", session.description, exc)
+        logger.error("guest-upgrade-failed", session=session.description, error=str(exc))
         return False
     return True
 
 
 def prompt_for_alternate_username(target: str, previous_user: str) -> str | None:
     if not sys.stdin.isatty():
-        logger.warning("Cannot prompt for alternate username for %s; non-interactive session", target)
+        logger.warning("prompt-unavailable", target=target)
         return None
     prompt = (
-        f"SSH to {target} failed for user '{previous_user}'. "
-        "Enter alternate username (leave blank to skip): "
+        f"SSH to {target} failed for user '{previous_user}'. Enter alternate username (leave blank to skip): "
     )
     try:
         new_user = input(prompt).strip()

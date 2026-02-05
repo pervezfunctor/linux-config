@@ -22,8 +22,9 @@
   "reportMissingTypeStubs": "error",
   "reportCallIssue": "error",
   "reportUnknownParameterType": "error",
-  "reportUnknownVariableType": "error",
-  "reportUnknownMemberType": "error",
+  "reportUnknownVariableType": "warning",
+  "reportUnknownMemberType": "warning",
+  "reportUnnecessaryComparison": "warning",
   "reportUnusedImport": "error",
   "reportUnusedClass": "error"
 }

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+import tomllib
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, TypeGuard, cast
@@ -18,11 +19,6 @@ from typing import Any, TypeGuard, cast
 import structlog
 import typer
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
-try:  # Python 3.11 fallbacks (not expected, but keeps lint happy)
-    import tomllib  # type: ignore[attr-defined]
-except ModuleNotFoundError as exc:  # pragma: no cover - only for <3.11
-    raise RuntimeError("Python 3.11+ is required for tomllib") from exc
 
 from logging_utils import configure_logging
 from proxmox_maintenance import (

@@ -23,6 +23,7 @@ dependencies = [
   "logfire>=0.50.0",
   "result>=0.17.0",
   "aiostream>=0.7.1",
+  "textual>=0.80.0",
 ]
 
 [project.optional-dependencies]

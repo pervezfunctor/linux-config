@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -9,16 +10,14 @@ import proxmox_batch
 
 
 def _make_host(**overrides: object) -> proxmox_batch.HostConfig:
-    base: dict[str, object] = {
-        "name": "prod-a",
-        "host": "proxmox-a.example.com",
-        "user": "root",
-        "guest_ssh_extra_args": (),
-        "max_parallel": 2,
-        "dry_run": False,
-    }
-    base.update(overrides)
-    return proxmox_batch.HostConfig(**base)  # type: ignore[arg-type]
+    return proxmox_batch.HostConfig(
+        name=cast(str, overrides.get("name", "prod-a")),
+        host=cast(str, overrides.get("host", "proxmox-a.example.com")),
+        user=cast(str, overrides.get("user", "root")),
+        guest_ssh_extra_args=cast(tuple[str, ...], overrides.get("guest_ssh_extra_args", ())),
+        max_parallel=cast(int, overrides.get("max_parallel", 2)),
+        dry_run=cast(bool, overrides.get("dry_run", False)),
+    )
 
 
 def test_load_manifest_merges_defaults(tmp_path: Path) -> None:

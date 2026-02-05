@@ -86,6 +86,7 @@ def inventory_configure(
     manifest: Annotated[str | None, Option("--manifest", "-m", help="Manifest path")] = None,
     host: Annotated[str | None, Option("--host", help="Pre-select host")] = None,
     verbose: Annotated[bool, Option("--verbose", help="Verbose logging")] = False,
+    tui: Annotated[bool, Option("--tui", help="Use Textual TUI interface")] = False,
 ) -> None:
     options = InventoryOptions(
         manifest=_manifest_path(manifest),
@@ -97,7 +98,12 @@ def inventory_configure(
         host=options.host,
         verbose=options.verbose,
     )
-    exit_code = proxmox_inventory_builder.run_inventory(run_options)
+    if tui:
+        from proxmox_cli.textual_app import run_textual_app
+
+        exit_code = run_textual_app(run_options)
+    else:
+        exit_code = proxmox_inventory_builder.run_inventory(run_options)
     raise typer.Exit(code=exit_code)
 
 

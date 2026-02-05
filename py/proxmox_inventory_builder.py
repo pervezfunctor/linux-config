@@ -2,7 +2,7 @@
 """Interactive helper that builds proxmox-hosts manifests from live inventory.
 
 This script performs the following steps:
-1. Prompts for (or updates) a host entry in py/proxmox-hosts.toml.
+1. Prompts for (or updates) a host entry in proxmox-hosts.toml.
 2. Uses SSH access to discover VMs and containers on the host.
 3. Lets operators mark which guests should be managed and capture notes.
 4. Persists the collected metadata back to the TOML manifest so proxmox_maintenance can consume it.
@@ -242,7 +242,7 @@ async def _discover_containers(
             cmd = shlex_join(["pct", "exec", ct.ctid, "--", "hostname", "-I"])
             try:
                 result = await host_session.run(cmd, capture_output=True, mutable=False)
-                ip = _extract_ipv4(result.stdout)
+                ip = extract_ipv4(result.stdout)
             except CommandExecutionError as exc:
                 LOGGER.warning("Unable to fetch IP for CT %s: %s", ct.ctid, exc)
         discoveries.append(
@@ -251,7 +251,7 @@ async def _discover_containers(
     return discoveries
 
 
-def _extract_ipv4(output: str) -> str | None:
+def extract_ipv4(output: str) -> str | None:
     for token in output.split():
         parts = token.split(".")
         if len(parts) != 4:

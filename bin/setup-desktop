@@ -360,6 +360,8 @@ gnome-settings_install() {
   gsettings set org.gnome.desktop.wm.preferences num-workspaces 4
 
   gsettings set org.gnome.desktop.interface monospace-font-name 'JetbrainsMono Nerd Font 11'
+
+  gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
 }
 
 gnome-keybindings_install() {

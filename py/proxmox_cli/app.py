@@ -9,12 +9,11 @@ from typing import Annotated
 import typer
 from typer import Option
 
-import proxmox_batch
-import proxmox_config_wizard
-import proxmox_inventory_builder
-import proxmox_maintenance
-from logging_utils import configure_logging
-from proxmox_cli.models import BatchOptions, InventoryOptions, MaintenanceOptions, WizardOptions
+from proxmox_cli.core.batch import DEFAULT_CONFIG_PATH, async_run_batch
+from proxmox_cli.core.maintenance import run_with_options
+from proxmox_cli.core.models import MaintenanceRunOptions
+from proxmox_cli.models import BatchOptions, InventoryOptions, WizardOptions
+from proxmox_cli.utils import configure_logging
 
 app = typer.Typer(help="Proxmox maintenance toolkit")
 
@@ -27,7 +26,7 @@ def main_callback(
 
 
 def _manifest_path(value: str | None) -> Path:
-    return Path(value).expanduser() if value else proxmox_batch.DEFAULT_CONFIG_PATH
+    return Path(value).expanduser() if value else DEFAULT_CONFIG_PATH
 
 
 batch_app = typer.Typer(help="Batch maintenance commands")
@@ -52,7 +51,7 @@ def batch_run(
         verbose=verbose,
     )
     exit_code = asyncio.run(
-        proxmox_batch.async_run_batch(
+        async_run_batch(
             config_path=options.manifest,
             host_filters=options.hosts,
             limit=options.limit,
@@ -72,6 +71,8 @@ def wizard_run(
     manifest: Annotated[str | None, Option("--manifest", "-m", help="Manifest path")] = None,
     verbose: Annotated[bool, Option("--verbose", help="Verbose logging")] = False,
 ) -> None:
+    import proxmox_config_wizard  # Lazy import to avoid circular dependency
+    
     options = WizardOptions(manifest=_manifest_path(manifest), verbose=verbose)
     exit_code = proxmox_config_wizard.run_wizard(options.manifest, verbose=options.verbose)
     raise typer.Exit(code=exit_code)
@@ -88,6 +89,8 @@ def inventory_configure(
     verbose: Annotated[bool, Option("--verbose", help="Verbose logging")] = False,
     tui: Annotated[bool, Option("--tui", help="Use Textual TUI interface")] = False,
 ) -> None:
+    import proxmox_inventory_builder  # Lazy import to avoid circular dependency
+    
     options = InventoryOptions(
         manifest=_manifest_path(manifest),
         host=host,
@@ -135,29 +138,19 @@ def maintenance_run(
 ) -> None:
     identity_path = Path(identity_file).expanduser() if identity_file else None
     guest_identity_path = Path(guest_identity_file).expanduser() if guest_identity_file else None
-    options = MaintenanceOptions(
+    
+    configure_logging(verbose)
+    
+    run_options = MaintenanceRunOptions(
         host=host,
         user=user,
         identity_file=identity_path,
+        ssh_extra_args=tuple(ssh_extra_arg or []),
         guest_user=guest_user,
         guest_identity_file=guest_identity_path,
         guest_ssh_extra_args=tuple(guest_ssh_extra_arg or []),
-        ssh_extra_args=tuple(ssh_extra_arg or []),
         max_parallel=max_parallel,
         dry_run=dry_run,
-        verbose=verbose,
     )
-    configure_logging(options.verbose)
-    run_options = proxmox_maintenance.MaintenanceRunOptions(
-        host=options.host,
-        user=options.user,
-        identity_file=options.identity_file,
-        ssh_extra_args=options.ssh_extra_args,
-        guest_user=options.guest_user,
-        guest_identity_file=options.guest_identity_file,
-        guest_ssh_extra_args=options.guest_ssh_extra_args,
-        max_parallel=options.max_parallel,
-        dry_run=options.dry_run,
-    )
-    exit_code = asyncio.run(proxmox_maintenance.run_with_options(run_options))
+    exit_code = asyncio.run(run_with_options(run_options))
     raise typer.Exit(code=exit_code)

@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from proxmox_cli.app import app
-from proxmox_cli.models import BatchOptions, MaintenanceOptions
+from proxmox_cli.models import BatchOptions
 from proxmox_inventory_builder import InventoryRunOptions
 from proxmox_maintenance import MaintenanceRunOptions
 
@@ -19,14 +19,30 @@ cli_mod = importlib.import_module("proxmox_cli.app")
 
 def test_batch_options_enforces_positive_limit() -> None:
     with pytest.raises(ValidationError):
-        BatchOptions(limit=0)
+        BatchOptions(
+            manifest=Path("/tmp/test.toml"),
+            hosts=(),
+            limit=0,  # This should fail validation
+            force_dry_run=False,
+            verbose=False,
+        )
 
 
 def test_maintenance_options_expand_identity(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     fake_home = tmp_path / "home"
     fake_home.mkdir()
     monkeypatch.setenv("HOME", str(fake_home))
-    options = MaintenanceOptions(host="pmx", identity_file=Path("~/.ssh/key"))
+    options = MaintenanceRunOptions(
+        host="pmx",
+        user="root",
+        identity_file=Path("~/.ssh/key"),
+        ssh_extra_args=(),
+        guest_user="root",
+        guest_identity_file=None,
+        guest_ssh_extra_args=(),
+        max_parallel=2,
+        dry_run=False,
+    )
     assert options.identity_file
     assert options.identity_file.is_absolute()
     assert str(options.identity_file).startswith(str(fake_home))

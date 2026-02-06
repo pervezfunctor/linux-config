@@ -2,79 +2,62 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict
 
-from proxmox_batch import DEFAULT_CONFIG_PATH
+# Re-export core models for convenience
+from proxmox_cli.core.batch import DEFAULT_CONFIG_PATH
+from proxmox_cli.core.models import (
+    BatchDefaults,
+    DefaultsForm,
+    HostConfig,
+    HostForm,
+    MaintenanceRunOptions,
+    ManifestState,
+)
 
 
-class _BaseOptions(BaseModel):
+class _CLIModel(BaseModel):
+    """Base model for CLI options."""
+
     model_config = ConfigDict(frozen=True)
 
-    verbose: bool = False
+
+class BatchOptions(_CLIModel):
+    """Options for batch run command."""
+
+    manifest: Path
+    hosts: tuple[str, ...]
+    limit: int | None
+    force_dry_run: bool
+    verbose: bool
 
 
-def _expand_manifest(value: str | Path) -> Path:
-    path = Path(value)
-    return path.expanduser().resolve()
+class WizardOptions(_CLIModel):
+    """Options for wizard command."""
+
+    manifest: Path
+    verbose: bool
 
 
-class BatchOptions(_BaseOptions):
-    manifest: Path = Field(default=DEFAULT_CONFIG_PATH)
-    hosts: tuple[str, ...] = Field(default_factory=tuple)
-    limit: int | None = Field(default=None, ge=1)
-    force_dry_run: bool = False
+class InventoryOptions(_CLIModel):
+    """Options for inventory command."""
 
-    _validate_manifest = field_validator("manifest", mode="before")(_expand_manifest)
-
-    @field_validator("hosts", mode="before")
-    @classmethod
-    def _coerce_hosts(cls, value: Iterable[str] | str | None) -> tuple[str, ...]:
-        if value is None:
-            return ()
-        if isinstance(value, str):
-            return (value,)
-        return tuple(value)
+    manifest: Path
+    host: str | None
+    verbose: bool
 
 
-class WizardOptions(_BaseOptions):
-    manifest: Path = Field(default=DEFAULT_CONFIG_PATH)
-
-    _validate_manifest = field_validator("manifest", mode="before")(_expand_manifest)
-
-
-class InventoryOptions(_BaseOptions):
-    manifest: Path = Field(default=DEFAULT_CONFIG_PATH)
-    host: str | None = None
-
-    _validate_manifest = field_validator("manifest", mode="before")(_expand_manifest)
-
-
-class MaintenanceOptions(_BaseOptions):
-    host: str
-    user: str = "root"
-    identity_file: Path | None = None
-    guest_user: str = "root"
-    guest_identity_file: Path | None = None
-    guest_ssh_extra_args: tuple[str, ...] = Field(default_factory=tuple)
-    ssh_extra_args: tuple[str, ...] = Field(default_factory=tuple)
-    max_parallel: int = Field(default=2, ge=1)
-    dry_run: bool = False
-
-    @field_validator("identity_file", "guest_identity_file", mode="before")
-    @classmethod
-    def _expand_identity(cls, value: str | Path | None) -> Path | None:
-        if value is None:
-            return None
-        return Path(value).expanduser().resolve()
-
-    @field_validator("ssh_extra_args", "guest_ssh_extra_args", mode="before")
-    @classmethod
-    def _normalize_args(cls, value: Iterable[str] | str | None) -> tuple[str, ...]:
-        if value is None:
-            return ()
-        if isinstance(value, str):
-            return (value,)
-        return tuple(value)
+__all__ = [
+    "DEFAULT_CONFIG_PATH",
+    "BatchDefaults",
+    "BatchOptions",
+    "DefaultsForm",
+    "HostConfig",
+    "HostForm",
+    "InventoryOptions",
+    "MaintenanceRunOptions",
+    "ManifestState",
+    "WizardOptions",
+]

@@ -49,9 +49,12 @@
         "git log",
         "git diff",
         "git show",
-        "ls"
+        "ls",
+        "pixi",
+        "uv"
     ],
     "kilo-code.deniedCommands": [],
     "security.workspace.trust.untrustedFiles": "open",
-    "workbench.colorTheme": "Gruvbox Dark Medium"
+    "workbench.colorTheme": "Gruvbox Dark Medium",
+    "diffEditor.ignoreTrimWhitespace": false
 }

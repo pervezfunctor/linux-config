@@ -20,7 +20,7 @@ is_bash() {
 }
 
 if has_cmd micro; then
-export EDITOR="micro"
+    export EDITOR="micro"
 elif has_cmd nvim; then
     export EDITOR="nvim"
 elif has_cmd vim; then
@@ -36,6 +36,7 @@ if has_cmd code; then
 elif has_cmd zed; then
     VISUAL="zed --wait"
 elif flatpak list | grep -qi "com.visualstudio.code"; then
+    # shellcheck disable=SC2034
     VISUAL="flatpak run com.visualstudio.code --wait"
 fi
 

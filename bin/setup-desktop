@@ -144,6 +144,8 @@ hyprland_install() {
       sudo zypper addrepo https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo
       sudo zypper refresh
       si hyprland dms hyprpolkitagent
+      mkdir -p ~/.config/hypr/dms
+      touch ~/.config/hypr/dms/{alttab,colors,layout,wpblur,binds,cursor,outputs}.conf
     else
       error "Unsupported OS. Not installing hyprland."
       return

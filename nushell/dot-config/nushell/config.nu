@@ -23,7 +23,7 @@ def jupyter-lab [] {
     ^$jupyter lab
 }
 
-def has_cmd [ app: string ] {
+def has_cmd [app: string] {
     (which $app | is-not-empty)
 }
 
@@ -33,6 +33,10 @@ def uv-marimo-standalone [] {
 
 def uv-jupyter-standalone [] {
     uv tool run jupyter lab
+}
+
+def kitty-theme [] {
+    ^kitty +kitten themes
 }
 
 source ($nu.default-config-dir | path join auto-includes.nu)

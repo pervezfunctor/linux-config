@@ -10,10 +10,9 @@ $env.PATH = ($env.PATH | prepend [
     $"($env.HOME)/.local/bin",
     $"($env.VOLTA_HOME)/bin",
     $"($env.PNPM_HOME)",
-    /home/linuxbrew/.linuxbrew/bin
 ])
 
-$env.CARAPACE_BRIDGES = 'zsh,fish,bash,inshellisense' # optional
+$env.XDG_DATA_DIRS = ($env.XDG_DATA_DIRS | prepend $"($env.HOME)/.local/share/flatpak/exports/share")
 
 const auto_includes = $nu.default-config-dir | path join auto-includes.nu
 if not ($auto_includes | path exists) {

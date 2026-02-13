@@ -189,7 +189,7 @@ dotfiles_install() {
     return 1
   }
 
-  bashrc_setup
+  is_mac || bashrc_setup
   nushell_setup
   zshrc_setup
 }
@@ -219,8 +219,6 @@ devtools_install() {
     log "Installing $pkg"
     pnpm install -g "$pkg"
   done
-
-  rust_install
 }
 
 claude_install() {
@@ -233,17 +231,14 @@ claude_install() {
   has_cmd claude || curl -fsSL https://claude.ai/install.sh | bash
 }
 
-motltbot_install() {
-  log "Installing moltbot"
-  curl -fsSL https://molt.bot/install.sh | bash
-}
-
 setup-shell() {
   local -a whiptail_items=()
-  is_linux && whiptail_items+=(
-    "system" "Install system packages" "on"
-    "incus" "Install incus" "off"
-  )
+  if is_linux && ! is_fedora-atomic; then
+    whiptail_items+=(
+      "system" "Install system packages" "on"
+      "incus" "Install incus" "off"
+    )
+  fi
 
   whiptail_items+=(
     "dotfiles" "Setup dotfiles with stow" "on"
@@ -251,9 +246,13 @@ setup-shell() {
     "devtools" "Install devtools(mise, uv etc)" "on"
     "nvim" "Install Neovim" "off"
     "claude" "Install claude" "off"
-    "nix" "Setup nix with home-manager" "off"
-    "moltbot" "Install moltbot" "off"
+    "rust" "Install rustup"
   )
+  if ! is_fedora-atomic; then
+    whiptail_items +=(
+      "nix" "Setup nix with home-manager" "off"
+    )
+  fi
 
   bootstrap
 

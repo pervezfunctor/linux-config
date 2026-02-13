@@ -244,6 +244,7 @@ vscode_install() {
     mads-hartmann.bash-ide-vscode
     TheNuProjectContributors.vscode-nushell-lang
     timonwong.shellcheck
+    wayou.vscode-todo-highlight
   )
 
   log "Installing vscode extensions"
@@ -434,19 +435,28 @@ gnome_install() {
 }
 
 setup-desktop() {
-  local -a whiptail_items=(
+  if is_mac; then
+    die "desktop option is not available for mac"
+  fi
+
+  local -a whiptail_items=()
+
+  if ! is_fedora-atomic; then
+    whiptail_items+=(
     "system" "Install desktop system packages" "on"
-    "flatpaks" "Install flatpaks" "on"
-    "vscode" "Install vscode" "off"
     "distrobox" "Install distrobox" "off"
     "virt" "Install virt-manager" "off"
+  )
+
+  whiptail_items=(
+    "flatpaks" "Install flatpaks" "on"
+    "vscode" "Install vscode" "off"
     "zed" "Install zed" "off"
   )
 
   if is_gnome; then
     whiptail_items+=("gnome" "Configure gnome desktop" "on")
   fi
-
   if is_fedora || is_questing || is_pikaos || is_tw || is_arch; then
     whiptail_items+=("niri" "Install niri" "off")
   fi

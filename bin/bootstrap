@@ -37,7 +37,12 @@
     [ -f /etc/os-release ] && grep -qi 'questing' /etc/os-release 2>/dev/null
   }
 
+  is_fedora-atomic() {
+    has_cmd rpm-ostree
+  }
+
   is_fedora() {
+    is_fedora-atomic && return 1
     [ -f /etc/redhat-release ] && grep -q -i 'Fedora' /etc/redhat-release
   }
 
@@ -73,8 +78,8 @@
     [ "$XDG_CURRENT_DESKTOP" = "GNOME" ] || [ "$XDG_SESSION_DESKTOP" = "gnome" ]
   }
 
-  is_fedora-atomic() {
-    has_cmd rpm-ostree
+  is_ublue() {
+    is_fedora-atomic && has_cmd ujust
   }
 
   prompt_yn() {
@@ -151,6 +156,8 @@
   update_packages() {
     log "Updating packages"
 
+    if is_mac || is_ublue; then
+      brew update; brew upgrade
     if is_fedora; then
       sudo dnf update -y
     elif is_trixie || is_questing; then
@@ -162,13 +169,14 @@
     elif is_arch; then
       sudo pacman -Syu
     else
-      error "OS not supported. Quitting."
-      exit 1
+      die "OS not supported. Quitting."
     fi
   }
 
   si() {
     log "Installing $*"
+    if is_mac || is_ublue; then
+      brew install "$@"
     if is_fedora; then
       sudo dnf install -y "$@"
     elif is_trixie || is_questing; then
@@ -192,7 +200,8 @@
 
     log "Installing brew"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    is_linux && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    is_mac && eval "$(homebrew/bin/brew shellenv)"
 
     has_cmd topgrade || brew install topgrade
 
@@ -291,35 +300,40 @@
 
     keep_sudo_alive
 
+    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_macos || is_fedora-atomic || {
+      die "Only Fedora, Questing, Tumbeweed, Arch, PikaOS supported. Quitting."
+    }
+  }
+
+  base_install() {
+    log "Installing required packages..."
     if is_mac; then
       xcode-select --install
       /usr/sbin/softwareupdate --install-rosetta --agree-to-license
       brew_install
       brew install wget mas stow newt trash zstd unzip rclone tmux tar tree visual-studio-code
-      exit 0
+    elif is_ublue; then
+      brew install stow newt trash-cli
+    else
+      si stow trash-cli whiptail unzip
     fi
-
-    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || {
-      error "Only  Fedora, Questing, Tumbeweed, Arch, PikaOS supported. Quitting."
-      exit 1
-    }
-
-    log "Installing required packages..."
-    si git stow trash-cli whiptail unzip
 
     dotfiles_clone
   }
-  if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ -n "$1" ]; then
-    bootstrap "$@"
 
-    if [ "$1" == "shell" ] || [ "$1" == "all" ]; then
-      "$DOT_DIR/bin/setup-shell"
+  main() {
+    if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ -n "$1" ]; then
+      bootstrap "$@"
+      base_install
+
+      if [ "$1" == "shell" ] || [ "$1" == "all" ]; then
+        "$DOT_DIR/bin/setup-shell"
+      fi
+
+      if [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
+        is_mac && die "'desktop' option not supportedon mac"
+        "$DOT_DIR/bin/setup-desktop" && exit 0
+      fi
     fi
-
-    is_mac && exit 0
-
-    if [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
-      "$DOT_DIR/bin/setup-desktop" && exit 0
-    fi
-  fi
+  }
 }

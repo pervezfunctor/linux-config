@@ -157,7 +157,8 @@
     log "Updating packages"
 
     if is_mac || is_ublue; then
-      brew update; brew upgrade
+      brew update
+      brew upgrade
     elif is_fedora; then
       sudo dnf update -y
     elif is_trixie || is_questing; then

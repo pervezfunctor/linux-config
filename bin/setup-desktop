@@ -443,10 +443,11 @@ setup-desktop() {
 
   if ! is_fedora-atomic; then
     whiptail_items+=(
-    "system" "Install desktop system packages" "on"
-    "distrobox" "Install distrobox" "off"
-    "virt" "Install virt-manager" "off"
-  )
+      "system" "Install desktop system packages" "on"
+      "distrobox" "Install distrobox" "off"
+      "virt" "Install virt-manager" "off"
+    )
+  fi
 
   whiptail_items+=(
     "flatpaks" "Install flatpaks" "on"

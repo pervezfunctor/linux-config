@@ -246,7 +246,7 @@ setup-shell() {
     "devtools" "Install devtools(mise, uv etc)" "on"
     "nvim" "Install Neovim" "off"
     "claude" "Install claude" "off"
-    "rust" "Install rustup"
+    "rust" "Install rustup" "off"
   )
   if ! is_fedora-atomic; then
     whiptail_items+=(

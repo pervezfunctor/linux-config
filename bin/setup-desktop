@@ -288,9 +288,14 @@ virt_install() {
 gnome-extensions_install() {
   if ! has_cmd gext; then
     has_cmd pipx || {
+      has_cmd pip && pip install --user pipx
+    }
+
+    has_cmd pipx || {
       error "pipx not found, skipping gnome extensions"
       return 1
     }
+
     pipx install gnome-extensions-cli --system-site-packages
   fi
 

@@ -297,7 +297,8 @@
   }
 
   bootstrap() {
-    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$HOME/.local/share/pnpm:$PATH"
+    export PNPM_HOME="/$HOME/.local/share/pnpm"
+    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PNPM_HOME:$PATH"
 
     keep_sudo_alive
 

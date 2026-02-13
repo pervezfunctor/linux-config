@@ -214,10 +214,10 @@ devtools_install() {
     opencode-ai
   )
 
-  log "Installing pnpm packages"
+  log "Installing npm packages"
   for pkg in "${npm_pkgs[@]}"; do
     log "Installing $pkg"
-    pnpm install -g "$pkg"
+    npm install -g "$pkg"
   done
 }
 

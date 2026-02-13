@@ -323,11 +323,10 @@
   }
 
   main() {
-    echo "STARTING"
     if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ -n "$1" ]; then
-      echo "STARTED"
       bootstrap "$@"
-      base_install
+
+      [ "$1" == "shell" ] || [ "$1" == "desktop" ] || base_install
 
       if [ "$1" == "shell" ] || [ "$1" == "all" ]; then
         "$DOT_DIR/bin/setup-shell"

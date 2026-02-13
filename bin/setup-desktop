@@ -226,17 +226,14 @@ distrobox_install() {
 }
 
 vscode_install() {
-  has_cmd code && {
-    log "vscode is already installed"
-    return
+  has_cmd code || {
+    has_cmd brew || brew_install
+
+    log "Installing vscode"
+    brew tap ublue-os/tap
+    brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
+    brew install --cask visual-studio-code-linux
   }
-
-  has_cmd brew || brew_install
-
-  log "Installing vscode"
-  brew tap ublue-os/tap
-  brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
-  brew install --cask visual-studio-code-linux
 
   local -a extensions=(
     jdinhlife.gruvbox
@@ -260,13 +257,10 @@ vscode_install() {
 }
 
 zed_install() {
-  has_cmd zed && {
-    log "zed is already installed"
-    return
+  has_cmd zed || {
+    log "Installing zed"
+    curl -f https://zed.dev/install.sh | sh
   }
-
-  log "Installing zed"
-  curl -f https://zed.dev/install.sh | sh
 
   cd ~/.local/share/linux-config && {
     log "Stowing zed dotfiles"
@@ -450,8 +444,8 @@ setup-desktop() {
   fi
 
   whiptail_items+=(
-    "flatpaks" "Install flatpaks" "on"
     "vscode" "Install vscode" "off"
+    "flatpaks" "Install flatpaks" "on"
     "zed" "Install zed" "off"
   )
 

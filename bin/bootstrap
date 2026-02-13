@@ -158,7 +158,7 @@
 
     if is_mac || is_ublue; then
       brew update; brew upgrade
-    if is_fedora; then
+    elif is_fedora; then
       sudo dnf update -y
     elif is_trixie || is_questing; then
       sudo apt update && sudo apt upgrade -y
@@ -177,7 +177,7 @@
     log "Installing $*"
     if is_mac || is_ublue; then
       brew install "$@"
-    if is_fedora; then
+    elif is_fedora; then
       sudo dnf install -y "$@"
     elif is_trixie || is_questing; then
       sudo apt install -y "$@"
@@ -300,7 +300,7 @@
 
     keep_sudo_alive
 
-    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_macos || is_fedora-atomic || {
+    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_mac || is_fedora-atomic || {
       die "Only Fedora, Questing, Tumbeweed, Arch, PikaOS supported. Quitting."
     }
   }
@@ -322,7 +322,9 @@
   }
 
   main() {
+    echo "STARTING"
     if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ -n "$1" ]; then
+      echo "STARTED"
       bootstrap "$@"
       base_install
 
@@ -336,4 +338,6 @@
       fi
     fi
   }
+
+  main "$@"
 }

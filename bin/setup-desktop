@@ -448,7 +448,7 @@ setup-desktop() {
     "virt" "Install virt-manager" "off"
   )
 
-  whiptail_items=(
+  whiptail_items+=(
     "flatpaks" "Install flatpaks" "on"
     "vscode" "Install vscode" "off"
     "zed" "Install zed" "off"

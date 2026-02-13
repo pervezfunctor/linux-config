@@ -249,7 +249,7 @@ setup-shell() {
     "rust" "Install rustup"
   )
   if ! is_fedora-atomic; then
-    whiptail_items +=(
+    whiptail_items+=(
       "nix" "Setup nix with home-manager" "off"
     )
   fi

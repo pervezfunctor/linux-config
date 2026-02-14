@@ -204,7 +204,7 @@
     is_linux && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
     is_mac && eval "$(homebrew/bin/brew shellenv)"
 
-    has_cmd topgrade || brew install topgrade
+    brew install topgrade gum
 
     is_mac && {
       brew install rclone rsync stow tar tmux trash-cli tree unzip zstd
@@ -299,6 +299,8 @@
   bootstrap() {
     export PNPM_HOME="/$HOME/.local/share/pnpm"
     export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PNPM_HOME:$PATH"
+
+    brew_install
 
     keep_sudo_alive
 

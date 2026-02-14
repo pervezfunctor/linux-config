@@ -22,6 +22,16 @@ incus_install() {
   incus_setup
 }
 
+home-manager_install() {
+  has_cmd nix || {
+    error "nix is not installed. Please install nix first."
+    return 1
+  }
+
+  log "Setting up home-manager"
+  nix run home-manager -- switch --flake ~/.local/share/linux-config/home-manager\#"$USER" --impure
+}
+
 nix_install() {
   has_cmd nix || {
     log "Installing nix"
@@ -29,9 +39,6 @@ nix_install() {
     # shellcheck disable=SC1091
     source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
   }
-
-  log "Setting up home-manager"
-  nix run home-manager -- switch --flake ~/.local/share/linux-config/home-manager\#"$USER" --impure
 }
 
 system_install() {
@@ -55,10 +62,27 @@ system_install() {
     zstd
   )
 
-  is_tw && pkgs+=(gcc-c++ micro-editor python313-pipx)
-  is_apt && pkgs+=(g++ imagemagick starship pipx)
-  is_fedora && pkgs+=(g++ nu pipx nu)
-  is_arch && pkgs+=(g++ python-pipx nushell)
+  is_tw && pkgs+=(
+    gcc-c++
+    micro-editor
+    python313-pipx
+  )
+  is_apt && pkgs+=(
+    g++
+    imagemagick
+    starship
+    pipx
+  )
+  is_fedora && pkgs+=(
+    g++
+    pipx
+    nu
+  )
+  is_arch && pkgs+=(
+    g++
+    python-pipx
+    nushell
+  )
 
   log "Installing system packages"
   si "${pkgs[@]}"
@@ -78,7 +102,7 @@ pixi_install() {
   brew install pixi
 
   has_cmd pixi || {
-    error "pixi is not installed. Please install pixi first."
+    error "pixi is not installed. Skipping pixi installation."
     return 1
   }
 
@@ -206,7 +230,14 @@ devtools_install() {
   eval "$(~/.local/bin/mise activate bash)"
   log "Installing pnpm"
   mise use -g node@latest pnpm
-  pnpm setup
+
+  local pkgi
+  if has_cmd pnpm; then
+    pnpm setup
+    pkgi=pnpm
+  else
+    pkgi=npm
+  fi
 
   local -a npm_pkgs=(
     @mermaid-js/mermaid-cli
@@ -217,7 +248,7 @@ devtools_install() {
   log "Installing npm packages"
   for pkg in "${npm_pkgs[@]}"; do
     log "Installing $pkg"
-    npm install -g "$pkg"
+    "$pkgi" install -g "$pkg"
   done
 }
 
@@ -232,54 +263,38 @@ claude_install() {
 }
 
 setup-shell() {
-  local -a whiptail_items=()
+  local -a order
+  mapfile -t order < <(declare -F | awk '{print $3}' | grep '_install$' | sed 's/_install$//')
+
+  local -a selected_defaults=(dotfiles shell devtools)
+
   if is_linux && ! is_fedora-atomic; then
-    whiptail_items+=(
-      "system" "Install system packages" "on"
-      "incus" "Install incus" "off"
-    )
+    order=(system incus "${order[@]}")
+    selected_defaults=(system "${selected_defaults[@]}")
   fi
 
-  whiptail_items+=(
-    "dotfiles" "Setup dotfiles with stow" "on"
-    "shell" "Install shell tools" "on"
-    "devtools" "Install devtools(mise, uv etc)" "on"
-    "nvim" "Install Neovim" "off"
-    "claude" "Install claude" "off"
-    "rust" "Install rustup" "off"
-  )
-  if ! is_fedora-atomic; then
-    whiptail_items+=(
-      "nix" "Setup nix with home-manager" "off"
-    )
-  fi
+  is_fedora-atomic || order+=(nix)
 
   bootstrap
 
-  local selected_output
-  selected_output=$(whiptail --checklist "Select tasks to execute:" 25 60 19 "${whiptail_items[@]}" 3>&1 1>&2 2>&3)
+  local selected
+  selected=$(printf "%s\n" "${order[@]}" | gum choose --no-limit \
+    --header="Select tasks to execute:" \
+    --selected="$(printf "%s\n" "${selected_defaults[@]}")") ||
+    {
+      warn "Setup cancelled."
+      return 1
+    }
 
-  local exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-    warn "Setup cancelled."
-    return 1
-  fi
-
-  local -a selected_tasks=()
-  if [ -n "$selected_output" ]; then
-    read -ra selected_tasks <<<"$selected_output"
-  fi
-
-  if [ ${#selected_tasks[@]} -eq 0 ]; then
+  [[ -z "$selected" ]] && {
     log "No tasks selected."
     return 0
-  fi
+  }
 
-  for task in "${selected_tasks[@]}"; do
-    task=${task//\"/}
+  while IFS= read -r task; do
     log "Executing: $task"
     "${task}_install"
-  done
+  done <<<"$selected"
 }
 
 if [ "${BASH_SOURCE[0]}" == "${0}" ]; then

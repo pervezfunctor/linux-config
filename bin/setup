@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Compatible with bash and zsh
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+dir_exists() {
+  [ -d "$1" ]
+}
+
+is_linux() {
+  [ "$(uname -s)" = "Linux" ]
+}
+
+is_mac() {
+  [ "$(uname -s)" = "Darwin" ]
+}
+
+die() {
+  printf 'ERROR: %s\n' "$1" >&2
+  exit 1
+}
+
+nu_install() {
+  has_cmd nu && return 0
+
+  echo "Installing nushell"
+
+  local tmpdir tarball url nu_dir asset
+  tmpdir="$(mktemp -d)"
+  tarball="$tmpdir/nu.tar.gz"
+  nu_dir="$HOME/.local/share/nushell"
+
+  if is_mac; then
+    asset="aarch64-apple-darwin.tar.gz"
+  else
+    asset="x86_64-unknown-linux-gnu.tar.gz"
+  fi
+
+  if has_cmd curl; then
+    _fetch() { curl -fsSL "$1"; }
+    _fetch_to() { curl -fsSL "$1" -o "$2"; }
+  elif has_cmd wget; then
+    _fetch() { wget -qO- "$1"; }
+    _fetch_to() { wget -qO "$2" "$1"; }
+  else
+    die "Neither curl nor wget is available"
+  fi
+
+  url="$(_fetch https://api.github.com/repos/nushell/nushell/releases/latest |
+    grep "browser_download_url.*${asset}" |
+    cut -d '"' -f 4)"
+  [ -n "$url" ] || die "Could not find nushell release URL"
+  _fetch_to "$url" "$tarball"
+
+  local extracted_dir
+  extracted_dir="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type d | head -1)"
+  [ -n "$extracted_dir" ] || die "Could not find extracted nushell directory"
+
+  mkdir -p "$nu_dir" ~/.local/bin
+  cp "$extracted_dir"/nu* "$nu_dir"/
+  chmod +x "$nu_dir"/nu*
+  ln -sf "$nu_dir/nu" ~/.local/bin/nu
+
+  find "$nu_dir" -type f -name 'nu_plugin_*' | while read -r plugin; do
+    "$nu_dir/nu" -c "plugin add $plugin"
+  done
+
+  rm -rf "$tmpdir"
+
+  has_cmd nu || die "nu is not installed"
+}
+
+export PATH="$HOME/.local/bin:$PATH"
+
+nu_install
+
+nu <(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup-shell.nu)
+is_linux && nu <(curl -fsSL https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup-desktop.nu)

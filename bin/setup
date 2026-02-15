@@ -76,6 +76,6 @@ export PATH="$HOME/.local/bin:$PATH"
 
 nu_install
 
-rm -f /tmp/setup-desktop.nu 2>/dev/null
-curl -fsSL https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup-desktop.nu -o /tmp/setup-desktop.nu && nu /tmp/setup-desktop.nu
-rm -f /tmp/setup-desktop.nu 2>/dev/null
+rm -f /tmp/setup.nu 2>/dev/null
+curl -fsSL https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup.nu -o /tmp/setup.nu && nu /tmp/setup.nu
+rm -f /tmp/setup.nu 2>/dev/null

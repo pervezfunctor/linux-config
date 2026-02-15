@@ -129,6 +129,7 @@ pixi_install() {
     tealdeer
     tectonic
     television
+    tmuxp
     xh
     yazi
     zoxide

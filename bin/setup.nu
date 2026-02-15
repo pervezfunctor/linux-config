@@ -326,6 +326,7 @@ def pixi-install-packages [] {
     "tealdeer"
     "tectonic"
     "television"
+    "tmuxp"
     "xh"
     "yazi"
     "zoxide"

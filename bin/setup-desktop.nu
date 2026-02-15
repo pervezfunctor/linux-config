@@ -13,10 +13,10 @@ def file-log [level: string, msg: string] {
     | save --append $env.LOG_FILE
 }
 
-def log+ [msg: string] { log info $msg; file-log+ "INFO" $msg }
-def warn+ [msg: string] { log warning $msg; file-log+ "WARNING" $msg }
-def error+ [msg: string] { log error $msg; file-log+ "ERROR" $msg }
-def die [msg: string] { log critical $msg; file-log+ "CRITICAL" $msg; exit 1 }
+def log+ [msg: string] { log info $msg; file-log "INFO" $msg }
+def warn+ [msg: string] { log warning $msg; file-log "WARNING" $msg }
+def error+ [msg: string] { log error $msg; file-log "ERROR" $msg }
+def die [msg: string] { log critical $msg; file-log "CRITICAL" $msg; exit 1 }
 
 def keep-sudo-alive [] {
   sudo -v
@@ -39,6 +39,10 @@ def is-linux []: nothing -> bool {
 
 def is-mac []: nothing -> bool {
   (sys host | get name) == "Darwin"
+}
+
+def has-cmd [cmd: string]: nothing -> bool {
+  (which $cmd | first | get path) != null
 }
 
 def is-fedora-atomic []: nothing -> bool {
@@ -1135,7 +1139,7 @@ def main [] {
     die "desktop option is not available for mac"
   }
 
-  setup-logs
+  init-log-file
   bootstrap
   main setup-shell
   main setup-desktop

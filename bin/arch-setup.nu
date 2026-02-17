@@ -1,22 +1,6 @@
 #!/usr/bin/env nu
 
-use std/log
-
-$env.LOG_FILE = $"($env.HOME)/.linux-config-logs/bootstrap-(date now | format date '%m-%d-%H%M%S').log"
-
-def init-log-file [] {
-    mkdir ($env.LOG_FILE | path dirname)
-}
-
-def file-log [level: string, msg: string] {
-    $"(date now | format date '%m-%d %H:%M:%S') [($level)] ($msg)\n"
-    | save --append $env.LOG_FILE
-}
-
-def log+ [msg: string] { log info $msg; file-log "INFO" $msg }
-def warn+ [msg: string] { log warning $msg; file-log "WARNING" $msg }
-def error+ [msg: string] { log error $msg; file-log "ERROR" $msg }
-def die [msg: string] { log critical $msg; file-log "CRITICAL" $msg; exit 1 }
+use log-utils.nu *
 
 def keep-sudo-alive [] {
   sudo -v
@@ -292,7 +276,7 @@ def dotfiles-clone [] {
       return
     }
 
-    warn "git pull --rebase failed. Attempting to abort rebase"
+    warn+ "git pull --rebase failed. Attempting to abort rebase"
     do -i { ^git -C $repo_dir rebase --abort }
     error make { msg: "git pull --rebase failed on clean repo" }
   }
@@ -308,7 +292,7 @@ def dotfiles-clone [] {
     return
   }
 
-  warn "git pull --rebase failed with local changes. Restoring state"
+  warn+ "git pull --rebase failed with local changes. Restoring state"
   do -i { ^git -C $repo_dir rebase --abort }
   do -i { ^git -C $repo_dir stash pop }
   error make { msg: "git pull --rebase failed; local changes restored" }
@@ -698,9 +682,38 @@ def "main setup-desktop" [] {
   }
 }
 
+def "main help" [] {
+    print "arch-setup.nu - Arch Linux setup script"
+    print ""
+    print "Usage: nu arch-setup.nu <command>"
+    print ""
+    print "Commands:"
+    print "  setup-shell    Interactive shell setup (packages, dotfiles, tools)"
+    print "  setup-desktop  Interactive desktop setup (WMs, flatpaks, apps)"
+    print "  system-shell   Install system packages (non-interactive)"
+    print "  system-desktop Install desktop packages (non-interactive)"
+    print "  dotfiles       Clone and stow dotfiles"
+    print "  incus          Install and configure incus"
+    print "  shell          Install pixi packages"
+    print "  rust           Install rustup"
+    print "  nvim           Install AstroNvim"
+    print "  devtools       Install dev tools (node, pnpm, etc)"
+    print "  claude         Install claude CLI"
+    print "  niri           Install niri WM"
+    print "  mangowc        Install mangowc WM"
+    print "  hypr           Install hyprland WM"
+    print "  sway           Install sway WM"
+    print "  vscode         Install vscode and extensions"
+    print "  zed            Stow zed editor dotfiles"
+    print "  flatpaks       Install flatpak applications"
+    print "  distrobox      Install distrobox"
+    print "  virt           Install virt-manager"
+    print "  help           Show this help message"
+}
+
 def main [] {
-  init-log-file
-  bootstrap
-  main setup-shell
-  main setup-desktop
+    init-log-file
+    bootstrap
+    main setup-shell
+    main setup-desktop
 }

@@ -143,6 +143,23 @@ def si [packages: list<string>]: nothing -> bool {
   true
 }
 
+def stow-package [package: string] {
+  let config_dir = ($env.HOME | path join ".local/share/linux-config")
+
+  if not (dir-exists $config_dir) {
+    error make { msg: $"Config directory not found: ($config_dir)" }
+  }
+
+  let package_dir = ($config_dir | path join $package)
+  if not (dir-exists $package_dir) {
+    error make { msg: $"Package directory not found: ($package_dir)" }
+  }
+
+  log+ $"Stowing ($package) dotfiles"
+  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME $package
+  do -i { ^git -C $config_dir stash --include-untracked --message $"Stashing ($package) dotfiles" }
+}
+
 def update-packages []: nothing -> nothing {
   log+ "Updating packages"
 
@@ -364,11 +381,7 @@ def nushell-setup [] {
     $nu_path | ^sudo tee -a /etc/shells
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing nushell dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME nushell
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing nushell dotfiles" }
+  stow-package "nushell"
 }
 
 def "main nvim" [] {
@@ -406,11 +419,7 @@ def "main nvim" [] {
 }
 
 def zshrc-setup [] {
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing zsh dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME zsh
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing zsh dotfiles" }
+  stow-package "zsh"
 
   log+ "Setting zsh as default shell"
   let zsh_path = (which zsh | first | get path)
@@ -639,11 +648,7 @@ def wm-install [] {
   do -i { mkdir $"($pictures)/Screenshots" }
   do -i { mkdir $"($pictures)/Wallpapers" }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing systemd units"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME systemd
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing systemd units" }
+  stow-package "systemd"
 }
 
 def "main niri" [] {
@@ -677,11 +682,7 @@ def "main niri" [] {
     }
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing niri dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME niri
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing niri dotfiles" }
+  stow-package "niri"
 
   let niri_dms = ($env.HOME | path join ".config/niri/dms")
   do -i { mkdir $niri_dms }
@@ -722,11 +723,8 @@ def "main mangowc" [] {
     return
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing mangowc dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME mango systemd
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing mangowc dotfiles" }
+  stow-package "mango"
+  stow-package "systemd"
 
   let mango_dms = ($env.HOME | path join ".config/mango/dms")
   do -i { mkdir $mango_dms }
@@ -766,11 +764,7 @@ def "main hypr" [] {
     return
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing hyprland dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME hypr
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing hyprland dotfiles" }
+  stow-package "hypr"
 
   let hypr_dms = ($env.HOME | path join ".config/hypr/dms")
   do -i { mkdir $hypr_dms }
@@ -872,11 +866,8 @@ def "main vscode" [] {
     do -i { ^code --install-extension $ext }
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing vscode dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME vscode kitty
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing vscode dotfiles" }
+  stow-package "vscode"
+  stow-package "kitty"
 }
 
 def "main zed" [] {
@@ -885,11 +876,7 @@ def "main zed" [] {
     ^curl -f https://zed.dev/install.sh | ^sh
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing zed dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME zed
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing zed dotfiles" }
+  stow-package "zed"
 }
 
 def "main virt" [] {
@@ -1133,6 +1120,51 @@ def "main setup-desktop" [] {
     log+ $"Executing: ($item.description)"
     do $item.handler
   }
+}
+
+def "main stow" [package: string] {
+  stow-package $package
+}
+
+def "main help" [] {
+  print "setup.nu - Cross-platform Linux/macOS setup script"
+  print ""
+  print "Usage: nu setup.nu <command>"
+  print ""
+  print "Commands:"
+  print "  setup-shell    Interactive shell setup (packages, dotfiles, tools)"
+  print "  setup-desktop  Interactive desktop setup (WMs, flatpaks, apps)"
+  print "  system-shell   Install system packages (non-interactive)"
+  print "  system-desktop Install desktop packages (non-interactive)"
+  print "  dotfiles       Clone and stow dotfiles"
+  print "  stow <pkg>     Stow a specific package (niri, nushell, zsh, etc)"
+  print "  incus          Install and configure incus"
+  print "  nix            Install nix package manager"
+  print "  home-manager   Setup home-manager with nix"
+  print "  shell          Install shell tools (brew, pixi packages)"
+  print "  rust           Install rustup"
+  print "  nvim           Install AstroNvim"
+  print "  devtools       Install dev tools (mise, uv, node, etc)"
+  print "  claude         Install claude CLI"
+  print "  niri           Install niri WM"
+  print "  mangowc        Install mangowc WM"
+  print "  hypr           Install hyprland WM"
+  print "  vscode         Install vscode and extensions"
+  print "  zed            Install zed editor"
+  print "  flatpaks       Install flatpak applications"
+  print "  distrobox      Install distrobox"
+  print "  virt           Install virt-manager"
+  print "  gnome          Configure GNOME desktop with extensions"
+  print "  help           Show this help message"
+  print ""
+  print "Supported Systems:"
+  print "  - Fedora (standard and atomic)"
+  print "  - Debian Trixie"
+  print "  - Ubuntu Questing"
+  print "  - openSUSE Tumbleweed"
+  print "  - Arch Linux"
+  print "  - PikaOS"
+  print "  - macOS"
 }
 
 def main [] {

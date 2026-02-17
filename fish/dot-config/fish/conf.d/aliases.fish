@@ -39,3 +39,8 @@ alias utlr 'systemctl --user restart'
 alias utlg 'systemctl --user list-units'
 alias utlf 'systemctl --user list-units --all --state=failed'
 alias dms-logs 'journalctl --user -u dms -f'
+
+## if using system npm: https://github.com/sindresorhus/guides/blob/main/npm-global-without-sudo.md
+# set NPM_PACKAGES "$HOME/.npm-packages"
+# set PATH $PATH $NPM_PACKAGES/bin
+# set MANPATH $NPM_PACKAGES/share/man $MANPATH

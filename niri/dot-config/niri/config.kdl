@@ -3,6 +3,7 @@ include "config/io.kdl"
 include "config/ui.kdl"
 include "config/rules.kdl"
 include "config/binds.kdl"
+include "config/exec.kdl"
 
 include "dms/cursor.kdl"
 include "dms/colors.kdl"

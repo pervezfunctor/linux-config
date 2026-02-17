@@ -104,5 +104,5 @@ def main []: nothing -> nothing {
     ]
   }
 
-  run-external $cmd_parts.0 ...$cmd_parts.1...
+  run-external $cmd_parts.0 ...($cmd_parts | skip 1)
 }

@@ -1,7 +1,10 @@
 source /usr/share/cachyos-fish-config/cachyos-config.fish
 
-set -gx EDITOR "code --wait"
-set -gx VISUAL "code --wait"
+set -gx DOT_DIR "$HOME/.local/share/linux-config"
+set -gx EDITOR "zededit --wait"
+set -gx VISUAL "zededit --wait"
+# set -gx EDITOR "code --wait"
+# set -gx VISUAL "code --wait"
 set -gx PNPM_HOME "$HOME/.local/share/pnpm"
 set -gx VOLTA_HOME "$HOME/.volta"
 set -gx XDG_DATA_DIRS "$HOME/.local/share/flatpak/exports/share" $XDG_DATA_DIRS

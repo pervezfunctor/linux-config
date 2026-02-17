@@ -24,7 +24,12 @@ def has-cmd [cmd: string]: nothing -> bool {
 def is-arch []: nothing -> bool {
   if not ("/etc/os-release" | path exists) { return false }
   let content = (open /etc/os-release)
-  $content =~ "Arch Linux"
+  let lines = ($content | lines)
+  
+  let id = ($lines | where { $in =~ '^ID=' } | first | str replace '^ID=' '' | str trim --char '"')
+  let id_like = ($lines | where { $in =~ '^ID_LIKE=' } | first | str replace '^ID_LIKE=' '' | str trim --char '"' | default "")
+  
+  $id == "arch" or ($id_like | str contains "arch")
 }
 
 def prompt-yn [prompt: string]: nothing -> bool {
@@ -35,6 +40,23 @@ def prompt-yn [prompt: string]: nothing -> bool {
 def si [packages: list<string>]: nothing -> bool {
   log+ $"Installing ($packages | str join ' ')"
   ^sudo pacman -S --quiet --noconfirm ...$packages
+}
+
+def stow-package [package: string] {
+  let config_dir = ($env.HOME | path join ".local/share/linux-config")
+
+  if not (dir-exists $config_dir) {
+    error make { msg: $"Config directory not found: ($config_dir)" }
+  }
+
+  let package_dir = ($config_dir | path join $package)
+  if not (dir-exists $package_dir) {
+    error make { msg: $"Package directory not found: ($package_dir)" }
+  }
+
+  log+ $"Stowing ($package) dotfiles"
+  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME $package
+  do -i { ^git -C $config_dir stash --include-untracked --message $"Stashing ($package) dotfiles" }
 }
 
 def update-packages []: nothing -> nothing {
@@ -188,11 +210,7 @@ def nushell-setup [] {
     $nu_path | ^sudo tee -a /etc/shells
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing nushell dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME nushell
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing nushell dotfiles" }
+  stow-package "nushell"
 }
 
 def "main nvim" [] {
@@ -233,11 +251,7 @@ def fish-setup [] {
     $fish_path | ^sudo tee -a /etc/shells
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing fish dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME fish
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing fish dotfiles" }
+  stow-package "fish"
 
   log+ "Setting fish as default shell"
   if (has-cmd chsh) {
@@ -405,11 +419,7 @@ def wm-install [] {
   do -i { mkdir $"($pictures)/Screenshots" }
   do -i { mkdir $"($pictures)/Wallpapers" }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing systemd units"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME systemd
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing systemd units" }
+  stow-package "systemd"
 }
 
 def "main niri" [] {
@@ -423,11 +433,7 @@ def "main niri" [] {
     ^paru -S niri dms-shell-bin
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing niri dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME niri
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing niri dotfiles" }
+  stow-package "niri"
 
   let niri_dms = ($env.HOME | path join ".config/niri/dms")
   do -i { mkdir $niri_dms }
@@ -487,11 +493,7 @@ def "main hypr" [] {
   paru-install
   ^paru -S hyprland dms-shell-bin
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing hyprland dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME hypr
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing hyprland dotfiles" }
+  stow-package "hypr"
 
   let hypr_dms = ($env.HOME | path join ".config/hypr/dms")
   do -i { mkdir $hypr_dms }
@@ -519,11 +521,7 @@ def "main sway" [] {
 
   si ["sway"]
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing sway dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME sway
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing sway dotfiles" }
+  stow-package "sway"
 }
 
 def "main flatpaks" [] {
@@ -605,21 +603,15 @@ def "main vscode" [] {
     do -i { ^code --install-extension $ext }
   }
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  log+ "Stowing vscode dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME vscode kitty
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing vscode dotfiles" }
+  stow-package "vscode"
+  stow-package "kitty"
 }
 
 def "main zed" [] {
   log+ "Installing zed"
   si ["zed"]
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
 
-  log+ "Stowing zed dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME zed
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing zed dotfiles" }
+  stow-package "zed"
 }
 
 def "main virt" [] {
@@ -688,6 +680,10 @@ def "main setup-desktop" [] {
   }
 }
 
+def "main stow" [package: string] {
+  stow-package $package
+}
+
 def "main help" [] {
     print "arch-setup.nu - Arch Linux setup script"
     print ""
@@ -699,6 +695,7 @@ def "main help" [] {
     print "  system-shell   Install system packages (non-interactive)"
     print "  system-desktop Install desktop packages (non-interactive)"
     print "  dotfiles       Clone and stow dotfiles"
+    print "  stow <pkg>     Stow a specific package (niri, fish, nushell, etc)"
     print "  incus          Install and configure incus"
     print "  shell          Install pixi packages"
     print "  rust           Install rustup"

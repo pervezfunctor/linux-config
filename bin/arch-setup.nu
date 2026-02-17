@@ -18,7 +18,7 @@ def dir-exists [path: string]: nothing -> bool {
 }
 
 def has-cmd [cmd: string]: nothing -> bool {
-  (which $cmd | first | get path) != null
+  (which $cmd | is-not-empty)
 }
 
 def is-arch []: nothing -> bool {
@@ -84,10 +84,36 @@ def paru-install [] {
 
 def incus-setup [] {
   log+ "Setting up incus"
-  ^sudo usermod -aG incus $env.USER
-  ^sudo usermod -aG incus-admin $env.USER
+  
+  # Check if groups exist before adding user
+  let groups_output = (^getent group | lines)
+  let group_names = ($groups_output | parse "{name}:x:{gid}:{members}" | get name)
+  
+  if "incus" in $group_names {
+    ^sudo usermod -aG incus $env.USER
+  } else {
+    warn+ "incus group not found, skipping"
+  }
+  
+  if "incus-admin" in $group_names {
+    ^sudo usermod -aG incus-admin $env.USER
+  } else {
+    warn+ "incus-admin group not found, skipping"
+  }
+  
   ^sudo systemctl enable --now incus.socket
-  ^sudo incus admin init --minimal
+  
+  # Wait for socket to be ready
+  sleep 2sec
+  
+  # Check if incus is already initialized
+  let check_init = (do -i { ^incus info } | complete)
+  if $check_init.exit_code != 0 {
+    log+ "Initializing incus"
+    ^sudo incus admin init --minimal
+  } else {
+    log+ "incus already initialized"
+  }
 }
 
 def "main incus" [] {

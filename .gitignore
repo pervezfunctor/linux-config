@@ -6,3 +6,4 @@ dms/
 .pytest_cache/
 .config/kitty/local.conf
 scratch.*
+telemetry-id

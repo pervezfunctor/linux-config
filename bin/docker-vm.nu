@@ -1,9 +1,5 @@
 #!/usr/bin/env nu
 
-# Docker VM management script for Incus
-# Creates and configures an Alpine Linux VM with Docker installed
-
-# VM configuration
 const VM_NAME = "docker"
 const VM_CPUS = 4
 const VM_MEM = "8GiB"
@@ -32,7 +28,6 @@ def check-incus [] {
   }
 }
 
-# Check if VM exists
 def vm-exists []: nothing -> bool {
   let result = (do -i { ^incus info $VM_NAME } | complete)
   $result.exit_code == 0
@@ -48,13 +43,11 @@ def get-vm-status []: nothing -> string {
   }
 }
 
-# Create the VM
 def create-vm [] {
   log "Creating VM..."
-  ^incus launch images:alpine/edge $VM_NAME --vm -c security.secureboot=false -c $"limits.cpu=($VM_CPUS)" -c $"limits.memory=($VM_MEM)" -d $"root,size=($VM_DISK)"
+  ^incus launch images:debian/13 $VM_NAME --vm -c security.secureboot=false -c $"limits.cpu=($VM_CPUS)" -c $"limits.memory=($VM_MEM)" -d $"root,size=($VM_DISK)"
 }
 
-# Start the VM if not running
 def start-vm-if-needed [] {
   let status = (get-vm-status)
   if $status != "RUNNING" {
@@ -65,14 +58,13 @@ def start-vm-if-needed [] {
   }
 }
 
-# Wait for VM to become ready
 def wait-for-vm [] {
   print "==> Waiting for VM to become ready..."
   mut elapsed = 0sec
 
   while $elapsed < $TIMEOUT {
     let result = (do -i {
-      ^incus exec $VM_NAME -- sh -c "ping -c1 1.1.1.1 >/dev/null 2>&1"
+      ^incus exec $VM_NAME -- bash -c "ping -c1 1.1.1.1 >/dev/null 2>&1"
     } | complete)
 
     if $result.exit_code == 0 {
@@ -91,7 +83,6 @@ def wait-for-vm [] {
   }
 }
 
-# Install Docker and configure the VM
 def install-docker [] {
   let user_name = ($env.USER? | default (whoami))
   let password = ($env.PASSWORD? | default $user_name)
@@ -100,56 +91,40 @@ def install-docker [] {
 
   # Build the script to execute inside the VM
   let script = "
-apk update
+apt-get update
+apt-get install -y ca-certificates curl
 
-apk add --no-cache \\
-  docker \\
-  docker-cli \\
-  docker-openrc \\
-  ca-certificates \\
-  curl \\
-  bash \\
-  git \\
-  doas \\
-  openssh-server
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
 
-rc-update add docker boot
-rc-service docker start
-
-sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-
-rc-update add sshd default
-rc-service sshd start
+systemctl enable --now docker
+systemctl enable --now ssh
 
 addgroup root docker || true
 
-echo \"net.ipv4.ip_forward=1\" >> /etc/sysctl.conf
-sysctl -p || true
+echo \"net.ipv4.ip_forward=1\" >> /etc/sysctl.d/99-ipforward.conf
+sysctl -p /etc/sysctl.d/99-ipforward.conf || true
 
 docker version
 docker run --rm hello-world
 
 if ! id \"$USER_NAME\" >/dev/null 2>&1; then
-  adduser -D -s /bin/bash \"$USER_NAME\"
+  useradd -m -s /bin/bash \"$USER_NAME\"
   echo \"$USER_NAME:$PASSWORD\" | chpasswd
 fi
 
-echo \"permit nopass $USER_NAME as root\" > /etc/doas.d/doas.conf
+echo \"$USER_NAME ALL=(ALL) NOPASSWD:ALL\" > /etc/sudoers.d/$USER_NAME
 addgroup \"$USER_NAME\" docker 2>/dev/null || true
 "
 
-  # Execute the script with environment variables
-  ^incus exec $VM_NAME -- env $"USER_NAME=($user_name)" $"PASSWORD=($password)" sh -eux $script
+  ^incus exec $VM_NAME -- env $"USER_NAME=($user_name)" $"PASSWORD=($password)" bash -eux $script
 
-  print $"User '($user_name)' created with doas permissions (password: '($password)')"
+  print $"User '($user_name)' created with sudo permissions (password: '($password)')"
   print $"Connect as user: incus exec ($VM_NAME) -- su - ($user_name)"
   print $"Or via ssh: ssh ($user_name)@<vm-ip-address>"
   print $"Get VM IP with: incus list ($VM_NAME) --format csv --columns 4"
 }
 
-# Main entry point
 def main [] {
   print "==> Checking Incus..."
   check-incus

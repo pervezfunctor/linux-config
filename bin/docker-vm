@@ -11,7 +11,7 @@ command -v incus >/dev/null
 
 if ! incus info "$VM_NAME" >/dev/null 2>&1; then
 	echo "Creating VM..."
-	incus launch images:alpine/edge \
+	incus launch images:debian/12 \
 		"$VM_NAME" \
 		--vm \
 		-c security.secureboot=false \
@@ -53,48 +53,34 @@ USER_NAME="${USER:-$(whoami)}"
 PASSWORD="${PASSWORD:-$USER_NAME}"
 
 echo "==> Installing Docker inside VM..."
-incus exec "$VM_NAME" -- sh -eux <<EOF
-apk update
+incus exec "$VM_NAME" -- bash -eux <<EOF
+apt-get update
+apt-get install -y ca-certificates curl
 
-apk add --no-cache \
-  docker \
-  docker-cli \
-  docker-openrc \
-  ca-certificates \
-  curl \
-  bash \
-  git \
-  doas \
-  openssh-server
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
 
-rc-update add docker boot
-rc-service docker start
-
-sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-
-rc-update add sshd default
-rc-service sshd start
+systemctl enable --now docker
+systemctl enable --now ssh
 
 addgroup root docker || true
 
-echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-sysctl -p || true
+echo "net.ipv4.ip_forward=1" >> /etc/sysctl.d/99-ipforward.conf
+sysctl -p /etc/sysctl.d/99-ipforward.conf || true
 
 docker version
 docker run --rm hello-world
 
 if ! id "$USER_NAME" >/dev/null 2>&1; then
-  adduser -D -s /bin/bash "$USER_NAME"
+  useradd -m -s /bin/bash "$USER_NAME"
   echo "$USER_NAME:$PASSWORD" | chpasswd
 fi
 
-echo "permit nopass $USER_NAME as root" > /etc/doas.d/doas.conf
+echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER_NAME
 addgroup "$USER_NAME" docker 2>/dev/null || true
 EOF
 
-echo "User '$USER_NAME' created with doas permissions (password: '$PASSWORD')"
+echo "User '$USER_NAME' created with sudo permissions (password: '$PASSWORD')"
 echo "Connect as user: incus exec $VM_NAME -- su - $USER_NAME"
 echo "Or via ssh: ssh $USER_NAME@<vm-ip-address>"
 echo "Get VM IP with: incus list $VM_NAME --format csv --columns 4"

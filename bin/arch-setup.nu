@@ -102,7 +102,7 @@ def "main incus" [] {
   incus-setup
 }
 
-def incus-setup [] {
+def "main system-shell" [] {
   update-packages
 
   let pkgs = [
@@ -369,14 +369,14 @@ def "main setup-shell" [] {
   mut items: list<record<description: string, handler: closure>> = []
 
   $items = $items ++ [
-    { description: "Install system packages", handler: { main system-shell } }
-    { description: "Install incus",           handler: { main incus } }
-    { description: "Setup dotfiles with stow",        handler: { main dotfiles } }
-    { description: "Install shell tools",             handler: { main shell } }
-    { description: "Install devtools (mise, uv etc)", handler: { main devtools } }
-    { description: "Install Neovim",                  handler: { main nvim } }
-    { description: "Install claude",                  handler: { main claude } }
-    { description: "Install rustup",                  handler: { main rust } }
+    { description: "Install system packages",           handler: { main system-shell } }
+    { description: "Install incus",                     handler: { main incus } }
+    { description: "Setup dotfiles with stow",          handler: { main dotfiles } }
+    { description: "Install shell tools",               handler: { main shell } }
+    { description: "Install devtools (mise, uv etc)",   handler: { main devtools } }
+    { description: "Install Neovim",                    handler: { main nvim } }
+    { description: "Install claude",                    handler: { main claude } }
+    { description: "Install rustup",                    handler: { main rust } }
   ]
 
   let selected = ($items | input list --multi --display description "Select tasks to execute:")

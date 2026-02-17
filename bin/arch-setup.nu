@@ -34,20 +34,13 @@ def prompt-yn [prompt: string]: nothing -> bool {
 
 def si [packages: list<string>]: nothing -> bool {
   log+ $"Installing ($packages | str join ' ')"
-
-  let result = do -i { ^sudo pacman -S --quiet --noconfirm ...$packages } | complete
-
-  if $result.exit_code != 0 {
-    error+ $"Package installation failed (exit ($result.exit_code)):\n($result.stderr)"
-    return false
-  }
-
-  true
+  ^sudo pacman -S --quiet --noconfirm ...$packages
 }
 
 def update-packages []: nothing -> nothing {
   log+ "Updating packages"
   ^sudo pacman -Syu
+  ^sudo pacman -Fy
 }
 
 def paru-install [] {
@@ -107,6 +100,8 @@ def "main system-shell" [] {
     "github-cli"
     "gum"
     "jq"
+    "jujutsu"
+    "lazyjj"
     "just"
     "lazygit"
     "make"
@@ -138,7 +133,6 @@ def "main system-shell" [] {
     "woff2-font-awesome"
     "xh"
     "yazi"
-    "zed"
     "zoxide"
     "zstd"
   ]
@@ -148,6 +142,7 @@ def "main system-shell" [] {
 
   log+ "Updating locate database, this may take a while..."
   do -i { ^sudo updatedb }
+  ^tldr --update
 }
 
 def pixi-install [] {
@@ -164,8 +159,6 @@ def pixi-install-packages [] {
   ]
 
   ^pixi global install ...$pixi_pkgs
-
-  ^tldr --update
 }
 
 def "main shell" [] {
@@ -574,6 +567,12 @@ def "main system-desktop" [] {
   ^pipx install pywal pywalfox
 }
 
+def "main cockpit" [] {
+  log+ "Installing cockpit"
+  let packages = ["cockpit" "cockpit-packagekit" "cockpit-storaged" "cockpit-podman" "cockpit-files" "cockpit-machines"]
+  si $packages
+}
+
 def "main distrobox" [] {
   log+ "Installing distrobox"
   let packages = ["podman" "distrobox"]
@@ -609,6 +608,8 @@ def "main vscode" [] {
 }
 
 def "main zed" [] {
+  log+ "Installing zed"
+  si ["zed"]
   let config_dir = ($env.HOME | path join ".local/share/linux-config")
 
   log+ "Stowing zed dotfiles"
@@ -618,7 +619,7 @@ def "main zed" [] {
 
 def "main virt" [] {
   log+ "Installing virt-manager"
-  let packages = ["virt-manager" "virt-install" "virt-viewer"]
+  let packages = ["virt-manager" "virt-install" "virt-viewer" "libisofs" "guestfs-tools" "qemu-img"]
   si $packages
 
   let groups = ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"]

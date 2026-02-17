@@ -1,0 +1,23 @@
+for_window [app_id="org.quickshell"] floating enable
+
+for_window [app_id="org.gnome.*"] {
+    border pixel 0
+    corner_radius 12
+}
+
+for_window [app_id="code"] {
+    default_floating_width 1920
+}
+
+for_window [app_id="org.telegram.desktop"] resize set width 400
+
+for_window [app_id="kitty"] resize set width 640
+
+for_window [app_id="virt-manager"] floating enable
+
+for_window [app_id="steam" title="notificationtoasts_*"] {
+    floating enable
+    move position 10 px 10 px
+}
+
+for_window [app_id=".*"] corner_radius 20

@@ -1,0 +1,32 @@
+set $gaps 4
+default_border pixel 2
+default_floating_border pixel 2
+gaps inner $gaps
+gaps outer $gaps
+smart_gaps on
+smart_borders on
+
+font pango:JetBrains Mono 10
+
+set $active_border #0DB7D4
+set $inactive_border #04404A
+client.focused $active_border $active_border #ffffff $active_border
+client.focused_inactive $inactive_border $inactive_border #888888 $inactive_border
+client.unfocused $inactive_border $inactive_border #888888 $inactive_border
+
+default_orientation auto
+workspace_layout default
+
+for_window [app_id=".*"] border pixel 2, corner_radius 12
+for_window [app_id=".*"] opacity 0.99
+
+focus_wrapping workspace
+mouse_warping output
+focus_follows_mouse no
+popup_during_fullscreen smart
+
+set $screenshot_dir ~/Pictures/Screenshots
+set $screenshot_fmt Screenshot_%Y-%m-%d_%H-%M-%S.png
+
+bindsym --whole-window $mod+button4 workspace prev
+bindsym --whole-window $mod+button5 workspace next

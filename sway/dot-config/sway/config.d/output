@@ -1,0 +1,16 @@
+set $disp1 HDMI-A-1
+set $disp2 HDMI-A-2
+
+output $disp1 {
+    mode 3840x2160@60Hz
+    scale 1.6
+    transform normal
+    pos 0 0
+}
+
+output $disp2 {
+    mode 3840x2160@60Hz
+    scale 1.6
+    transform normal
+    pos 0 0
+}

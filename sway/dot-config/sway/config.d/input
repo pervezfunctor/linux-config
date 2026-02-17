@@ -1,0 +1,18 @@
+input type:keyboard {
+    xkb_layout us
+    xkb_options ctrl:nocaps
+    repeat_delay 300
+    repeat_rate 30
+}
+
+input type:touchpad {
+    tap enabled
+    natural_scroll enabled
+}
+
+input type:mouse {
+    accel_profile flat
+}
+
+bindswitch --reload --locked lid:on output $laptop disable
+bindswitch --reload --locked lid:off output $laptop enable

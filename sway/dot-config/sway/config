@@ -1,0 +1,7 @@
+include config.d/env
+include config.d/input
+include config.d/output
+include config.d/ui
+include config.d/binds
+include config.d/exec
+include config.d/rules

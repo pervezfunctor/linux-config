@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Usage: sudo-warm <opencode|kilo|claude> [args...]
+# Keeps sudo timestamp refreshed in background, then launches the AI tool
+
+set -e
+
+show_help() {
+    cat <<EOF
+Usage: sudo-warm <tool> [args...]
+
+Keeps sudo timestamp refreshed in background, then launches an AI tool.
+On first run, you'll be prompted for your sudo password. Subsequent
+sudo commands work without re-prompting until the timeout (~5 min).
+
+Arguments:
+  tool    AI tool to launch: opencode, kilo, or claude
+  args    Arguments to pass to the tool
+
+Examples:
+  sudo-warm opencode
+  sudo-warm opencode --help
+  sudo-warm kilo "fix the bug in foo.py"
+  sudo-warm claude "explain this code"
+EOF
+    exit 0
+}
+
+case "$1" in
+    -h|--help) show_help ;;
+    opencode|kilo|claude) ;;
+    *) echo "Usage: $0 <opencode|kilo|claude> [args...]" >&2; exit 1 ;;
+esac
+
+TOOL="$1"
+shift
+
+# Verify sudo access first (will prompt for password)
+sudo -v
+
+# Start sudo-keep-alive in background with nohup to detach from terminal
+nohup bash -c 'while true; do sudo -v; sleep 240; done' >/dev/null 2>&1 &
+SUDO_PID=$!
+
+cleanup() {
+    kill $SUDO_PID 2>/dev/null || true
+}
+trap cleanup EXIT
+
+"$TOOL" "$@"

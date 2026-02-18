@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Compatible with bash and zsh
+set -euo pipefail
 
 has_cmd() {
   command -v "$1" >/dev/null 2>&1
@@ -7,10 +8,6 @@ has_cmd() {
 
 dir_exists() {
   [ -d "$1" ]
-}
-
-is_linux() {
-  [ "$(uname -s)" = "Linux" ]
 }
 
 is_mac() {
@@ -22,21 +19,46 @@ die() {
   exit 1
 }
 
-nu_install() {
-  has_cmd nu && return 0
-
-  echo "Installing nushell"
-
-  local tmpdir tarball url nu_dir asset
-  tmpdir="$(mktemp -d)"
-  tarball="$tmpdir/nu.tar.gz"
-  nu_dir="$HOME/.local/share/nushell"
-
+get_nushell_url() {
+  local asset
   if is_mac; then
     asset="aarch64-apple-darwin.tar.gz"
   else
     asset="x86_64-unknown-linux-gnu.tar.gz"
   fi
+
+  local json
+  json=$(_fetch "https://api.github.com/repos/nushell/nushell/releases/latest")
+
+  local url
+  if has_cmd jq; then
+    url=$(echo "$json" | jq -r ".assets[] | select(.name | contains(\"${asset}\")) | .browser_download_url" 2>/dev/null)
+  elif has_cmd python3; then
+    url=$(python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for a in data.get('assets', []):
+    if '${asset}' in a.get('name', ''):
+        print(a.get('browser_download_url', ''))
+        break
+" <<< "$json")
+  else
+    url=$(echo "$json" | grep -oP '"browser_download_url":\s*"\K[^"]*'"${asset}"'[^"]*')
+  fi
+
+  [ -n "$url" ] || die "Could not find nushell release URL for ${asset}"
+  echo "$url"
+}
+
+nu_install() {
+  has_cmd nu && return 0
+
+  echo "Installing nushell"
+
+  local tmpdir tarball url nu_dir
+  tmpdir="$(mktemp -d)"
+  tarball="$tmpdir/nu.tar.gz"
+  nu_dir="$HOME/.local/share/nushell"
 
   if has_cmd curl; then
     _fetch() { curl -fsSL "$1"; }
@@ -48,23 +70,27 @@ nu_install() {
     die "Neither curl nor wget is available"
   fi
 
-  url="$(_fetch https://api.github.com/repos/nushell/nushell/releases/latest |
-    grep "browser_download_url.*${asset}" |
-    cut -d '"' -f 4)"
-  [ -n "$url" ] || die "Could not find nushell release URL"
+  url=$(get_nushell_url)
   _fetch_to "$url" "$tarball"
+
+  [ -s "$tarball" ] || die "Downloaded tarball is empty or missing"
 
   local extracted_dir
   extracted_dir="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type d | head -1)"
   [ -n "$extracted_dir" ] || die "Could not find extracted nushell directory"
 
   mkdir -p "$nu_dir" ~/.local/bin
-  cp "$extracted_dir"/nu* "$nu_dir"/
-  chmod +x "$nu_dir"/nu*
-  ln -sf "$nu_dir/nu" ~/.local/bin/nu
 
-  find "$nu_dir" -type f -name 'nu_plugin_*' | while read -r plugin; do
-    "$nu_dir/nu" -c "plugin add $plugin"
+  cp "$extracted_dir"/nu* "$nu_dir/" || die "Failed to copy nushell binaries"
+  chmod +x "$nu_dir"/nu* || die "Failed to set executable permissions"
+
+  ln -sf "$nu_dir/nu" ~/.local/bin/nu || die "Failed to create nu symlink"
+  [ -L ~/.local/bin/nu ] || die "nu symlink not created"
+
+  for plugin in "$nu_dir"/nu_plugin_*; do
+    if [ -f "$plugin" ]; then
+      "$nu_dir/nu" plugin add "$plugin" || echo "Warning: Failed to register plugin: $plugin"
+    fi
   done
 
   rm -rf "$tmpdir"

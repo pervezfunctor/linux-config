@@ -110,6 +110,116 @@ source ($nu.default-config-dir | path join aliases.nu)
 # This is a comment
 ```
 
+#### Functional Programming Techniques
+
+**Library Files**:
+- Use `bin/lib.nu` for general reusable functions
+- Use `bin/logs.nu` for logging functions
+- Use `<app>-lib.nu` for tool-specific functions
+
+**Imports**:
+```nu
+use ./lib.nu [
+    default-if-empty
+    try-relative
+    validate-path
+]
+use ./logs.nu
+use ./stow-lib.nu [safe-ln, safe-rm]
+```
+
+**Avoid Mutation**: Use pipelines instead of `mut` + `for` + `append`
+```nu
+# Bad
+mut items = []
+for item in $collection {
+    $items = ($items | append (transform $item))
+}
+
+# Good - use pipeline with | each
+let items = ($collection | each { |item| transform $item })
+```
+
+**Pure Functions**: Separate pure logic from side effects
+```nu
+# Pure - no side effects, returns value
+def compute-path [base: string, name: string] {
+    $base | path join $name
+}
+
+# Impure - I/O side effects
+def link-files [items: list<record>] {
+    for item in $items {
+        ^ln -sf $item.src $item.dest
+    }
+}
+```
+
+**Safe Command Wrappers**: Wrap external commands for consistent error handling
+```nu
+def safe-ln [src: string, dest: string] {
+    try {
+        ^ln -sf $src $dest
+        true
+    } catch {
+        false
+    }
+}
+```
+
+**Default Values**: Use `default-if-empty` for pipe-friendly defaults
+```nu
+let dir = ($input | default-if-empty $env.HOME)
+```
+
+**Validation Functions**: Centralize validation logic
+```nu
+def validate-path [path: string, --required] {
+    if $required and not ($path | path exists) {
+        error make {
+            msg: $"Path does not exist: ($path)"
+            label: { text: $path, span: (metadata $path).span }
+        }
+    }
+    $path
+}
+```
+
+**Avoid `reduce`**: Use `| each`, `| where`, `| get`, or `| reduce` alternatives instead
+```nu
+# Bad - avoid reduce for simple transformations
+let result = ($items | reduce -f [] { |item, acc| $acc | append $item })
+
+# Good - use | each
+let result = ($items | each { |item| transform $item })
+
+# Good - use | where for filtering
+let filtered = ($items | where { |item| $item.active })
+
+# Good - use | get for indexing
+let value = ($record | get $key | default "fallback")
+```
+
+**Pipeline-First**: Prefer passing data through pipes rather than nested function calls
+```nu
+# Good
+let result = ($input | step-one | step-two | step-three)
+
+# Avoid
+let result = (step-three (step-two (step-one $input)))
+```
+
+**Testing**: Write tests for functions in `<script>-test.nu`
+```nu
+# bin/stow-test.nu
+use ./stow-lib.nu
+
+def "test to-stow-name" [] {
+    let result = (to-stow-name ".bashrc")
+    assert equal $result "dot-bashrc"
+}
+```
+
 ### KDL (`.kdl` files)
 
 **Indentation**: 4 spaces

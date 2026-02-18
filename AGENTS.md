@@ -490,6 +490,39 @@ Before committing changes:
 4. **Functionality**: Test all modified features
 5. **pixi check**: From `py/`, run `pixi run check` after every change to execute the consolidated lint/type/test suite
 
+### Documentation Requirements
+
+When modifying scripts or configurations:
+
+- **Update documentation**: Always update the corresponding `docs/<script-name>.md` file when changing script behavior, arguments, or features
+- **Keep help in sync**: Ensure the `--help` output in scripts matches the documentation
+- **Test coverage**: Write tests for all new functionality in `bin/test-<script>.nu` files
+- **Comprehensive tests**: Tests should cover:
+  - Happy path (normal usage)
+  - Error cases (invalid inputs, missing files)
+  - Edge cases (empty inputs, boundary values)
+  - Command variations (all flags and options)
+
+### Test File Organization
+
+```
+bin/
+├── script.nu           # Main script
+├── test-script.nu      # Comprehensive test suite
+└── lib.nu              # Shared utilities (tested separately)
+```
+
+**Test naming convention:**
+```nu
+def "test <function-name> <scenario>" [] {
+    # Test implementation
+}
+
+def "test <function-name> errors on <condition>" [] {
+    # Error case test
+}
+```
+
 ## Proxmox Automation CLI
 
 The Python helpers under `py/` are now exposed via a unified Typer CLI named `proxmoxctl`. Run it with `uv run proxmoxctl -- --help` to view available commands. Key subcommands:
@@ -500,6 +533,147 @@ The Python helpers under `py/` are now exposed via a unified Typer CLI named `pr
 - `proxmoxctl inventory configure`: guided guest discovery/credential capture.
 
 Legacy scripts (`proxmox_maintenance.py`, `proxmox_batch.py`, etc.) remain runnable for backwards compatibility, but new work should target `proxmoxctl` so we keep the UX consistent and typed via Pydantic.
+
+## Utility Scripts
+
+### sudo-warm (`bin/sudo-warm`)
+
+A bash utility that keeps sudo timestamp refreshed in the background, then launches an AI tool. Useful when working with AI tools that may need sudo access for system operations.
+
+**Usage:**
+```
+sudo-warm <tool> [args...]
+```
+
+**Arguments:**
+- `tool` - AI tool to launch: `opencode`, `kilo`, or `claude`
+- `args` - Arguments to pass to the tool
+
+**How it works:**
+- Prompts for sudo password on first run (if not cached)
+- Starts a background process that refreshes sudo timestamp every 4 minutes
+- Launches the specified AI tool
+- Automatically cleans up the background process on exit
+- Sudo access remains valid for ~5 minutes after the tool exits
+
+**Examples:**
+```bash
+sudo-warm opencode
+sudo-warm opencode --help
+sudo-warm kilo "fix the bug in foo.py"
+sudo-warm claude "explain this code"
+```
+
+### incus-firewall-config.nu (`bin/incus-firewall-config.nu`)
+
+A Nushell script to configure firewall rules for Incus containers on the specified bridge interface. Automatically detects the active firewall service (UFW, firewalld, Docker iptables, or nftables) and applies appropriate rules.
+
+**Usage:**
+```
+nu bin/incus-firewall-config.nu [bridge] [--help|-h]
+```
+
+**Arguments:**
+- `bridge` - Bridge interface name (default: `incusbr0`)
+- `--help`, `-h` - Show help message
+
+**Supported Firewall Services:**
+- **UFW**: Allows forwarding on the bridge interface
+- **firewalld**: Adds bridge to trusted zone
+- **Docker**: Adds iptables rules for bridge traffic
+- **nftables**: Adds accept rules for bridge traffic
+
+**Requirements:**
+- sudo privileges for firewall modifications
+- One of the supported firewall services must be running
+
+**Examples:**
+```bash
+nu bin/incus-firewall-config.nu              # Configure default incusbr0
+nu bin/incus-firewall-config.nu br1          # Configure custom bridge
+nu bin/incus-firewall-config.nu --help       # Show help
+```
+
+### pkg-install.nu (`bin/pkg-install.nu`)
+
+A Nushell script to install packages and package managers based on a YAML configuration file. Supports multiple package managers and can automatically install missing package managers.
+
+**Usage:**
+```
+nu bin/pkg-install.nu <yaml_file> [groups...]
+```
+
+**Arguments:**
+- `yaml_file` - Path to YAML configuration file containing package definitions
+- `groups` - Package groups to install (optional, defaults to all if not specified)
+
+**YAML Configuration Format:**
+```yaml
+installers:
+  - brew
+  - pixi
+  - mise
+
+brew:
+  - git
+  - curl
+  - vim
+
+pixi:
+  - python
+  - nodejs
+
+mise:
+  - nodejs@20
+  - rust
+
+# Package groups for selective installation
+apt:
+  base:
+    - vim
+    - curl
+    - git
+  dev:
+    - build-essential
+    - cmake
+```
+
+**Supported Package Managers:**
+- **brew** - Homebrew package manager
+- **pixi** - Pixi global package installer
+- **mise** - Runtime version manager
+- **cargo** - Rust package manager
+- **go** - Go modules installer
+- **npm** - Node.js package manager
+- **pipx** - Python application installer
+- **pikman** - Package manager wrapper
+- **dnf** - Fedora/RHEL package manager
+- **pacman** - Arch Linux package manager
+- **zypper** - openSUSE package manager
+- **apt** - Debian/Ubuntu package manager
+- **flatpak** - Flatpak application installer
+
+**Features:**
+- Auto-installs missing package managers defined in `installers` section
+- Supports flat package lists or grouped package definitions
+- Skips unavailable package managers gracefully
+- Processes packages in parallel for each manager
+
+**Examples:**
+```bash
+nu bin/pkg-install.nu packages.yaml          # Install all packages
+nu bin/pkg-install.nu packages.yaml base     # Install only 'base' group
+nu bin/pkg-install.nu packages.yaml base dev # Install 'base' and 'dev' groups
+```
+
+### Proxmox Guest Discovery Scripts
+
+Documentation for the following server management scripts:
+
+- **[proxmox-guests.nu.md](proxmox-guests.nu.md)** - Discover Proxmox VMs/containers and generate `servers.json`
+- **[build-servers-json.nu.md](build-servers-json.nu.md)** - Interactive builder for `servers.json`
+- **[ssh-copy-id.nu.md](ssh-copy-id.nu.md)** - Copy SSH keys to servers from JSON file
+- **[generate-tmuxp.nu.md](generate-tmuxp.nu.md)** - Generate tmuxp YAML configs for remote servers
 
 ## Git Workflow
 

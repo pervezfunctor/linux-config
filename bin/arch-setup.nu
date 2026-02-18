@@ -25,10 +25,10 @@ def is-arch []: nothing -> bool {
   if not ("/etc/os-release" | path exists) { return false }
   let content = (open /etc/os-release)
   let lines = ($content | lines)
-  
+
   let id = ($lines | where { $in =~ '^ID=' } | first | str replace '^ID=' '' | str trim --char '"')
   let id_like = ($lines | where { $in =~ '^ID_LIKE=' } | first | str replace '^ID_LIKE=' '' | str trim --char '"' | default "")
-  
+
   $id == "arch" or ($id_like | str contains "arch")
 }
 
@@ -84,28 +84,28 @@ def paru-install [] {
 
 def incus-setup [] {
   log+ "Setting up incus"
-  
+
   # Check if groups exist before adding user
   let groups_output = (^getent group | lines)
   let group_names = ($groups_output | parse "{name}:x:{gid}:{members}" | get name)
-  
+
   if "incus" in $group_names {
     ^sudo usermod -aG incus $env.USER
   } else {
     warn+ "incus group not found, skipping"
   }
-  
+
   if "incus-admin" in $group_names {
     ^sudo usermod -aG incus-admin $env.USER
   } else {
     warn+ "incus-admin group not found, skipping"
   }
-  
+
   ^sudo systemctl enable --now incus.socket
-  
+
   # Wait for socket to be ready
   sleep 2sec
-  
+
   # Check if incus is already initialized
   let check_init = (do -i { ^incus info } | complete)
   if $check_init.exit_code != 0 {
@@ -219,13 +219,14 @@ def "main shell" [] {
 }
 
 def "main rust" [] {
-  if (has-cmd rustup) {
-    log+ "rustup is already installed"
+  if (has-cmd cargo) {
+    log+ "rust/cargo is already installed"
     return
   }
 
-  log+ "Installing rustup"
-  ^curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | ^sh
+  log+ "Installing rust"
+  si ["rustup"]
+  rustup default stable
 }
 
 def nushell-setup [] {
@@ -236,6 +237,8 @@ def nushell-setup [] {
     $nu_path | ^sudo tee -a /etc/shells
   }
 
+  log+ "Installing nufmt..."
+  cargo install --git https://github.com/nushell/nufmt
   stow-package "nushell"
 }
 

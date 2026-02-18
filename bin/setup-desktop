@@ -197,6 +197,7 @@ system_install() {
     gnome-keyring
     pass
     plocate
+    gvfs
   )
 
   is_tw && pkgs+=(gopass)
@@ -206,6 +207,8 @@ system_install() {
     pika-refind-btrfs-hooks
     refind-btrfs
   )
+  is_fedora && pkgs+=(gvfs-smb)
+  is_arch && pkgs+=(gvfs-smb)
 
   log "Installing system packages"
   si "${pkgs[@]}"

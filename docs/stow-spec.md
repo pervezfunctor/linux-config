@@ -28,24 +28,8 @@ stow <path> [--target-dir <dir>] [--package <name>] [--stow-dir <dir>]
 2. Creates stow package directory structure
 3. Converts dotfile names to stow-compatible format (leading `.` → `dot-`)
 4. Copies file contents (not just creates empty files)
-5. Runs `stow --adopt` to integrate existing files into the package
-
-**Naming Convention:**
-- `.vimrc` → `dot-vimrc`
-- `.config/nvim` → `dot-config/nvim`
-- `normal-file` → `normal-file` (unchanged)
-
-**Usage:**
-```nu
-# Basic usage (defaults to ~ as target)
-stow ~/.vimrc --package vim
-
-# With nested structure
-stow ~/.config/nvim --target-dir ~ --package nvim
-
-# Custom stow directory
-stow ~/.config/fish --target-dir ~ --package fish --stow-dir ~/dotfiles
-```
+5. Preserves symlinks as symlinks (does not convert to regular files)
+6. Runs `stow --adopt` to integrate existing files into the package
 
 ### `stow apply`
 
@@ -65,67 +49,15 @@ stow apply <package> [--target-dir <dir>] [--stow-dir <dir>] [--backup-dir <dir>
 **Behavior:**
 1. Discovers all files in the stow package
 2. For each file that conflicts in the target:
-   - Backs up only files (not directories)
+   - Backs up only regular files (not directories or symlinks)
+   - Removes unmanaged symlinks (stow will create its own)
    - Backup path preserves directory structure relative to target
    - Backup format: `<relative-path>-YYYYMMDD_HHMMSS`
    - Removes the original file
 3. Runs `stow` to create symlinks
 4. Reports number of files backed up and location
 
-**Important:** Only backs up files, not directories. This prevents accidentally moving entire directory trees.
-
-**Usage:**
-```nu
-# Basic usage (defaults to ~ as target)
-stow apply vim
-
-# With custom backup location
-stow apply nvim --target-dir ~ --stow-dir ~/dotfiles --backup-dir ~/.backups
-
-# Apply to specific target directory
-stow apply fish --target-dir ~
-```
-
-### `stow help`
-
-Show help message with usage information.
-
-**Signature:**
-```nu
-stow help
-```
-
-## Implementation Details
-
-### Helper Functions
-
-#### `to-stow-name`
-Converts a filename to stow-compatible format.
-- Input: `.vimrc` → Output: `dot-vimrc`
-- Input: `normal-file` → Output: `normal-file`
-
-#### `from-stow-name`
-Converts from stow naming back to original.
-- Input: `dot-vimrc` → Output: `.vimrc`
-- Input: `normal-file` → Output: `normal-file`
-
-#### `create-stow-structure`
-Recursively creates stow-compatible directory structure.
-- Handles arbitrarily deep nesting
-- Converts each path component using `to-stow-name`
-- Copies file contents using `open --raw` and `save`
-
-#### `get-stow-files`
-Returns all files from a stow package (excludes directories).
-- Skips the package root directory itself
-- Returns original target paths for each file
-
-#### `backup-path`
-Backs up a single file with timestamp.
-- Only processes files (skips directories)
-- Creates backup directory structure if needed
-- Preserves directory structure relative to target_dir
-- Uses format: `<relative-path>-YYYYMMDD_HHMMSS`
+**Important:** Only backs up regular files. Symlinks are removed since stow will create its own.
 
 ## Technical Notes
 

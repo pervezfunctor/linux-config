@@ -68,10 +68,12 @@ def create-stow-structure [
     let source_type = ($current_path | path type)
 
     if $source_type == 'dir' {
+        let expanded_path = ($current_path | path expand)
+        let expanded_target = ($target_dir | path expand)
         let relative_path = do -i {
-            $current_path
-            | path relative-to $target_dir
-        } | default $current_path
+            $expanded_path
+            | path relative-to $expanded_target
+        } | default $expanded_path
 
         let converted_parts = $relative_path
             | path split
@@ -86,10 +88,12 @@ def create-stow-structure [
             }
         }
     } else if $source_type == 'file' {
+        let expanded_path = ($current_path | path expand)
+        let expanded_target = ($target_dir | path expand)
         let relative_path = do -i {
-            $current_path
-            | path relative-to $target_dir
-        } | default $current_path
+            $expanded_path
+            | path relative-to $expanded_target
+        } | default $expanded_path
 
         let converted_parts = $relative_path
             | path split
@@ -101,9 +105,16 @@ def create-stow-structure [
             mkdir $parent_dir
         }
 
-        # Copy the file content to stow package
-        let content = open --raw $current_path
-        $content | save $stow_path
+        # Handle symlinks vs regular files
+        if ($current_path | path type) == 'symlink' {
+            let target = (do -i { ^readlink $current_path })
+            if $target != null {
+                ^ln -s $target $stow_path
+            }
+        } else {
+            let content = open --raw $current_path
+            $content | save $stow_path
+        }
     }
 }
 
@@ -147,23 +158,25 @@ def get-stow-files [stow_pkg_dir: string, target_dir: string]: nothing -> list<s
     mut files = []
 
     if ($stow_pkg_dir | path exists) {
-        let pattern = $"($stow_pkg_dir)/**/*"
+        let abs_stow_pkg = ($stow_pkg_dir | path expand)
+        let abs_target = ($target_dir | path expand)
+        let pattern = $"($abs_stow_pkg)/**/*"
         for item in (glob $pattern) {
             # Skip directories and the stow package root itself
-            if ($item | path type) == 'dir' or $item == $stow_pkg_dir {
+            if ($item | path type) == 'dir' or $item == $abs_stow_pkg {
                 continue
             }
 
             let relative_path = do -i {
                 $item
-                | path relative-to $stow_pkg_dir
+                | path relative-to $abs_stow_pkg
             } | default ($item | path basename)
 
             # Convert back from stow naming to original
             let converted_parts = $relative_path
                 | path split
                 | each { |part| $part | from-stow-name }
-            let original_path = $target_dir | path join ...$converted_parts
+            let original_path = $abs_target | path join ...$converted_parts
 
             $files = ($files | append $original_path)
         }
@@ -177,16 +190,18 @@ def backup-path [path: string, backup_dir: string, target_dir: string] {
         return
     }
 
-    # Check if it's a file (not directory)
-    if ($path | path type) != 'file' {
+    let path_type = ($path | path type)
+    if $path_type != 'file' {
         return
     }
 
     let timestamp = (date now | format date '%Y%m%d_%H%M%S')
     
-    # Get relative path from target_dir to preserve structure
+    let expanded_path = ($path | path expand)
+    let expanded_target = ($target_dir | path expand)
     let relative_path = do -i {
-        $path | path relative-to $target_dir
+        $expanded_path
+        | path relative-to $expanded_target
     } | default ($path | path basename)
     
     let backup_path = $backup_dir | path join $"($relative_path)-($timestamp)"
@@ -284,9 +299,14 @@ test-result "stow-add creates correct structure" (
     ($stow_dir | path join "nvim/dot-config/nvim/lua/options.lua" | path exists)
 ) $"Found ($stow_files | length) files, expected 2"
 
-# Verify symlinks were created
-let init_vim_is_symlink = ($target_dir | path join ".config/nvim/init.vim" | path type) == "symlink"
-test-result "stow-add creates symlinks" $init_vim_is_symlink "init.vim should be a symlink"
+# Verify symlinks were created (only if stow is available)
+let stow_available = (which stow | is-not-empty)
+if $stow_available {
+    let init_vim_is_symlink = ($target_dir | path join ".config/nvim/init.vim" | path type) == "symlink"
+    test-result "stow-add creates symlinks" $init_vim_is_symlink "init.vim should be a symlink"
+} else {
+    print "[SKIP] stow-add creates symlinks (stow not installed)"
+}
 
 # Verify file content is preserved
 let content = open ($target_dir | path join ".config/nvim/init.vim")
@@ -311,9 +331,13 @@ test-result "stow-apply creates backups" $backup_exists "Should have backed up c
 let backup_has_path = ($backup_files | any {|f| $f | str contains ".config/nvim"})
 test-result "backup preserves path structure" $backup_has_path "Backup should include .config/nvim path"
 
-# Verify symlink was created
-let symlink_exists = ($target2_dir | path join ".config/nvim/init.vim" | path type) == "symlink"
-test-result "stow-apply creates symlinks after backup" $symlink_exists "Should have created symlink"
+# Verify symlink was created (only if stow is available)
+if $stow_available {
+    let symlink_exists = ($target2_dir | path join ".config/nvim/init.vim" | path type) == "symlink"
+    test-result "stow-apply creates symlinks after backup" $symlink_exists "Should have created symlink"
+} else {
+    print "[SKIP] stow-apply creates symlinks (stow not installed)"
+}
 
 # Verify backup has old content
 let backup_content = if ($backup_files | length) > 0 { open ($backup_files | first) } else { "" }

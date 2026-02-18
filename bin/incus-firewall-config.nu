@@ -6,8 +6,28 @@ def service-active [service: string]: nothing -> bool {
 }
 
 def run-sudo [cmd: string]: nothing -> bool {
-  let result = (do -i { sudo $cmd } | complete)
+  let check = (do -i { sudo -n true } | complete)
+  if $check.exit_code != 0 {
+    print $"  Skipped (no sudo): sudo ($cmd)"
+    return false
+  }
+  let result = (do -i { sudo -n $cmd } | complete)
   if $result.exit_code == 0 { true } else { print $"  Failed: sudo ($cmd)"; false }
+}
+
+def ufw-rule-exists [rule: string]: nothing -> bool {
+  let result = (do -i { sudo ufw status numbered } | complete)
+  if $result.exit_code != 0 { return false }
+  $result.stdout | str contains $rule
+}
+
+def add-ufw-if-missing [rule: string]: nothing -> bool {
+  if (ufw-rule-exists $rule) {
+    print $"  Rule already exists: ($rule)"
+    true
+  } else {
+    run-sudo $rule
+  }
 }
 
 def add-iptables-if-missing [chain: string, rule: string]: nothing -> bool {
@@ -25,11 +45,18 @@ def add-nft-if-missing [rule: string]: nothing -> bool {
 }
 
 export def configure-incus-firewall [bridge: string = "incusbr0"] {
+  let sudo_check = (do -i { sudo -n true } | complete)
+  if $sudo_check.exit_code != 0 {
+    print "Warning: sudo privileges required for firewall configuration."
+    print "Run manually with sudo: sudo nu bin/incus-firewall-config.nu"
+    return
+  }
+
   if (service-active ufw) {
     print $"UFW detected, configuring ($bridge)..."
-    run-sudo $"ufw allow in on ($bridge)"
-    run-sudo $"ufw route allow in on ($bridge)"
-    run-sudo $"ufw route allow out on ($bridge)"
+    add-ufw-if-missing $"ufw allow in on ($bridge)"
+    add-ufw-if-missing $"ufw route allow in on ($bridge)"
+    add-ufw-if-missing $"ufw route allow out on ($bridge)"
   }
 
   if (service-active firewalld) {

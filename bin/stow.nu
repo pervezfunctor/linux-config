@@ -12,17 +12,17 @@ use ./lib.nu [
     safe-cp
     safe-mkdir
 ]
-use ./logs.nu
+use ./logs.nu [log+ error+]
 
 def resolve-dirs [
-    target: string,
-    source_dir: string,
-    --backup-dir: string
+    target: string = "",
+    source_dir: string = "",
+    --backup-dir: string = ""
 ] {
     let target_dir = ($target | default-if-empty $env.HOME)
     let source_dir = ($source_dir | default-if-empty ($target_dir | path join '.local' 'share' 'linux-config'))
-    let backup_dir = ($backup_dir | default-if-empty ($target_dir | path join '.local' 'share' 'stow-backups'))
-    { target: $target_dir, source: $source_dir, backup: $backup_dir }
+    let backup_dir_out = ($backup_dir | default-if-empty ($target_dir | path join '.local' 'share' 'stow-backups'))
+    { target: $target_dir, source: $source_dir, backup: $backup_dir_out }
 }
 
 def to-stow-name [name: string] {
@@ -123,6 +123,11 @@ export def "main add" [
     if ($path | path type) == 'symlink' {
         let link_target = (do -i { ^readlink $path })
         if $link_target != null {
+            # Check if the symlink target is already in the stow source directory
+            if ($link_target | str starts-with $dirs.source) {
+                log+ $"Already managed by stow: ($path)"
+                return
+            }
             ^ln -s $link_target $stow_file
         }
     } else {

@@ -34,7 +34,7 @@ Use the following script and select what you need. You MUST select at least syst
 bash -c "$(curl -sSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/master/bin/bootstrap)" -- all
 ```
 
-If you need docker run the following script to install docker inside a VM and use `devpod` for development.
+If you need docker run the following script to install docker inside a VM and use `devpod` for development. See [docs/docker-vm.md](docs/docker-vm.md) for detailed documentation.
 
 ```bash
 ~/.local/share/linux-config/bin/docker-vm

@@ -1,17 +1,7 @@
-#!/usr/bin/env bash
-# Compatible with bash and zsh
-set -euo pipefail
+#!/usr/bin/env sh
 
 has_cmd() {
   command -v "$1" >/dev/null 2>&1
-}
-
-dir_exists() {
-  [ -d "$1" ]
-}
-
-is_mac() {
-  [ "$(uname -s)" = "Darwin" ]
 }
 
 die() {
@@ -19,89 +9,40 @@ die() {
   exit 1
 }
 
-get_nushell_url() {
-  local asset
-  if is_mac; then
-    asset="aarch64-apple-darwin.tar.gz"
+nu_install() {
+  if has_cmd dnf; then
+    sudo dnf install -y nu
+  elif has_cmd pacman; then
+    sudo pacman -S --noconfirm nushell
+  elif has_cmd brew; then
+    brew install nushell
   else
-    asset="x86_64-unknown-linux-gnu.tar.gz"
+    if ! has_cmd pixi; then
+      curl -fsSL https://pixi.sh/install.sh | bash
+    fi
+    export PATH="$HOME/.pixi/bin:$PATH"
+    pixi global install nushell
   fi
-
-  local json
-  json=$(_fetch "https://api.github.com/repos/nushell/nushell/releases/latest")
-
-  local url
-  if has_cmd jq; then
-    url=$(echo "$json" | jq -r ".assets[] | select(.name | contains(\"${asset}\")) | .browser_download_url" 2>/dev/null)
-  elif has_cmd python3; then
-    url=$(python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-for a in data.get('assets', []):
-    if '${asset}' in a.get('name', ''):
-        print(a.get('browser_download_url', ''))
-        break
-" <<< "$json")
-  else
-    url=$(echo "$json" | grep -oP '"browser_download_url":\s*"\K[^"]*'"${asset}"'[^"]*')
-  fi
-
-  [ -n "$url" ] || die "Could not find nushell release URL for ${asset}"
-  echo "$url"
+  has_cmd nu || die "nu installation failed"
 }
 
-nu_install() {
-  has_cmd nu && return 0
-
-  echo "Installing nushell"
-
-  local tmpdir tarball url nu_dir
-  tmpdir="$(mktemp -d)"
-  tarball="$tmpdir/nu.tar.gz"
-  nu_dir="$HOME/.local/share/nushell"
+run_setup_nu() {
+  tmp=$(mktemp /tmp/setup.nu.XXXXXX)
+  url="https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup.nu"
 
   if has_cmd curl; then
-    _fetch() { curl -fsSL "$1"; }
-    _fetch_to() { curl -fsSL "$1" -o "$2"; }
+    curl -fsSL "$url" -o "$tmp" || die "Failed to download setup.nu"
   elif has_cmd wget; then
-    _fetch() { wget -qO- "$1"; }
-    _fetch_to() { wget -qO "$2" "$1"; }
+    wget -qO "$tmp" "$url" || die "Failed to download setup.nu"
   else
-    die "Neither curl nor wget is available"
+    die "Neither curl nor wget found"
   fi
 
-  url=$(get_nushell_url)
-  _fetch_to "$url" "$tarball"
-
-  [ -s "$tarball" ] || die "Downloaded tarball is empty or missing"
-
-  local extracted_dir
-  extracted_dir="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type d | head -1)"
-  [ -n "$extracted_dir" ] || die "Could not find extracted nushell directory"
-
-  mkdir -p "$nu_dir" ~/.local/bin
-
-  cp "$extracted_dir"/nu* "$nu_dir/" || die "Failed to copy nushell binaries"
-  chmod +x "$nu_dir"/nu* || die "Failed to set executable permissions"
-
-  ln -sf "$nu_dir/nu" ~/.local/bin/nu || die "Failed to create nu symlink"
-  [ -L ~/.local/bin/nu ] || die "nu symlink not created"
-
-  for plugin in "$nu_dir"/nu_plugin_*; do
-    if [ -f "$plugin" ]; then
-      "$nu_dir/nu" plugin add "$plugin" || echo "Warning: Failed to register plugin: $plugin"
-    fi
-  done
-
-  rm -rf "$tmpdir"
-
-  has_cmd nu || die "nu is not installed"
+  nu "$tmp"
+  rm -f "$tmp"
 }
 
 export PATH="$HOME/.local/bin:$PATH"
 
 nu_install
-
-rm -f /tmp/setup.nu 2>/dev/null
-curl -fsSL https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup.nu -o /tmp/setup.nu && nu /tmp/setup.nu
-rm -f /tmp/setup.nu 2>/dev/null
+run_setup_nu

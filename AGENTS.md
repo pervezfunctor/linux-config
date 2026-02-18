@@ -115,7 +115,6 @@ source ($nu.default-config-dir | path join aliases.nu)
 **Library Files**:
 - Use `bin/lib.nu` for general reusable functions
 - Use `bin/logs.nu` for logging functions
-- Use `<app>-lib.nu` for tool-specific functions
 
 **Imports**:
 ```nu
@@ -125,7 +124,6 @@ use ./lib.nu [
     validate-path
 ]
 use ./logs.nu
-use ./stow-lib.nu [safe-ln, safe-rm]
 ```
 
 **Avoid Mutation**: Use pipelines instead of `mut` + `for` + `append`

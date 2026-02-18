@@ -6,54 +6,103 @@ VM_CPUS=4
 VM_MEM="8GiB"
 VM_DISK="30GiB"
 
-echo "==> Checking Incus..."
-command -v incus >/dev/null
+show_help() {
+	cat <<EOF
+docker-vm - Manage Docker VM with Incus
 
-if ! incus info "$VM_NAME" >/dev/null 2>&1; then
-	echo "Creating VM..."
-	incus launch images:debian/12 \
-		"$VM_NAME" \
-		--vm \
-		-c security.secureboot=false \
-		-c limits.cpu="$VM_CPUS" \
-		-c limits.memory="$VM_MEM" \
-		-d root,size="$VM_DISK"
-else
-	echo "VM already exists."
-	VM_STATUS=$(incus list "$VM_NAME" --format csv --columns s)
-	if [ "$VM_STATUS" != "RUNNING" ]; then
-		echo "VM is not running (status: $VM_STATUS). Starting..."
-		incus start "$VM_NAME"
+Usage: docker-vm [command]
+
+Commands:
+	create	Create and start the VM with Docker (default)
+	start	Start the existing VM
+	stop	Stop the running VM
+	restart	Restart the VM
+	remove	Remove the VM completely
+	exec	Execute commands inside the VM
+	status	Show VM status and connectivity info
+	help	Show this help message
+
+Examples:
+	docker-vm create
+	docker-vm start
+	docker-vm exec docker ps
+	docker-vm status
+
+Environment:
+	USER		Username to create in VM (default: current user)
+	PASSWORD	Password for user (default: same as username)
+EOF
+}
+
+check-incus() {
+	if ! command -v incus >/dev/null; then
+		echo "Error: incus is not installed" >&2
+		exit 1
+	fi
+}
+
+vm-exists() {
+	incus info "$VM_NAME" >/dev/null 2>&1
+}
+
+vm-status() {
+	if vm-exists; then
+		incus list "$VM_NAME" --format csv --columns s
 	else
-		echo "VM is already running."
+		echo "STOPPED"
 	fi
-fi
+}
 
-echo "==> Waiting for VM to become ready..."
-TIMEOUT=120
-ELAPSED=0
-INTERVAL=2
+wait-for-vm() {
+	echo "==> Waiting for VM to become ready..."
+	TIMEOUT=120
+	ELAPSED=0
+	INTERVAL=2
 
-while [ $ELAPSED -lt $TIMEOUT ]; do
-	if incus exec "$VM_NAME" -- sh -c 'ping -c1 1.1.1.1 >/dev/null 2>&1' 2>/dev/null; then
-		echo "VM is ready!"
-		break
+	while [ $ELAPSED -lt $TIMEOUT ]; do
+		if incus exec "$VM_NAME" -- sh -c 'ping -c1 1.1.1.1 >/dev/null 2>&1' 2>/dev/null; then
+			echo "VM is ready!"
+			return 0
+		fi
+		sleep $INTERVAL
+		ELAPSED=$((ELAPSED + INTERVAL))
+		echo "Waiting... (${ELAPSED}s/${TIMEOUT}s)"
+	done
+
+	echo "ERROR: VM failed to become ready within ${TIMEOUT} seconds" >&2
+	return 1
+}
+
+cmd-create() {
+	check-incus
+
+	if ! vm-exists; then
+		echo "Creating VM..."
+		incus launch images:debian/12 \
+			"$VM_NAME" \
+			--vm \
+			-c security.secureboot=false \
+			-c limits.cpu="$VM_CPUS" \
+			-c limits.memory="$VM_MEM" \
+			-d root,size="$VM_DISK"
+	else
+		echo "VM already exists."
+		VM_STATUS=$(vm-status)
+		if [ "$VM_STATUS" != "RUNNING" ]; then
+			echo "VM is not running (status: $VM_STATUS). Starting..."
+			incus start "$VM_NAME"
+		else
+			echo "VM is already running."
+		fi
 	fi
-	sleep $INTERVAL
-	ELAPSED=$((ELAPSED + INTERVAL))
-	echo "Waiting... (${ELAPSED}s/${TIMEOUT}s)"
-done
 
-if [ $ELAPSED -ge $TIMEOUT ]; then
-	echo "ERROR: VM failed to become ready within ${TIMEOUT} seconds"
-	exit 1
-fi
+	wait-for-vm
 
-USER_NAME="${USER:-$(whoami)}"
-PASSWORD="${PASSWORD:-$USER_NAME}"
+	USER_NAME="${USER:-$(whoami)}"
+	PASSWORD="${PASSWORD:-$USER_NAME}"
 
-echo "==> Installing Docker inside VM..."
-incus exec "$VM_NAME" -- bash -eux <<EOF
+	echo "==> Installing Docker inside VM..."
+	incus exec "$VM_NAME" -- bash -eux <<EOF
 apt-get update
 apt-get install -y ca-certificates curl
 
@@ -80,7 +129,159 @@ echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER_NAME
 addgroup "$USER_NAME" docker 2>/dev/null || true
 EOF
 
-echo "User '$USER_NAME' created with sudo permissions (password: '$PASSWORD')"
-echo "Connect as user: incus exec $VM_NAME -- su - $USER_NAME"
-echo "Or via ssh: ssh $USER_NAME@<vm-ip-address>"
-echo "Get VM IP with: incus list $VM_NAME --format csv --columns 4"
+	echo "User '$USER_NAME' created with sudo permissions (password: '$PASSWORD')"
+	echo "Connect as user: incus exec $VM_NAME -- su - $USER_NAME"
+	echo "Or via ssh: ssh $USER_NAME@<vm-ip-address>"
+	echo "Get VM IP with: incus list $VM_NAME --format csv --columns 4"
+}
+
+cmd-start() {
+	check-incus
+
+	if ! vm-exists; then
+		echo "Error: VM does not exist. Run 'docker-vm create' first." >&2
+		exit 1
+	fi
+
+	VM_STATUS=$(vm-status)
+	if [ "$VM_STATUS" != "RUNNING" ]; then
+		echo "Starting VM..."
+		incus start "$VM_NAME"
+		wait-for-vm
+		echo "VM started and ready"
+	else
+		echo "VM is already running."
+	fi
+}
+
+cmd-stop() {
+	check-incus
+
+	if ! vm-exists; then
+		echo "Error: VM does not exist" >&2
+		exit 1
+	fi
+
+	VM_STATUS=$(vm-status)
+	if [ "$VM_STATUS" == "RUNNING" ]; then
+		echo "Stopping VM..."
+		incus stop "$VM_NAME"
+		echo "VM stopped"
+	else
+		echo "VM is not running"
+	fi
+}
+
+cmd-restart() {
+	check-incus
+
+	if ! vm-exists; then
+		echo "Error: VM does not exist. Run 'docker-vm create' first." >&2
+		exit 1
+	fi
+
+	echo "Restarting VM..."
+	incus restart "$VM_NAME"
+	wait-for-vm
+	echo "VM restarted and ready"
+}
+
+cmd-remove() {
+	check-incus
+
+	if ! vm-exists; then
+		echo "VM does not exist"
+		exit 0
+	fi
+
+	VM_STATUS=$(vm-status)
+	if [ "$VM_STATUS" == "RUNNING" ]; then
+		echo "Stopping VM first..."
+		incus stop "$VM_NAME" --force
+	fi
+
+	echo "Removing VM..."
+	incus delete "$VM_NAME"
+	echo "VM removed"
+}
+
+cmd-exec() {
+	check-incus
+
+	if ! vm-exists; then
+		echo "Error: VM does not exist" >&2
+		exit 1
+	fi
+
+	VM_STATUS=$(vm-status)
+	if [ "$VM_STATUS" != "RUNNING" ]; then
+		echo "Error: VM is not running. Start it first with: docker-vm start" >&2
+		exit 1
+	fi
+
+	if [ $# -eq 0 ]; then
+		echo "Opening shell in VM..."
+		incus exec "$VM_NAME" -- bash
+	else
+		incus exec "$VM_NAME" -- bash -c "$*"
+	fi
+}
+
+cmd-status() {
+	check-incus
+
+	if ! vm-exists; then
+		echo "Error: VM does not exist" >&2
+		exit 1
+	fi
+
+	echo "==> VM Status:"
+	incus list "$VM_NAME" --format table
+
+	echo "\n==> VM Network:"
+	incus exec "$VM_NAME" -- ip addr
+
+	echo "\n==> Testing VM connectivity:"
+	if incus exec "$VM_NAME" -- sh -c 'ping -c1 1.1.1.1 >/dev/null 2>&1' 2>/dev/null; then
+		echo "VM has internet connectivity (IPv4)"
+	else
+		echo "Error: VM does NOT have internet connectivity (IPv4)" >&2
+	fi
+}
+
+COMMAND="${1:-create}"
+shift || true
+
+case "$COMMAND" in
+help|-h|--help)
+	show_help
+	exit 0
+	;;
+create)
+	cmd-create
+	;;
+start)
+	cmd-start
+	;;
+stop)
+	cmd-stop
+	;;
+restart)
+	cmd-restart
+	;;
+remove)
+	cmd-remove
+	;;
+exec)
+	cmd-exec "$@"
+	;;
+status)
+	cmd-status
+	;;
+*)
+	echo "Error: Unknown command: $COMMAND" >&2
+	echo ""
+	show_help
+	exit 1
+	;;
+esac

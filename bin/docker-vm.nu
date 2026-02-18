@@ -1,6 +1,7 @@
 #!/usr/bin/env nu
 
 use incus-firewall-config.nu *
+use logs.nu [log+ warn+ error+ die]
 
 const VM_NAME = "docker"
 const VM_CPUS = 4
@@ -11,11 +12,14 @@ const INTERVAL = 2sec
 const TOTAL_CHECKS = 60
 
 def show-progress [current: int, total: int] {
-  let percent = (($current / $total) * 100 | into int)
+  let percent = (($current * 100) / $total | into int)
   let bar_len = 20
   let filled = (($current * $bar_len) / $total | into int)
-  let bar = ((1..$filled | each { "▓" } | str join) + (1..($bar_len - $filled) | each { "░" } | str join))
-  print $"\rWaiting for VM... [($bar)] ($percent)%  " 
+  let empty_count = $bar_len - $filled
+  let bar_filled = if $filled > 0 { (1..$filled | each { |_| "▓" } | str join) } else { "" }
+  let bar_empty = if $empty_count > 0 { (1..$empty_count | each { |_| "░" } | str join) } else { "" }
+  let bar = $bar_filled + $bar_empty
+  print $"\rWaiting for VM... [($bar)] ($percent)%  "
 }
 
 # Check VM connectivity (IPv4 first, then IPv6)
@@ -54,14 +58,14 @@ def wait-for-vm [] {
 }
 
 # Log an error message with red X
-def log-error [message: string] {
-  print $"(ansi red)✗ ($message)(ansi reset)"
+def print-error [message: string] {
+  error+ $message
 }
 
 # Check if incus is installed
 def check-incus [] {
   if (which incus | is-empty) {
-    log-error "incus is not installed"
+    print-error "incus is not installed"
     print $"(ansi green)→ Please install incus first(ansi reset)"
     error make {
       msg: "incus is not installed"
@@ -85,7 +89,7 @@ def get-vm-status []: nothing -> string {
 }
 
 def create-vm [] {
-  log "Creating VM..."
+  print "Creating VM..."
   ^incus launch images:debian/13 $VM_NAME --vm -c security.secureboot=false -c $"limits.cpu=($VM_CPUS)" -c $"limits.memory=($VM_MEM)" -d $"root,size=($VM_DISK)"
 }
 
@@ -95,7 +99,7 @@ def start-vm-if-needed [] {
     print $"VM is not running. Status: ($status). Starting..."
     ^incus start $VM_NAME
   } else {
-    log "VM is already running."
+    print "VM is already running."
   }
 }
 
@@ -105,39 +109,27 @@ def install-docker [] {
 
   print "==> Installing Docker inside VM..."
 
-  # Build the script to execute inside the VM
-  let script = "
-apt-get update
-apt-get install -y ca-certificates curl
+  let script_dir = ($env.CURRENT_FILE | path dirname | path join .. bin)
+  let script_path = ($script_dir | path join install-docker-vm.sh)
+  if not ($script_path | path exists) {
+    error make {
+      msg: $"Script not found: ($script_path)"
+    }
+  }
 
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
+  ^incus file push $script_path $"($VM_NAME)/tmp/install-docker.sh"
+  try {
+    ^incus exec $VM_NAME -- bash /tmp/install-docker.sh $user_name $password
+  } catch {
+    print $"Docker installation failed: ($in)"
+  }
+  ^incus exec $VM_NAME -- rm /tmp/install-docker.sh
 
-systemctl enable --now docker
-systemctl enable --now ssh
+  print $"User '($user_name)' created with sudo permissions"
 
-addgroup root docker || true
-
-echo \"net.ipv4.ip_forward=1\" >> /etc/sysctl.d/99-ipforward.conf
-sysctl -p /etc/sysctl.d/99-ipforward.conf || true
-
-docker version
-docker run --rm hello-world
-
-if ! id \"$USER_NAME\" >/dev/null 2>&1; then
-  useradd -m -s /bin/bash \"$USER_NAME\"
-  echo \"$USER_NAME:$PASSWORD\" | chpasswd
-fi
-
-echo \"$USER_NAME ALL=(ALL) NOPASSWD:ALL\" > /etc/sudoers.d/$USER_NAME
-addgroup \"$USER_NAME\" docker 2>/dev/null || true
-"
-
-  ^incus exec $VM_NAME -- env $"USER_NAME=($user_name)" $"PASSWORD=($password)" bash -eux $script
-
-  print $"User '($user_name)' created with sudo permissions (password: '($password)')"
   print $"Connect as user: incus exec ($VM_NAME) -- su - ($user_name)"
   print $"Or via ssh: ssh ($user_name)@<vm-ip-address>"
+  print $"Password if asked: ($password)"
   print $"Get VM IP with: incus list ($VM_NAME) --format csv --columns 4"
 }
 
@@ -162,110 +154,162 @@ def cmd-create [] {
 def cmd-start [] {
   check-incus
   if not (vm-exists) {
-    log-error "VM does not exist. Run without arguments to create it."
+    print-error "VM does not exist. Run without arguments to create it."
     exit 1
   }
   start-vm-if-needed
   wait-for-vm
-  log "VM started and ready"
+  print "VM started and ready"
 }
 
 def cmd-stop [] {
   check-incus
   if not (vm-exists) {
-    log-error "VM does not exist"
+    print-error "VM does not exist"
     exit 1
   }
   let status = (get-vm-status)
   if $status == "RUNNING" {
-    log "Stopping VM..."
+    print "Stopping VM..."
     ^incus stop $VM_NAME
-    log "VM stopped"
+    print "VM stopped"
   } else {
-    log "VM is not running"
+    print "VM is not running"
   }
 }
 
 def cmd-restart [] {
   check-incus
   if not (vm-exists) {
-    log-error "VM does not exist. Run without arguments to create it."
+    print-error "VM does not exist. Run without arguments to create it."
     exit 1
   }
-  log "Restarting VM..."
+  print "Restarting VM..."
   ^incus restart $VM_NAME
   wait-for-vm
-  log "VM restarted and ready"
+  print "VM restarted and ready"
 }
 
 def cmd-remove [] {
   check-incus
   if not (vm-exists) {
-    log "VM does not exist"
+    print "VM does not exist"
     exit 0
   }
   let status = (get-vm-status)
   if $status == "RUNNING" {
-    log "Stopping VM first..."
+    print "Stopping VM first..."
     ^incus stop $VM_NAME --force
   }
-  log "Removing VM..."
+  print "Removing VM..."
   ^incus delete $VM_NAME
-  log "VM removed"
+  print "VM removed"
 }
 
 def cmd-exec [...args: string] {
   check-incus
   if not (vm-exists) {
-    log-error "VM does not exist"
+    print-error "VM does not exist"
     exit 1
   }
   let status = (get-vm-status)
   if $status != "RUNNING" {
-    log-error "VM is not running. Start it first with: docker-vm.nu start"
+    print-error "VM is not running. Start it first with: docker-vm.nu start"
     exit 1
   }
   let cmd_str = ($args | str join " ")
   if ($cmd_str | str trim | is-empty) {
-    log "Opening shell in VM..."
+    print "Opening shell in VM..."
     ^incus exec $VM_NAME -- bash
   } else {
     ^incus exec $VM_NAME -- bash -c $cmd_str
   }
 }
 
+def cmd-shell [] {
+  check-incus
+  if not (vm-exists) {
+    print-error "VM does not exist"
+    exit 1
+  }
+  let status = (get-vm-status)
+  if $status != "RUNNING" {
+    print-error "VM is not running. Start it first with: docker-vm.nu start"
+    exit 1
+  }
+  let user_name = ($env.USER? | default (whoami))
+  print $"Opening shell as user '($user_name)'..."
+  ^incus exec $VM_NAME -- su - $user_name
+}
+
 def cmd-status [] {
   check-incus
   if not (vm-exists) {
-    log-error "VM does not exist"
+    print-error "VM does not exist"
     exit 1
   }
-  
+
   print "==> VM Status:"
   ^incus list $VM_NAME --format table
-  
+
   print "\n==> VM Network:"
   ^incus exec $VM_NAME -- ip addr
-  
+
   print "\n==> Host iptables FORWARD chain:"
   do -i { ^sudo iptables -L FORWARD -v -n }
-  
+
   print "\n==> Host iptables DOCKER-USER chain:"
   do -i { ^sudo iptables -L DOCKER-USER -v -n }
-  
+
   print "\n==> Testing VM connectivity:"
   let ping_test = (do -i { ^incus exec $VM_NAME -- bash -c "ping -c1 -W 3 1.1.1.1" } | complete)
   if $ping_test.exit_code == 0 {
-    log "VM has internet connectivity (IPv4)"
+    print "VM has internet connectivity (IPv4)"
   } else {
-    log-error "VM does NOT have internet connectivity (IPv4)"
+    print-error "VM does NOT have internet connectivity (IPv4)"
   }
 }
 
+def cmd-help [] {
+  print ("
+docker-vm.nu - Manage Docker VM with Incus
+
+Usage: docker-vm.nu [command]
+
+Commands:
+  create    Create and start the VM with Docker
+  start     Start the existing VM
+  stop      Stop the running VM
+  restart   Restart the VM
+  remove    Remove the VM completely
+  shell     Open shell as the user (not root)
+  exec      Execute commands inside the VM
+  status    Show VM status and connectivity info
+  help      Show this help message
+
+Examples:
+  docker-vm.nu create
+  docker-vm.nu create --password mysecret
+  docker-vm.nu start
+  docker-vm.nu shell
+  docker-vm.nu exec docker ps
+  docker-vm.nu status
+
+Options:
+  --password    Password for user (default: same as username)
+
+Environment:
+  USER    Username to create in VM (default: current user)
+" | str trim)
+}
+
 def main [
-  command?: string     # Command: create, start, stop, restart, remove, exec, status (default: create)
-  ...args: string      # Arguments for exec command
+  command?: string     # Command: create, start, stop, restart, remove, shell, exec, status, help (default: create)
+  --password: string  # Password for user (default: same as username)
+  ...args: string     # Arguments for exec command
 ] {
+  $env.PASSWORD = $password
+
   let cmd = ($command | default "create")
   match $cmd {
     "create" => { cmd-create }
@@ -273,11 +317,13 @@ def main [
     "stop" => { cmd-stop }
     "restart" => { cmd-restart }
     "remove" => { cmd-remove }
+    "shell" => { cmd-shell }
     "exec" => { cmd-exec ...$args }
     "status" => { cmd-status }
+    "help" => { cmd-help }
     _ => {
-      log-error $"Unknown command: ($cmd)"
-      print "Usage: docker-vm.nu [create|start|stop|restart|remove|exec|status]"
+      print-error $"Unknown command: ($cmd)"
+      print "Usage: docker-vm.nu [create|start|stop|restart|remove|shell|exec|status|help]"
       exit 1
     }
   }

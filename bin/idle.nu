@@ -67,11 +67,44 @@ def system-sleep []: nothing -> nothing {
   }
 }
 
+def show-help [] {
+  print "idle.nu - Idle management for Wayland compositors"
+  print ""
+  print "Usage: nu idle.nu [command]"
+  print ""
+  print "Commands:"
+  print "  (no args)    Start idle daemon with default timeouts"
+  print "  monitor-off  Turn off monitors immediately"
+  print "  monitor-on   Turn on monitors immediately"
+  print "  system-sleep Suspend the system"
+  print "  help         Show this help message"
+  print ""
+  print "Supported Compositors:"
+  print "  - niri"
+  print "  - hyprland"
+  print "  - sway"
+  print "  - mango"
+  print ""
+  print "Timeouts:"
+  print "  Monitor off: 3 minutes"
+  print "  System sleep: 10 minutes (disabled in VMs)"
+  print ""
+  print "Requirements:"
+  print "  - swayidle"
+}
+
 def "main monitor-off" []: nothing -> nothing { monitor-off }
 def "main monitor-on" []: nothing -> nothing { monitor-on }
 def "main system-sleep" []: nothing -> nothing { system-sleep }
+def "main help" []: nothing -> nothing { show-help }
 
-def main []: nothing -> nothing {
+def main [
+  --help (-h)
+]: nothing -> nothing {
+  if $help {
+    show-help
+    return
+  }
   if not (has-cmd "swayidle") {
     error make { msg: "swayidle not found" }
   }

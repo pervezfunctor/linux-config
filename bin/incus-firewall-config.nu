@@ -95,6 +95,25 @@ export def configure-incus-firewall [bridge: string = "incusbr0"] {
   print "Firewall configuration complete."
 }
 
-def main [bridge: string = "incusbr0"] {
+def show-help [] {
+  print "Usage: incus-firewall-config.nu [bridge]"
+  print ""
+  print "Configure firewall rules for Incus containers on the specified bridge interface."
+  print ""
+  print "Arguments:"
+  print "  bridge    Bridge interface name (default: incusbr0)"
+  print ""
+  print "Supports: UFW, firewalld, iptables (Docker), nftables"
+  print "Requires: sudo privileges for firewall modifications"
+}
+
+def main [
+  bridge: string = "incusbr0"
+  --help (-h)
+] {
+  if $help {
+    show-help
+    return
+  }
   configure-incus-firewall $bridge
 }

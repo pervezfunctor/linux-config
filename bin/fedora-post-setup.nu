@@ -171,6 +171,42 @@ def cleanup [] {
   sudo dnf autoremove -y
 }
 
+def show-help [] {
+  print "fedora-post-setup.nu - Fedora post-installation setup script"
+  print ""
+  print "Usage: nu fedora-post-setup.nu [command]"
+  print ""
+  print "Commands:"
+  print "  (no args)  Interactive task selection (default)"
+  print "  help       Show this help message"
+  print ""
+  print "Available Tasks:"
+  print "  update               Update packages"
+  print "  flathub              Setup flathub"
+  print "  firmware             Update firmware"
+  print "  appimage             Setup appimage support"
+  print "  nvidia               Install nvidia drivers"
+  print "  rebuild-nvidia-drivers  Rebuild nvidia drivers"
+  print "  amd                  Install AMD drivers"
+  print "  intel                Install Intel drivers"
+  print "  set-hostname         Set hostname"
+  print "  codecs               Install codecs"
+  print "  compress             Setup zip tools"
+  print "  utc                  Setup time"
+  print "  fonts                Setup fonts"
+  print "  network              Setup network"
+  print "  btrfs                Setup btrfs"
+  print "  deja-dup             Install deja-dup"
+  print "  steam                Install steam"
+  print "  flatpak-steam        Install steam flatpak"
+  print "  brave                Install brave"
+  print "  librewolf            Install librewolf"
+  print "  vscode               Install vscode"
+  print "  multimedia           Install multimedia tools"
+  print "  gnome                Setup gnome"
+  print "  cleanup              Cleanup"
+}
+
 def select-tasks [] {
   let tasks = [
     {name: "update", description: "Update packages", handler: { update }}
@@ -204,7 +240,18 @@ def select-tasks [] {
   $tasks | input list --multi --display description
 }
 
-def main [] {
+def "main help" [] {
+  show-help
+}
+
+def main [
+  --help (-h)
+] {
+  if $help {
+    show-help
+    return
+  }
+
   let tasks = select-tasks
 
   if ($tasks | is-empty) {

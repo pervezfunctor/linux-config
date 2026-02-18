@@ -131,8 +131,50 @@ def get_packages [installer_data: any, groups: list<string>] {
     }
 }
 
-def main [yaml_file: string, ...groups: string] {
-    let config = (open $yaml_file | from yaml)
+def show-help [] {
+  print "pkg-install.nu - Install packages from YAML configuration"
+  print ""
+  print "Usage: nu pkg-install.nu <yaml_file> [groups...]"
+  print ""
+  print "Arguments:"
+  print "  yaml_file    Path to YAML file with package definitions"
+  print "  groups       Package groups to install (optional, defaults to all)"
+  print ""
+  print "YAML Format:"
+  print '  installers:'
+  print '    - brew'
+  print '    - pixi'
+  print '  brew:'
+  print '    - git'
+  print '    - curl'
+  print '  pixi:'
+  print '    - python'
+  print '  apt:'
+  print '    base:'
+  print '      - vim'
+  print '    dev:'
+  print '      - build-essential'
+  print ""
+  print "Supported Package Managers:"
+  print "  brew, pixi, mise, cargo, go, npm, pipx, pikman"
+  print "  dnf, pacman, zypper, apt, flatpak"
+  print ""
+  print "Examples:"
+  print "  nu pkg-install.nu packages.yaml"
+  print "  nu pkg-install.nu packages.yaml base dev"
+}
+
+def main [
+  yaml_file?: string
+  ...groups: string
+  --help (-h)
+] {
+  if $help or ($yaml_file | is-empty) {
+    show-help
+    return
+  }
+
+  let config = (open $yaml_file | from yaml)
 
     let installers_to_install = ($config | get installers | default [])
 

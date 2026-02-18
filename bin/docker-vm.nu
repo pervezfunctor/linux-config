@@ -310,7 +310,7 @@ def main [
 ] {
   $env.PASSWORD = $password
 
-  let cmd = ($command | default "create")
+  let cmd = ($command | default "help")
   match $cmd {
     "create" => { cmd-create }
     "start" => { cmd-start }

@@ -2,6 +2,23 @@ $env.config = {
     show_banner: false
 }
 
+# Import OS detection functions
+use ~/.local/share/linux-config/bin/lib.nu [
+    is-linux
+    is-mac
+    is-ubuntu
+    is-debian
+    is-apt
+    is-arch
+    is-tumbleweed
+    is-tw
+    is-fedora
+    is-fedora-atomic
+    is-pikaos
+    is-gnome
+    is-ublue
+]
+
 def jupyter-lab [] {
     let jupyter_dir = ($nu.home-dir | path join jupyter-lab)
 
@@ -37,6 +54,45 @@ def uv-jupyter-standalone [] {
 
 def kitty-theme [] {
     ^kitty +kitten themes
+}
+
+# OS-specific package manager aliases
+if (is-ubuntu) or (is-apt) {
+    # Debian/Ubuntu
+    alias i = sudo apt install
+    alias r = sudo apt remove
+    alias s = apt search
+    def u [] {
+        sudo apt update
+        sudo apt upgrade
+    }
+} else if (is-arch) {
+    # Arch Linux
+    alias i = sudo pacman -S
+    alias r = sudo pacman -R
+    alias s = pacman -Ss
+    alias u = sudo pacman -Syu
+} else if (is-tw) {
+    # openSUSE Tumbleweed
+    alias i = sudo zypper install
+    alias r = sudo zypper remove
+    alias s = zypper search
+    alias u = sudo zypper update
+} else if (is-fedora) or (is-fedora-atomic) {
+    # Fedora
+    alias i = sudo dnf install
+    alias r = sudo dnf remove
+    alias s = dnf search
+    alias u = sudo dnf update
+} else {
+    # Fallback to pikman
+    alias i = pikman install
+    alias r = pikman remove
+    alias s = pikman search
+    def u [] {
+        pikman update
+        pikman upgrade
+    }
 }
 
 source ($nu.default-config-dir | path join auto-includes.nu)

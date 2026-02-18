@@ -1,17 +1,13 @@
 alias c = code
 alias g = git
 alias h = btm
-alias i = pikman install
-def u [] {
-    pikman update
-    pikman upgrade
-}
 alias p = pikman
 alias pi = pixi global install
 alias t = tmux
 alias v = nvim
-alias s = rg
 alias f = fd-find
+
+# OS-specific package manager aliases (i, r, s, u) are defined in config.nu
 
 alias gs = git stash -u
 alias gp = git push

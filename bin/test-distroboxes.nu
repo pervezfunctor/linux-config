@@ -20,31 +20,37 @@ print "--------------------------------------------"
 print ""
 
 # Step 3: Enter specific distrobox and run command
-print "[3/6] Testing enter (debian)..."
+print "[3/6] Testing enter (debian-tmuxp)..."
 print "--------------------------------------------"
-./bin/distroboxes.nu enter debian cat /etc/os-release
+./bin/distroboxes.nu enter debian-tmuxp cat /etc/os-release
 print ""
 
-# Step 4: Restart all
-print "[4/6] Testing restart-all..."
+# Step 4: Enter all distroboxes sequentially
+print "[4/6] Testing enter-all..."
+print "--------------------------------------------"
+./bin/distroboxes.nu enter-all
+print ""
+
+# Step 5: Restart all
+print "[5/6] Testing restart-all..."
 print "--------------------------------------------"
 ./bin/distroboxes.nu restart-all
 print ""
 
-# Step 5: Stop all
-print "[5/6] Testing stop-all..."
+# Step 6: Stop all
+print "[6/6] Testing stop-all..."
 print "--------------------------------------------"
 ./bin/distroboxes.nu stop-all
 print ""
 
-# Step 6: List to confirm stopped
-print "[5.5/6] Verifying stopped status..."
+# Step 7: List to confirm stopped
+print "[6.5/6] Verifying stopped status..."
 print "--------------------------------------------"
 ./bin/distroboxes.nu list
 print ""
 
-# Step 7: Remove all
-print "[6/6] Testing remove-all..."
+# Step 8: Remove all
+print "[7/7] Testing remove-all..."
 print "--------------------------------------------"
 ./bin/distroboxes.nu remove-all --yes
 print ""

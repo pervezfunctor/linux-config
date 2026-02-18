@@ -11,6 +11,14 @@ def check-distrobox [] {
   }
 }
 
+def list-tmuxp-boxes [] {
+  let boxes = (do -i { ^distrobox list } | complete)
+  if $boxes.exit_code != 0 {
+    return []
+  }
+  $boxes.stdout | lines | skip 1 | parse "{id}|{name}|{status}|{image}" | get name | each { str trim } | where { $it =~ "-tmuxp$" }
+}
+
 def box-exists [name: string] {
   let result = (do -i { ^distrobox list } | complete)
   if $result.exit_code != 0 {
@@ -57,12 +65,12 @@ def "main create-all" [] {
   check-distrobox
 
   let boxes = [
-    {name: "ubuntu", image: "ubuntu:latest"},
-    {name: "debian", image: "debian:latest"},
-    {name: "fedora", image: "fedora:latest"},
-    {name: "arch", image: "archlinux:latest"},
-    {name: "tumbleweed", image: "opensuse/tumbleweed:latest"},
-    {name: "alpine", image: "alpine:latest"},
+    {name: "ubuntu-tmuxp", image: "ubuntu:latest"},
+    {name: "debian-tmuxp", image: "debian:latest"},
+    {name: "fedora-tmuxp", image: "fedora:latest"},
+    {name: "arch-tmuxp", image: "archlinux:latest"},
+    {name: "tumbleweed-tmuxp", image: "opensuse/tumbleweed:latest"},
+    {name: "alpine-tmuxp", image: "alpine:latest"},
   ]
 
   log info "Starting distrobox creation process..."
@@ -144,7 +152,7 @@ def "main remove-all" [
   check-distrobox
 
   if not $yes {
-    log warning "This will remove all distroboxes!"
+    log warning "This will remove all distroboxes created by this script!"
     let response = (input "Are you sure? (y/N): ")
 
     if $response !~ "(?i)^y(es)?$" {
@@ -153,23 +161,14 @@ def "main remove-all" [
     }
   }
 
-  let boxes = (do -i { ^distrobox list } | complete)
-
-  if $boxes.exit_code != 0 {
-    log error "Failed to list distroboxes"
-    error make {
-      msg: "Failed to list distroboxes"
-    }
-  }
-
-  let box_names = ($boxes.stdout | lines | skip 1 | parse "{id}|{name}|{status}|{image}" | get name | each { str trim })
+  let box_names = (list-tmuxp-boxes)
 
   if ($box_names | is-empty) {
-    log info "No distroboxes found"
+    log info "No tmuxp distroboxes found"
     return
   }
 
-  log info "Removing all distroboxes..."
+  log info "Removing all tmuxp distroboxes..."
 
   let failed = $box_names | each { |box|
     if not (if $yes { remove-box $box --yes } else { remove-box $box }) {
@@ -178,7 +177,7 @@ def "main remove-all" [
   } | compact
 
   if ($failed | is-empty) {
-    log info "All distroboxes removed successfully"
+    log info "All tmuxp distroboxes removed successfully"
   } else {
     log error $"Failed to remove: ($failed | str join ', ')"
     error make {
@@ -206,23 +205,14 @@ def start-box [
 def "main start-all" [] {
   check-distrobox
 
-  let boxes = (do -i { ^distrobox list } | complete)
-
-  if $boxes.exit_code != 0 {
-    log error "Failed to list distroboxes"
-    error make {
-      msg: "Failed to list distroboxes"
-    }
-  }
-
-  let box_names = ($boxes.stdout | lines | skip 1 | parse "{id}|{name}|{status}|{image}" | get name | each { str trim })
+  let box_names = (list-tmuxp-boxes)
 
   if ($box_names | is-empty) {
-    log info "No distroboxes found"
+    log info "No tmuxp distroboxes found"
     return
   }
 
-  log info "Starting all distroboxes..."
+  log info "Starting all tmuxp distroboxes..."
 
   let failed = $box_names | each { |box|
     if not (start-box $box) {
@@ -231,7 +221,7 @@ def "main start-all" [] {
   } | compact
 
   if ($failed | is-empty) {
-    log info "All distroboxes started successfully"
+    log info "All tmuxp distroboxes started successfully"
   } else {
     log error $"Failed to start: ($failed | str join ', ')"
     error make {
@@ -259,23 +249,14 @@ def stop-box [
 def "main stop-all" [] {
   check-distrobox
 
-  let boxes = (do -i { ^distrobox list } | complete)
-
-  if $boxes.exit_code != 0 {
-    log error "Failed to list distroboxes"
-    error make {
-      msg: "Failed to list distroboxes"
-    }
-  }
-
-  let box_names = ($boxes.stdout | lines | skip 1 | parse "{id}|{name}|{status}|{image}" | get name | each { str trim })
+  let box_names = (list-tmuxp-boxes)
 
   if ($box_names | is-empty) {
-    log info "No distroboxes found"
+    log info "No tmuxp distroboxes found"
     return
   }
 
-  log info "Stopping all distroboxes..."
+  log info "Stopping all tmuxp distroboxes..."
 
   let failed = $box_names | each { |box|
     if not (stop-box $box) {
@@ -284,7 +265,7 @@ def "main stop-all" [] {
   } | compact
 
   if ($failed | is-empty) {
-    log info "All distroboxes stopped successfully"
+    log info "All tmuxp distroboxes stopped successfully"
   } else {
     log error $"Failed to stop: ($failed | str join ', ')"
     error make {
@@ -303,6 +284,82 @@ def "main restart-all" [] {
   print ""
 
   main start-all
+}
+
+def "main enter-all" [] {
+  check-distrobox
+
+  let box_names = (list-tmuxp-boxes)
+
+  if ($box_names | is-empty) {
+    log info "No tmuxp distroboxes found"
+    return
+  }
+
+  log info $"Found ($box_names | length) tmuxp distrobox(es)"
+  print ""
+
+  for box in $box_names {
+    log info $"Entering distrobox '($box)'..."
+    ^distrobox enter --name $box --clean-path -- echo ""
+    print ""
+  }
+
+  log info "Finished entering all distroboxes"
+}
+
+def "main exec-all" [
+  ...cmd: string  # Command and arguments to execute in all distroboxes
+] {
+  check-distrobox
+
+  if ($cmd | is-empty) {
+    log error "No command specified"
+    print "Usage: distroboxes.nu exec-all <command> [args...]"
+    error make {
+      msg: "No command specified"
+    }
+  }
+
+  let box_names = (list-tmuxp-boxes)
+
+  if ($box_names | is-empty) {
+    log info "No tmuxp distroboxes found"
+    return
+  }
+
+  let command_str = ($cmd | str join " ")
+  log info $"Executing '($command_str)' in all tmuxp distroboxes..."
+  print ""
+
+  let results = $box_names | each { |box|
+    log info $"[($box)] Executing command..."
+    let result = (do -i { ^distrobox enter $box -- ...$cmd } | complete)
+
+    if $result.exit_code == 0 {
+      log info $"[($box)] Command completed successfully"
+      if ($result.stdout | is-not-empty) {
+        print $result.stdout
+      }
+      null
+    } else {
+      log error $"[($box)] Command failed with exit code ($result.exit_code)"
+      if ($result.stderr | is-not-empty) {
+        print $result.stderr
+      }
+      $box
+    }
+  } | compact
+
+  print ""
+  if ($results | is-empty) {
+    log info "Command executed successfully in all tmuxp distroboxes"
+  } else {
+    log error $"Command failed in the following distroboxes: ($results | str join ', ')"
+    error make {
+      msg: "Command failed in some distroboxes"
+    }
+  }
 }
 
 def "main enter" [
@@ -328,105 +385,47 @@ def "main enter" [
   }
 }
 
-def "main exec-all" [
-  ...cmd: string  # Command and arguments to execute in all distroboxes
-] {
-  check-distrobox
-
-  if ($cmd | is-empty) {
-    log error "No command specified"
-    print "Usage: distroboxes.nu exec-all <command> [args...]"
-    error make {
-      msg: "No command specified"
-    }
-  }
-
-  let boxes = (do -i { ^distrobox list } | complete)
-
-  if $boxes.exit_code != 0 {
-    log error "Failed to list distroboxes"
-    error make {
-      msg: "Failed to list distroboxes"
-    }
-  }
-
-  let box_names = ($boxes.stdout | lines | skip 1 | parse "{id}|{name}|{status}|{image}" | get name | each { str trim })
-
-  if ($box_names | is-empty) {
-    log info "No distroboxes found"
-    return
-  }
-
-  let command_str = ($cmd | str join " ")
-  log info $"Executing '($command_str)' in all distroboxes..."
-  print ""
-
-  let results = $box_names | each { |box|
-    log info $"[($box)] Executing command..."
-    let result = (do -i { ^distrobox enter $box -- ...$cmd } | complete)
-
-    if $result.exit_code == 0 {
-      log info $"[($box)] Command completed successfully"
-      if ($result.stdout | is-not-empty) {
-        print $result.stdout
-      }
-      null
-    } else {
-      log error $"[($box)] Command failed with exit code ($result.exit_code)"
-      if ($result.stderr | is-not-empty) {
-        print $result.stderr
-      }
-      $box
-    }
-  } | compact
-
-  print ""
-  if ($results | is-empty) {
-    log info "Command executed successfully in all distroboxes"
-  } else {
-    log error $"Command failed in the following distroboxes: ($results | str join ', ')"
-    error make {
-      msg: "Command failed in some distroboxes"
-    }
-  }
-}
-
 def "main help" [] {
   print "Usage: distroboxes.nu [COMMAND]"
   print ""
   print "Commands:"
   print "  create-all     Create all distroboxes (default)"
   print "  list           List existing distroboxes"
-  print "  remove-all     Remove all distroboxes (interactive)"
-  print "  start-all      Start all distroboxes"
-  print "  stop-all       Stop all distroboxes"
-  print "  restart-all    Restart all distroboxes"
-  print "  exec-all       Execute a command in all distroboxes"
+  print "  remove-all     Remove all tmuxp distroboxes (interactive)"
+  print "  start-all      Start all tmuxp distroboxes"
+  print "  stop-all       Stop all tmuxp distroboxes"
+  print "  restart-all    Restart all tmuxp distroboxes"
+  print "  exec-all       Execute a command in all tmuxp distroboxes"
   print "  enter          Enter a specific distrobox (with --clean-path)"
+  print "  enter-all     Enter all tmuxp distroboxes sequentially"
   print "  help           Show this help message"
   print ""
   print "Distroboxes created:"
-  print "  - ubuntu (latest)"
-  print "  - debian (latest)"
-  print "  - fedora (latest)"
-  print "  - arch (latest)"
-  print "  - tumbleweed (latest)"
-  print "  - alpine (latest)"
+  print "  - ubuntu-tmuxp (latest)"
+  print "  - debian-tmuxp (latest)"
+  print "  - fedora-tmuxp (latest)"
+  print "  - arch-tmuxp (latest)"
+  print "  - tumbleweed-tmuxp (latest)"
+  print "  - alpine-tmuxp (latest)"
   print ""
   print "Home directories:"
   print "  Each distrobox uses a custom home directory in ~/.boxes/<name>"
   print "  This keeps container files separate from your host home"
   print ""
+  print "Note:"
+  print "  All commands (except enter, list) operate only on boxes ending with -tmuxp"
+  print ""
   print "Examples:"
   print "  distroboxes.nu create-all          # Create all distroboxes"
   print "  distroboxes.nu list                # List existing boxes"
-  print "  distroboxes.nu remove-all          # Remove all boxes"
-  print "  distroboxes.nu start-all           # Start all boxes"
-  print "  distroboxes.nu stop-all            # Stop all boxes"
-  print "  distroboxes.nu restart-all         # Restart all boxes"
-  print "  distroboxes.nu exec-all uname -a   # Run command in all boxes"
-  print "  distroboxes.nu enter debian        # Enter debian shell"
-  print "  distroboxes.nu enter alpine uname -a     # Run command in alpine"
+  print "  distroboxes.nu remove-all          # Remove all tmuxp boxes"
+  print "  distroboxes.nu start-all           # Start all tmuxp boxes"
+  print "  distroboxes.nu stop-all            # Stop all tmuxp boxes"
+  print "  distroboxes.nu restart-all         # Restart all tmuxp boxes"
+  print "  distroboxes.nu exec-all uname -a   # Run command in all tmuxp boxes"
+  print "  distroboxes.nu enter debian-tmuxp  # Enter debian-tmuxp shell"
+  print "  distroboxes.nu enter alpine-tmuxp uname -a # Run command in alpine-tmuxp"
+  print "  distroboxes.nu enter-all           # Enter all tmuxp boxes sequentially"
 }
 
 def main [] {

@@ -15,6 +15,8 @@ if not string match -q -- $PNPM_HOME $PATH
     set -gx PATH "$PNPM_HOME" $PATH
 end
 
-~/.local/bin/mise activate fish | source
+if test -x ~/.local/bin/mise
+    ~/.local/bin/mise activate fish | source
+end
 
 alias git-tree='git status --short | awk "{print \$2}" | tree --fromfile'

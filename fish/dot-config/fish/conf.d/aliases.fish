@@ -1,3 +1,6 @@
+# Source common functions first (OS detection)
+source $__fish_config_dir/functions/common.fish
+
 alias c 'code'
 alias g 'git'
 alias h 'btm'

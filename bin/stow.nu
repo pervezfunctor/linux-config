@@ -180,23 +180,107 @@ export def "main apply" [
     log+ $"Applied: ($package)"
 }
 
+export def "main restore" [
+    package: string,
+    --target: string,
+    --source-dir: string,
+    --backup-dir: string
+] {
+    let dirs = (resolve-dirs $target $source_dir --backup-dir $backup_dir)
+
+    if ($package | default-if-empty "" | is-empty) {
+        error+ "package is required"
+        return
+    }
+
+    let stow_pkg_dir = $dirs.source | path join $package
+
+    if not ($stow_pkg_dir | path exists) {
+        error+ $"Package does not exist: ($package)"
+        return
+    }
+
+    let abs_target = ($dirs.target | path expand)
+    let abs_backup = ($dirs.backup | path expand)
+
+    # Find all target files for this package
+    let abs_stow_pkg = ($stow_pkg_dir | path expand)
+    let files_to_restore = collect-stow-files $abs_stow_pkg $abs_target
+
+    # Process each file and collect results
+    let results = $files_to_restore
+    | each { |item|
+        let relative_path = try-relative $item.target $abs_target
+        let backup_pattern = $abs_backup | path join $"($relative_path)-*"
+        let backups = glob $backup_pattern
+        | where { |b| ($b | path type) == 'file' }
+
+        if ($backups | is-empty) {
+            log+ $"No backup found for: ($item.target)"
+            { restored: false }
+        } else {
+            # Sort by timestamp and get most recent
+            let latest_backup = $backups
+            | each { |b|
+                let filename = $b | path basename
+                let timestamp = $filename | parse --regex '.*-(\d{8}_\d{6})$' | get capture0 | default "" | first
+                { path: $b, timestamp: $timestamp }
+            }
+            | where { |x| $x.timestamp != "" }
+            | sort-by timestamp
+            | last
+
+            if $latest_backup == null {
+                log+ $"No valid backup found for: ($item.target)"
+                { restored: false }
+            } else {
+                # Remove current symlink/file
+                let current_type = do -i { $item.target | path type } | default "none"
+                if $current_type == 'symlink' {
+                    safe-rm $item.target
+                } else if $current_type == 'file' {
+                    safe-rm $item.target
+                }
+
+                # Restore from backup
+                ensure-parent-dir $item.target
+                safe-cp $latest_backup.path $item.target
+
+                log+ $"Restored: ($item.target) <- ($latest_backup.path)"
+                { restored: true }
+            }
+        }
+    }
+
+    let restored_count = $results | where { |r| $r.restored } | length
+
+    if $restored_count > 0 {
+        log+ $"Restored ($restored_count) file\(s\) for package: ($package)"
+    } else {
+        log+ $"No files restored for package: ($package)"
+    }
+}
+
 export def "main help" [] {
     print "stow - Dotfiles manager
 
 USAGE:
     stow add <package> <path>    Add file to stow package
     stow apply <package>        Apply stow package
+    stow restore <package>      Restore from latest backup
 
 OPTIONS:
     --target      Target directory (default: ~)
     --source-dir  Source directory (default: ~/.local/share/linux-config)
-    --backup-dir  Backup directory for apply (default: ~/.local/share/stow-backups)
+    --backup-dir  Backup directory for apply/restore (default: ~/.local/share/stow-backups)
 
 EXAMPLES:
     stow add vim ~/.vimrc
     stow add nvim ~/.config/nvim/init.vim
     stow apply vim
     stow apply nvim --backup-dir ~/.backups
+    stow restore vim
+    stow restore nvim --backup-dir ~/.backups
 "
 }
 

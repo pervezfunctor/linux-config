@@ -88,3 +88,7 @@ Pass `--dir /alternate/path` (before the `show`/`clean` command) or export `LINU
 ## Proxmox Automation Toolkit
 
 Python-based helpers for Proxmox (batch maintenance scripts, manifest wizard, guest inventory tooling) now live under `py/`. See [`py/README.md`](py/README.md) for detailed docs, CLI usage, and manifest guidance.
+
+## Distroboxes
+
+See [docs/distroboxes.md](docs/distroboxes.md) for detailed documentation.

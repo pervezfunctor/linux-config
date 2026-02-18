@@ -308,6 +308,38 @@ When adding new configurations:
 3. Run `stow <appname>` from repository root to symlink
 4. Test configuration before committing
 
+### stow.nu Tool
+
+This repository includes a custom Nushell-based stow implementation (`bin/stow.nu`) for managing dotfiles with symlinks.
+
+**Syntax:**
+```
+stow add <package> <path>
+stow apply <package> [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+```
+
+**Commands:**
+- `stow add <package> <path>` - Add a file to a stow package
+- `stow apply <package>` - Apply stow package with automatic backup
+
+**Options:**
+- `--target`: Target directory (default: `~`)
+- `--source-dir`: Source directory (default: `~/.local/share/linux-config`)
+- `--backup-dir`: Backup directory for apply (default: `~/.local/share/stow-backups`)
+
+**Examples:**
+```nu
+stow add vim ~/.vimrc
+stow add nvim ~/.config/nvim/init.vim
+stow apply vim
+stow apply nvim --backup-dir ~/.backups
+```
+
+**Notes:**
+- Only files are allowed (directories not supported)
+- Files in target matching stow files are backed up before linking
+- Backup format: `<relative-path>-YYYYMMDD_HHMMSS`
+
 ## DMS Integration
 
 This repository uses the DMS (Desktop Management System) for various desktop functions:

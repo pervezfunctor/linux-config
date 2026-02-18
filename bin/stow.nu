@@ -7,14 +7,12 @@ use ./lib.nu [
     validate-path
     validate-file
     default-if-empty
-]
-use ./logs.nu
-use ./stow-lib.nu [
     safe-ln
     safe-rm
     safe-cp
     safe-mkdir
 ]
+use ./logs.nu
 
 def resolve-dirs [
     target: string,

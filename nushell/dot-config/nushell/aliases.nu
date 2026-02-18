@@ -22,6 +22,7 @@ alias gfm = git pull
 alias gcm = git commit --message
 alias gia = git add
 alias gco = git checkout
+alias git-tree = git status --short | awk '{print $2}' | tree --fromfile
 
 alias stls = sudo systemctl status
 alias stle = sudo systemctl enable --now

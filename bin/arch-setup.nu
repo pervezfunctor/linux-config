@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
-use log-utils.nu *
+use logs.nu *
 
 def keep-sudo-alive [] {
   sudo -v
@@ -668,8 +668,7 @@ def bootstrap [] {
   let home_bin     = ($env.HOME | path join "bin")
   let local_bin    = ($env.HOME | path join ".local/bin")
 
-  $env.PATH = [$dot_bin, $pixi_bin, $home_bin, $local_bin, $pnpm_home, $env.PATH]
-    | flatten
+  $env.PATH = ([$dot_bin, $pixi_bin, $home_bin, $local_bin, $pnpm_home] | append ($env.PATH | path split))
     | path expand
     | uniq
 

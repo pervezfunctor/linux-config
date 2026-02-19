@@ -26,7 +26,7 @@ layer-rule {
     place-within-backdrop true
 }
 
-# spawn-sh-at-startup "qs -c noctalia-shell"
+// spawn-sh-at-startup "qs -c noctalia-shell"
 spawn-sh-at-startup "systemctl --user start noctalia"
 
 include "../noctalia.kdl"

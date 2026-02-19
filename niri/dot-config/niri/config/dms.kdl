@@ -1,0 +1,49 @@
+binds {
+  Mod+D { spawn-sh "dms ipc call spotlight toggle"; }
+  Super+Alt+L { spawn-sh "dms ipc call lock lock"; }
+
+  Mod+Space hotkey-overlay-title="Application Launcher" {
+      spawn "dms" "ipc" "call" "spotlight" "toggle";
+  }
+
+  Mod+V hotkey-overlay-title="Clipboard Manager" {
+      spawn "dms" "ipc" "call" "clipboard" "toggle";
+  }
+  Mod+M hotkey-overlay-title="Task Manager" {
+      spawn "dms" "ipc" "call" "processlist" "focusOrToggle";
+  }
+  Mod+Comma hotkey-overlay-title="Settings" {
+      spawn "dms" "ipc" "call" "settings" "focusOrToggle";
+  }
+  Mod+N hotkey-overlay-title="Notification Center" {
+      spawn "dms" "ipc" "call" "notifications" "toggle";
+  }
+  Mod+Y hotkey-overlay-title="Browse Wallpapers" {
+      spawn "dms" "ipc" "call" "dankdash" "wallpaper";
+  }
+
+  XF86AudioRaiseVolume allow-when-locked=true {
+      spawn "dms" "ipc" "call" "audio" "increment" "3";
+  }
+  XF86AudioLowerVolume allow-when-locked=true {
+      spawn "dms" "ipc" "call" "audio" "decrement" "3";
+  }
+  XF86AudioMute allow-when-locked=true {
+      spawn "dms" "ipc" "call" "audio" "mute";
+  }
+
+  XF86MonBrightnessUp allow-when-locked=true {
+     spawn "dms" "ipc" "call" "brightness" "increment" "5" "";
+  }
+  XF86MonBrightnessDown allow-when-locked=true {
+     spawn "dms" "ipc" "call" "brightness" "decrement" "5" "";
+  }
+}
+
+spawn-sh-at-startup "systemctl --user start dms"
+// spawn-sh-at-startup "dms run"
+
+include "dms/colors.kdl"
+include "dms/layout.kdl"
+include "dms/alttab.kdl"
+include "dms/binds.kdl"

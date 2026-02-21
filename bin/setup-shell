@@ -179,7 +179,7 @@ nvim_install() {
   fi
 
   log "Installing AstroNvim"
-  trash ~/.config/nvim.bak || true
+  trash ~/.config/nvim.bak 2>/dev/null || true
   mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null || true
   mkdir ~/.config/nvim 2>/dev/null || true
   mv ~/.local/share/nvim ~/.local/share/nvim.bak 2>/dev/null || true
@@ -260,7 +260,9 @@ claude_install() {
   }
 
   log "Installing claude"
-  has_cmd claude || curl -fsSL https://claude.ai/install.sh | bash
+  has_cmd claude || {
+    curl -fsSL https://claude.ai/install.sh | bash
+  }
 }
 
 setup-shell() {

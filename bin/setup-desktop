@@ -42,7 +42,6 @@ wm_install() {
     xdg-desktop-portal-gtk
     xdg-desktop-portal-wlr
   )
-  # qt6-multimedia
 
   is_ubuntu && pkgs+=(bibata-cursor-theme)
   is_fedora && pkgs+=(gvfs-smb)

@@ -1,7 +1,5 @@
 #!/usr/bin/env nu
 
-# Demo script to showcase distroboxes.nu features
-
 print "╔════════════════════════════════════════════════════════════╗"
 print "║         Distroboxes.nu - Nushell Script Demo              ║"
 print "╚════════════════════════════════════════════════════════════╝"
@@ -10,7 +8,6 @@ print ""
 print $"(ansi cyan)This demo showcases the converted Nushell script(ansi reset)"
 print ""
 
-# Demo 1: Show help
 print $"(ansi yellow)═══ Demo 1: Help Command ═══(ansi reset)"
 nu bin/distroboxes.nu help
 print ""
@@ -53,4 +50,3 @@ print ""
 print "╔════════════════════════════════════════════════════════════╗"
 print "║                    Demo Complete!                         ║"
 print "╚════════════════════════════════════════════════════════════╝"
-

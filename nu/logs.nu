@@ -18,4 +18,14 @@ def file-log [level: string, msg: string] {
 export def log+ [msg: string] { log info $msg; file-log "INFO" $msg }
 export def warn+ [msg: string] { log warning $msg; file-log "WARNING" $msg }
 export def error+ [msg: string] { log error $msg; file-log "ERROR" $msg }
-export def die [msg: string] { log critical $msg; file-log "CRITICAL" $msg; exit 1 }
+export def die [msg: string] {
+    log critical $msg
+    file-log "CRITICAL" $msg
+    error make {
+        msg: $msg
+        label: {
+            text: "fatal error"
+            span: (metadata $msg).span
+        }
+    }
+}

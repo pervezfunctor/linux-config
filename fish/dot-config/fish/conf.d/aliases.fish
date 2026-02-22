@@ -1,4 +1,3 @@
-# Source common functions first (OS detection)
 source $__fish_config_dir/functions/common.fish
 
 alias c 'code'
@@ -10,33 +9,27 @@ alias t 'tmux'
 alias v 'nvim'
 alias f 'fd-find'
 
-# OS-specific package manager aliases
 if is_ubuntu; or is_apt
-    # Debian/Ubuntu
     alias i 'sudo apt install'
     alias r 'sudo apt remove'
     alias s 'apt search'
     alias u 'sudo apt update; and sudo apt upgrade'
 else if is_arch
-    # Arch Linux
     alias i 'sudo pacman -S'
     alias r 'sudo pacman -R'
     alias s 'pacman -Ss'
     alias u 'sudo pacman -Syu'
 else if is_tw
-    # openSUSE Tumbleweed
     alias i 'sudo zypper install'
     alias r 'sudo zypper remove'
     alias s 'zypper search'
     alias u 'sudo zypper update'
 else if is_fedora; or is_fedora_atomic
-    # Fedora
     alias i 'sudo dnf install'
     alias r 'sudo dnf remove'
     alias s 'dnf search'
     alias u 'sudo dnf update'
 else
-    # Fallback to pikman
     alias i 'pikman install'
     alias r 'pikman remove'
     alias s 'pikman search'

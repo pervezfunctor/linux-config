@@ -1,17 +1,7 @@
 #!/usr/bin/env nu
 
-use logs.nu *
-
-def keep-sudo-alive [] {
-  sudo -v
-
-  job spawn {
-    loop {
-      sudo -n true
-      sleep 60sec
-    }
-  }
-}
+use std/util 'path add'
+use ../nu/logs.nu *
 
 def dir-exists [path: string]: nothing -> bool {
   ($path | path exists) and ($path | path type) == "dir"
@@ -85,8 +75,7 @@ def paru-install [] {
 def incus-setup [] {
   log+ "Setting up incus"
 
-  # Check if groups exist before adding user
-  let groups_output = (^getent group | lines)
+    let groups_output = (^getent group | lines)
   let group_names = ($groups_output | parse "{name}:x:{gid}:{members}" | get name)
 
   if "incus" in $group_names {
@@ -103,10 +92,9 @@ def incus-setup [] {
 
   ^sudo systemctl enable --now incus.socket
 
-  # Wait for socket to be ready
+
   sleep 2sec
 
-  # Check if incus is already initialized
   let check_init = (do -i { ^incus info } | complete)
   if $check_init.exit_code != 0 {
     log+ "Initializing incus"
@@ -664,17 +652,14 @@ def "main virt" [] {
 }
 
 def bootstrap [] {
-  let pnpm_home    = ($env.HOME | path join ".local/share/pnpm")
-  let dot_bin      = ($env.HOME | path join ".local/share/linux-config/bin")
-  let pixi_bin     = ($env.HOME | path join ".pixi/bin")
-  let home_bin     = ($env.HOME | path join "bin")
-  let local_bin    = ($env.HOME | path join ".local/bin")
-
-  $env.PATH = ([$dot_bin, $pixi_bin, $home_bin, $local_bin, $pnpm_home] | append ($env.PATH | path split))
-    | path expand
-    | uniq
-
-  keep-sudo-alive
+  path add ([
+    "bin"
+    ".local/bin"
+    ".local/share/pnpm"
+    ".npm-packages"
+    ".pixi/bin"
+    ".local/share/linux-config/bin"
+  ] | each { $env.HOME | path join $in | path expand })
 
   if not (is-arch) {
     die "This script only supports Arch Linux. Quitting."
@@ -747,6 +732,8 @@ def "main help" [] {
 def main [] {
     init-log-file
     bootstrap
+    let sudo_job_id = keep-sudo-alive
     main setup-shell
     main setup-desktop
+    stop-sudo-alive $sudo_job_id
 }

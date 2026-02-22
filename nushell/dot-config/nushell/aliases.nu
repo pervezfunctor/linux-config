@@ -7,8 +7,6 @@ alias t = tmux
 alias v = nvim
 alias f = fd-find
 
-# OS-specific package manager aliases (i, r, s, u) are defined in config.nu
-
 alias gs = git stash -u
 alias gp = git push
 alias gb = git branch

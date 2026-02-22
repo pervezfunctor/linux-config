@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 {
   export DOT_DIR="$HOME/.local/share/linux-config"
   LOG_ROOT="${LINUX_CONFIG_LOG_DIR:-$HOME/.linux-config-logs}"
@@ -37,12 +39,12 @@
     [ -f /etc/os-release ] && grep -qi 'questing' /etc/os-release 2>/dev/null
   }
 
-  is_fedora-atomic() {
+  is_fedora_atomic() {
     has_cmd rpm-ostree
   }
 
   is_fedora() {
-    is_fedora-atomic && return 1
+    is_fedora_atomic && return 1
     [ -f /etc/redhat-release ] && grep -q -i 'Fedora' /etc/redhat-release
   }
 
@@ -75,11 +77,11 @@
   }
 
   is_gnome() {
-    [ "$XDG_CURRENT_DESKTOP" = "GNOME" ] || [ "$XDG_SESSION_DESKTOP" = "gnome" ]
+    [ "${XDG_CURRENT_DESKTOP:-}" = "GNOME" ] || [ "${XDG_SESSION_DESKTOP:-}" = "gnome" ]
   }
 
   is_ublue() {
-    is_fedora-atomic && has_cmd ujust
+    is_fedora_atomic && has_cmd ujust
   }
 
   prompt_yn() {
@@ -202,7 +204,7 @@
     log "Installing brew"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     is_linux && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    is_mac && eval "$(homebrew/bin/brew shellenv)"
+    is_mac && eval "$(/opt/homebrew/bin/brew shellenv)"
 
     brew install topgrade gum
 
@@ -266,12 +268,7 @@
       return 1
     }
 
-    local stash_ref
-    stash_ref=$(git stash list | head -n1 | cut -d: -f1)
-    if [ -z "$stash_ref" ]; then
-      error "Unable to determine stash reference"
-      return 1
-    fi
+    local stash_ref="stash@{0}"
 
     if git pull --rebase --stat; then
       log "Pull succeeded. Restoring local changes"
@@ -297,46 +294,46 @@
   }
 
   bootstrap() {
-    export PNPM_HOME="/$HOME/.local/share/pnpm"
-    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PNPM_HOME:$PATH"
+    export PNPM_HOME="$HOME/.local/share/pnpm"
+    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PNPM_HOME:$HOME/.npm-packages/bin:$PATH"
 
     brew_install
 
     keep_sudo_alive
 
-    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_mac || is_fedora-atomic || {
-      die "Only Fedora, Questing, Tumbeweed, Arch, PikaOS supported. Quitting."
+    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_mac || is_fedora_atomic || {
+      die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS, macOS supported. Quitting."
     }
   }
 
   base_install() {
     log "Installing required packages..."
+    update_packages
     if is_mac; then
       xcode-select --install
       /usr/sbin/softwareupdate --install-rosetta --agree-to-license
-      brew_install
       brew install wget mas stow newt trash zstd unzip rclone tmux tar tree visual-studio-code
     elif is_ublue; then
       brew install stow newt trash-cli
     else
-      si stow trash-cli whiptail unzip
+      si git stow trash-cli whiptail unzip
     fi
 
     dotfiles_clone
   }
 
   main() {
-    if [ "${BASH_SOURCE[0]}" == "${0}" ] || [ -n "$1" ]; then
+    if [[ "${BASH_SOURCE[0]:-}" == "${0}" ]]; then
       bootstrap "$@"
 
-      [ "$1" == "shell" ] || [ "$1" == "desktop" ] || base_install
+      [[ "${1:-}" == "shell" ]] || [[ "${1:-}" == "desktop" ]] || base_install
 
-      if [ "$1" == "shell" ] || [ "$1" == "all" ]; then
+      if [[ "${1:-}" == "shell" ]] || [[ "${1:-}" == "all" ]]; then
         "$DOT_DIR/bin/setup-shell"
       fi
 
-      if [ "$1" == "desktop" ] || [ "$1" == "all" ]; then
-        is_mac && die "'desktop' option not supportedon mac"
+      if [[ "${1:-}" == "desktop" ]] || [[ "${1:-}" == "all" ]]; then
+        is_mac && die "'desktop' option not supported on mac"
         "$DOT_DIR/bin/setup-desktop" && exit 0
       fi
     fi

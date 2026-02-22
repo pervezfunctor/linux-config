@@ -120,7 +120,6 @@ source ($nu.default-config-dir | path join aliases.nu)
 ```nu
 use ./lib.nu [
     default-if-empty
-    try-relative
     validate-path
 ]
 use ./logs.nu

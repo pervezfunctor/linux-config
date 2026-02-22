@@ -1,7 +1,7 @@
 #!/usr/bin/env nu
 
 use incus-firewall-config.nu *
-use logs.nu [log+ warn+ error+ die]
+use ../nu/logs.nu [log+ warn+ error+ die]
 
 const VM_NAME = "docker"
 const VM_CPUS = 4
@@ -22,7 +22,6 @@ def show-progress [current: int, total: int] {
   print $"\rWaiting for VM... [($bar)] ($percent)%  "
 }
 
-# Check VM connectivity (IPv4 first, then IPv6)
 def check-vm-connectivity [] {
   let result_v4 = (do -i { ^incus exec $VM_NAME -- bash -c "ping -c1 -W 2 1.1.1.1 >/dev/null 2>&1" } | complete)
   if $result_v4.exit_code == 0 {
@@ -57,12 +56,11 @@ def wait-for-vm [] {
   }
 }
 
-# Log an error message with red X
 def print-error [message: string] {
   error+ $message
 }
 
-# Check if incus is installed
+
 def check-incus [] {
   if (which incus | is-empty) {
     print-error "incus is not installed"

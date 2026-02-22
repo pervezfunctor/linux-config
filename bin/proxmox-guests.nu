@@ -212,13 +212,11 @@ def select-guests [guests: list<record>]: nothing -> list<record> {
     return []
   }
 
-  # Separate VMs and containers
   let vms = $guests | where {|g| $g.type == "vm"}
   let containers = $guests | where {|g| $g.type == "container"}
 
   mut selected_guests = []
 
-  # Display and select VMs
   if ($vms | length) > 0 {
     print $"\n(ansi magenta)=== Virtual Machines ===(ansi reset)"
     print $"(ansi yellow)Index  VMID    Status      Name(ansi reset)"
@@ -243,7 +241,6 @@ def select-guests [guests: list<record>]: nothing -> list<record> {
     }
   }
 
-  # Display and select Containers
   if ($containers | length) > 0 {
     print $"\n(ansi blue)=== Containers ===(ansi reset)"
     print $"(ansi yellow)Index  CTID    Status      Name(ansi reset)"
@@ -289,7 +286,6 @@ def test-connection [conn: record]: nothing -> bool {
 }
 
 def build-server-record [guest: record, ip: string, username: string, identity: string]: nothing -> record {
-  # Build base record with common fields
   let base = {
     name: $guest.name
     type: $guest.type
@@ -298,7 +294,6 @@ def build-server-record [guest: record, ip: string, username: string, identity: 
     identity: $identity
   }
 
-  # Add type-specific fields for readability
   if $guest.type == "vm" {
     $base | merge {
       vmid: $guest.vmid
@@ -336,7 +331,6 @@ def start-guest [conn: record, guest: record]: nothing -> bool {
 
   if $result.exit_code == 0 {
     print $"  (ansi green)✓ Started ($guest.name)(ansi reset)"
-    # Wait a moment for the guest to initialize
     sleep 5sec
     true
   } else {
@@ -349,7 +343,6 @@ def start-guest [conn: record, guest: record]: nothing -> bool {
 }
 
 def process-guest [guest: record, conn: record, default_user: string, default_identity: string]: nothing -> record {
-  # Check if guest is running, offer to start if not
   if $guest.status != "running" {
     print $"(ansi yellow)($guest.name) ($guest.type) is not running \(status: ($guest.status)\)(ansi reset)"
     let start_it = input $"  Start it? \(y/n, default: y\): " | default "y"
@@ -420,7 +413,6 @@ def print-summary [servers: list<record>, output: path] {
   print $"\n(ansi green)=== Configuration Complete ===(ansi reset)"
   print $"Saved ($servers | length) servers to (ansi cyan)($output)(ansi reset)"
 
-  # Separate VMs and containers for summary
   let vms = $servers | where {|s| $s.type == "vm"}
   let containers = $servers | where {|s| $s.type == "container"}
 

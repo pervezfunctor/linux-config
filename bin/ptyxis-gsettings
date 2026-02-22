@@ -27,7 +27,7 @@ get_ptyxis_uuid() {
     echo "Error: Could not read default Ptyxis profile" >&2
     return 1
   fi
-  # Remove surrounding brackets from dconf format
+
   uuid="${uuid//\[}"
   uuid="${uuid//\]}"
   echo "$uuid"
@@ -54,7 +54,6 @@ cmd_set_palette() {
   echo "Done."
 }
 
-# Main
 if [[ $# -lt 1 ]]; then
   usage
 fi

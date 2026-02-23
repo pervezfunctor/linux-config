@@ -1,7 +1,5 @@
 source $__fish_config_dir/functions/common.fish
 
-echo "aliases"
-
 alias c 'zeditor'
 alias g 'git'
 alias h 'btm'

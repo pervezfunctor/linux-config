@@ -1,4 +1,13 @@
-source /usr/share/cachyos-fish-config/cachyos-config.fish
+# Format man pages
+set -x MANROFFOPT "-c"
+set -x MANPAGER "sh -c 'col -bx | bat -l man -p'"
+
+## Environment setup
+# Apply .profile: use this to put fish compatible .profile stuff in
+if test -f ~/.fish_profile
+  source ~/.fish_profile
+end
+
 
 set -gx DOT_DIR $HOME/.local/share/linux-config
 
@@ -32,3 +41,21 @@ end
 if test -x ~/.local/bin/mise
     ~/.local/bin/mise activate fish | source
 end
+
+if has_cmd fish
+    zoxide init fish | source
+end
+
+if has_cmd fzf
+    fzf --fish | source
+end
+
+if has_cmd starship
+    starship init fish | source
+end
+
+if has_cmd carapace
+    set -Ux CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
+    carapace _carapace | source
+end
+

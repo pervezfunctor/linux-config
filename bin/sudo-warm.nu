@@ -39,12 +39,12 @@ export def stop-sudo-alive [job_id: int] {
 }
 
 def main [tool: string, ...args: string] {
-    if $tool in ["-h" "--help"] {
+    if $tool in ["-h" "--help" "help" ] {
         show-help
         return
     }
 
-    if $tool not-in ["opencode" "kilo" "claude"] {
+    if $tool not-in ["opencode" "kilo" "claude" "cline" "gemini-cli" ] {
         print $"Usage: sudo-warm <opencode|kilo|claude> [args...]" (ansi reset)
         exit 1
     }

@@ -432,7 +432,7 @@ stow apply <package> [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
 **Options:**
 - `--target`: Target directory (default: `~`)
 - `--source-dir`: Source directory (default: `~/.local/share/linux-config`)
-- `--backup-dir`: Backup directory for apply (default: `~/.local/share/stow-backups`)
+- `--backup-dir`: Backup directory for apply (default: `~/.stow-backups`)
 
 **Examples:**
 ```nu

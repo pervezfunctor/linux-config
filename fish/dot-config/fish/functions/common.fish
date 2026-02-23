@@ -39,8 +39,6 @@ end
 function fish_greeting
 end
 
-# OS Detection Functions
-
 function is_linux
     test (uname -s) = "Linux"
 end

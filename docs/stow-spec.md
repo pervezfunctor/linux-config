@@ -42,7 +42,7 @@ Apply a stow package with automatic backup.
 **Options:**
 - `--target`: Target directory (default: `~`)
 - `--source-dir`: Source directory (default: `~/.local/share/linux-config`)
-- `--backup-dir`: Backup directory (default: `~/.local/share/stow-backups`)
+- `--backup-dir`: Backup directory (default: `~/.stow-backups`)
 
 ### `stow restore`
 
@@ -54,12 +54,12 @@ Restore the symlinks for a package from the most recent backup.
 **Options:**
 - `--target`: Target directory (default: `~`)
 - `--source-dir`: Source directory (default: `~/.local/share/linux-config`)
-- `--backup-dir`: Backup directory (default: `~/.local/share/stow-backups`)
+- `--backup-dir`: Backup directory (default: `~/.stow-backups`)
 
 **Behavior:**
 1. Collects all files mapped to the package.
 2. Searches the backup directory for the newest timestamped backup matching each file.
-3. Fails loudly with an explicit error if any mapped file lacks a valid backup.
+3. Shows a warning if a mapped file lacks a valid backup. If the current target is a file, fails loudly with an explicit error.
 4. Safely destroys the current target symlink/file and restores the backup.
 
 ## Examples
@@ -115,11 +115,11 @@ Once the files are listed, `collect-stow-files` applies the inverse macro: `from
 ### 3. `backup-file` (Collision management during apply)
 Before `stow apply` generates a new symlink to a deployed path, it calls `backup-file` on the target location.
 * If a symlink already exists there, it is silently deleted (assumed to be a stale stow or safe overwrite).
-* If a genuine file exists there, its relative deployment path is calculated, and a formatted timestamp (`-YYYYMMDD_HHMMSS`) is appended to it. It is copied deep into the `$backup_dir` folder tree (e.g. `~/.local/share/stow-backups/.config/nvim/init.vim-2026...`), preventing data loss. Only after that copy perfectly succeeds is the target file forcefully deleted.
+* If a genuine file exists there, its relative deployment path is calculated, and a formatted timestamp (`-YYYYMMDD_HHMMSS`) is appended to it. It is copied deep into the `$backup_dir` folder tree (e.g. `~/.stow-backups/.config/nvim/init.vim-2026...`), preventing data loss. Only after that copy perfectly succeeds is the target file forcefully deleted.
 
 ### 4. `main restore` (Rollback mechanism)
 The restore command exists as an "undo" lever. Because `stow apply` inherently leaves old, timestamped copies of overwritten files inside the backup directory, `main restore` traces them down.
 
-For a requested package, it passes the package name into `collect-stow-files` to determine exactly which files the package owns. For each file mapping, it dives into the backup directory and does a timestamp-glob search (e.g., `glob ~/.local/share/stow-backups/.config/nvim/init.vim-*`).
+For a requested package, it passes the package name into `collect-stow-files` to determine exactly which files the package owns. For each file mapping, it dives into the backup directory and does a timestamp-glob search (e.g., `glob ~/.stow-backups/.config/nvim/init.vim-*`).
 
-It then chronologically sorts these matches and picks the newest one. If it cannot find a valid timestamped backup file for *any* required component in the package, the script fails loudly with an explicit `Cannot restore package` exception to prevent partial/corrupted un-stow operations. If all backups are located safely, it deletes the current active symlinks and copies the backup files back into their original locations.
+It then chronologically sorts these matches and picks the newest one. If it cannot find a valid timestamped backup file, it shows a warning and skips restoring that file. However, if the current target is a regular file, it fails loudly with an explicit `Cannot restore package` exception to prevent partial/corrupted un-stow operations. For backups located safely, it deletes the current active symlinks and copies the backup files back into their original locations.

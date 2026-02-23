@@ -13,8 +13,8 @@ export def ensure-parent-dir [path: string] {
     }
 }
 
-export def validate-path [path: string, --required] {
-    if $required and not ($path | path exists) {
+export def validate-path [path: string] {
+    if not ($path | path exists) {
         error make {
             msg: $"Path does not exist: ($path)"
             label: { text: $path, span: (metadata $path).span }
@@ -34,41 +34,6 @@ export def validate-file [path: string] {
     $path
 }
 
-export def safe-ln [src: string, dest: string] {
-    try {
-        ^ln -sf $src $dest
-        true
-    } catch {
-        false
-    }
-}
-
-export def safe-rm [path: string] {
-    try {
-        ^rm -f $path
-        true
-    } catch {
-        false
-    }
-}
-
-export def safe-cp [src: string, dest: string] {
-    try {
-        ^cp $src $dest
-        true
-    } catch {
-        false
-    }
-}
-
-export def safe-mkdir [path: string] {
-    try {
-        mkdir $path
-        true
-    } catch {
-        false
-    }
-}
 
 def has_cmd [app: string] {
     (which $app | is-not-empty)

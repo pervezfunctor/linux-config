@@ -1,13 +1,22 @@
 source $__fish_config_dir/functions/common.fish
 
-alias c 'code'
+echo "aliases"
+
+alias c 'zeditor'
 alias g 'git'
 alias h 'btm'
-alias p 'pikman'
 alias pi 'pixi global install'
+alias p 'pikman'
 alias t 'tmux'
 alias v 'nvim'
-alias f 'fd-find'
+
+if has_cmd /home/linuxbrew/.linuxbrew/bin/brew
+  alias b 'brew'
+  alias bi 'brew install'
+  alias br 'brew uninstall'
+  alias bs 'brew search'
+  alias bu 'brew update && brew upgrade'
+end
 
 if is_ubuntu; or is_apt
     alias i 'sudo apt install'
@@ -49,6 +58,7 @@ alias gfm 'git pull'
 alias gcm 'git commit -m'
 alias gia 'git add'
 alias gco 'git checkout'
+alias git-tree='git status --short | awk "{print \$2}" | tree --fromfile'
 
 alias stls 'sudo systemctl status'
 alias stle 'sudo systemctl enable --now'
@@ -65,8 +75,3 @@ alias utlr 'systemctl --user restart'
 alias utlg 'systemctl --user list-units'
 alias utlf 'systemctl --user list-units --all --state=failed'
 alias dms-logs 'journalctl --user -u dms -f'
-
-## if using system npm: https://github.com/sindresorhus/guides/blob/main/npm-global-without-sudo.md
-# set NPM_PACKAGES "$HOME/.npm-packages"
-# set PATH $PATH $NPM_PACKAGES/bin
-# set MANPATH $NPM_PACKAGES/share/man $MANPATH

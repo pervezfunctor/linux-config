@@ -1,5 +1,31 @@
 use std/util "path add"
 
+def stow-package [package: string] {
+  let config_dir = ($env.HOME | path join ".local/share/linux-config")
+  validate-path $config_dir
+
+  let package_dir = ($config_dir | path join $package)
+  validate-path $package_dir
+
+  # @TODO: Replace with stow.nu apply
+  log+ $"Stowing ($package) dotfiles"
+  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME $package
+  do -i {
+    ^git -C $config_dir stash --include-untracked --message $"Stashing ($package) dotfiles"
+  }
+}
+
+def group-add [group: string] {
+  let groups_output = (^getent group | lines)
+  let group_names = ($groups_output | parse "{name}:x:{gid}:{members}" | get name)
+
+  if $group in $group_names {
+    ^sudo usermod -aG $group $env.USER
+  } else {
+    warn+ "$group group not found, skipping"
+  }
+}
+
 export def si [packages: list<string>]: nothing -> bool {
   log+ $"Installing ($packages | str join ' ')"
 
@@ -28,20 +54,6 @@ export def si [packages: list<string>]: nothing -> bool {
     return false
   }
   true
-}
-
-export def stow-package [package: string] {
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-  if not (dir-exists $config_dir) {
-    error make { msg: $"Config directory not found: ($config_dir)" }
-  }
-  let package_dir = ($config_dir | path join $package)
-  if not (dir-exists $package_dir) {
-    error make { msg: $"Package directory not found: ($package_dir)" }
-  }
-  log+ $"Stowing ($package) dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME $package
-  do -i { ^git -C $config_dir stash --include-untracked --message $"Stashing ($package) dotfiles" }
 }
 
 export def update-packages []: nothing -> nothing {
@@ -132,6 +144,4 @@ export def bootstrap [] {
     ".pixi/bin"
     ".local/share/linux-config/bin"
   ] | each { $env.HOME | path join $in | path expand })
-
-  brew-install
 }

@@ -2,25 +2,7 @@
 
 use std/util 'path add'
 use ../nu/logs.nu *
-
-def dir-exists [path: string]: nothing -> bool {
-  ($path | path exists) and ($path | path type) == "dir"
-}
-
-def has-cmd [cmd: string]: nothing -> bool {
-  (which $cmd | is-not-empty)
-}
-
-def is-arch []: nothing -> bool {
-  if not ("/etc/os-release" | path exists) { return false }
-  let content = (open /etc/os-release)
-  let lines = ($content | lines)
-
-  let id = ($lines | where { $in =~ '^ID=' } | first | str replace '^ID=' '' | str trim --char '"')
-  let id_like = ($lines | where { $in =~ '^ID_LIKE=' } | first | str replace '^ID_LIKE=' '' | str trim --char '"' | default "")
-
-  $id == "arch" or ($id_like | str contains "arch")
-}
+use ../nu/lib.nu *
 
 def prompt-yn [prompt: string]: nothing -> bool {
   let response = (input $"(ansi cyan)? ($prompt)(ansi reset) (ansi yellow)[y/N](ansi reset) ")
@@ -32,31 +14,18 @@ def si [packages: list<string>]: nothing -> bool {
   ^sudo pacman -S --quiet --noconfirm ...$packages
 }
 
-def stow-package [package: string] {
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
-  if not (dir-exists $config_dir) {
-    error make { msg: $"Config directory not found: ($config_dir)" }
-  }
-
-  let package_dir = ($config_dir | path join $package)
-  if not (dir-exists $package_dir) {
-    error make { msg: $"Package directory not found: ($package_dir)" }
-  }
-
-  log+ $"Stowing ($package) dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME $package
-  do -i { ^git -C $config_dir stash --include-untracked --message $"Stashing ($package) dotfiles" }
-}
-
 def update-packages []: nothing -> nothing {
   log+ "Updating packages"
+
   ^sudo pacman -Syu
   ^sudo pacman -Fy
 }
 
 def paru-install [] {
-  if (has-cmd paru) { return }
+  if (has-cmd paru) {
+    log+ "paru is already installed"
+    return
+  }
 
   log+ "Installing paru"
 
@@ -64,44 +33,25 @@ def paru-install [] {
   do -i { ^rm -rf /tmp/paru }
   ^git clone https://aur.archlinux.org/paru.git /tmp/paru
 
-  do {
+  try {
     cd /tmp/paru
     ^makepkg --syncdeps --noconfirm --install
+  } catch {
+    warn+ "Failed to install paru"
   }
 
   do -i { ^rm -rf /tmp/paru }
 }
 
-def incus-setup [] {
+
+def incus-config [] {
   log+ "Setting up incus"
-
-    let groups_output = (^getent group | lines)
-  let group_names = ($groups_output | parse "{name}:x:{gid}:{members}" | get name)
-
-  if "incus" in $group_names {
-    ^sudo usermod -aG incus $env.USER
-  } else {
-    warn+ "incus group not found, skipping"
-  }
-
-  if "incus-admin" in $group_names {
-    ^sudo usermod -aG incus-admin $env.USER
-  } else {
-    warn+ "incus-admin group not found, skipping"
-  }
+  group-add "incus"
+  group-add "incus-admin"
 
   ^sudo systemctl enable --now incus.socket
-
-
   sleep 2sec
-
-  let check_init = (do -i { ^incus info } | complete)
-  if $check_init.exit_code != 0 {
-    log+ "Initializing incus"
-    ^sudo incus admin init --minimal
-  } else {
-    log+ "incus already initialized"
-  }
+  ^sudo incus admin init --minimal
 }
 
 def "main incus" [] {
@@ -112,13 +62,14 @@ def "main incus" [] {
 
   log+ "Installing incus"
   si ["incus"]
-  incus-setup
+  incus-config
 }
 
 def "main system-shell" [] {
   update-packages
 
-  let pkgs = [
+  log+ "Installing system packages"
+  si [
     "bash-language-server"
     "bat"
     "bottom"
@@ -177,17 +128,9 @@ def "main system-shell" [] {
     "zstd"
   ]
 
-  log+ "Installing system packages"
-  si $pkgs
-
   log+ "Updating locate database, this may take a while..."
   do -i { ^sudo updatedb }
   ^tldr --update
-}
-
-def pixi-install [] {
-  log+ "Installing pixi packages"
-  pixi-install-packages
 }
 
 def pixi-install-packages [] {
@@ -201,8 +144,14 @@ def pixi-install-packages [] {
   ^pixi global install ...$pixi_pkgs
 }
 
-def "main shell" [] {
-  pixi-install
+
+def "main pixi" [] {
+  log+ "Installing pixi packages"
+  if not (has-cmd pixi) {
+    curl -fsSL https://pixi.sh/install.sh | sh
+  }
+
+  pixi-install-packages
 }
 
 def "main rust" [] {
@@ -216,16 +165,9 @@ def "main rust" [] {
   rustup default stable
 }
 
-def nushell-setup [] {
+def nushell-config [] {
   let nu_path = (which nu | first | get path)
-  let shells = (open /etc/shells | lines)
-
-  if not ($nu_path in $shells) {
-    $nu_path | ^sudo tee -a /etc/shells
-  }
-
-  log+ "Installing nufmt..."
-  cargo install --git https://github.com/nushell/nufmt
+  add-shell $nu_path
   stow-package "nushell"
 }
 
@@ -240,39 +182,23 @@ def "main nvim" [] {
 
   log+ "Installing AstroNvim"
 
-  let nvim_config_bak = ($env.HOME | path join ".config/nvim.bak")
-  let nvim_share      = ($env.HOME | path join ".local/share/nvim")
-  let nvim_share_bak  = ($env.HOME | path join ".local/share/nvim.bak")
-  let nvim_state      = ($env.HOME | path join ".local/state/nvim")
-  let nvim_state_bak  = ($env.HOME | path join ".local/state/nvim.bak")
-  let nvim_cache      = ($env.HOME | path join ".cache/nvim")
-  let nvim_cache_bak  = ($env.HOME | path join ".cache/nvim.bak")
+  do -i { ^trash ($env.HOME | path join .config nvim.bak) }
+  do -i { ^trash ($env.HOME | path join .local share nvim.bak) }
+  do -i { ^trash ($env.HOME | path join .local state nvim.bak) }
+  do -i { ^trash ($env.HOME | path join .cache nvim.bak) }
 
-  do -i { ^trash $nvim_config_bak }
-  do -i { ^mv $nvim_config $nvim_config_bak }
   mkdir $nvim_config
-  do -i { ^mv $nvim_share $nvim_share_bak }
-  do -i { ^mv $nvim_state $nvim_state_bak }
-  do -i { ^mv $nvim_cache $nvim_cache_bak }
-
   ^git clone --depth 1 https://github.com/AstroNvim/template $nvim_config
   ^rm -rf $"($nvim_config)/.git"
 }
 
-def fish-setup [] {
-  let fish_path = (which fish | first | get path)
-  let shells = (open /etc/shells | lines)
-
-  if not ($fish_path in $shells) {
-    $fish_path | ^sudo tee -a /etc/shells
-  }
-
+def fish-config [] {
+  let shell_path = (which fish | first | get path)
+  add-shell $shell_path
   stow-package "fish"
 
   log+ "Setting fish as default shell"
-  if (has-cmd chsh) {
-    ^chsh -s $fish_path
-  }
+  ^chsh -s $shell_path
 }
 
 def dotfiles-clone [] {
@@ -328,20 +254,19 @@ def dotfiles-clone [] {
 
 def "main dotfiles" [] {
   dotfiles-clone
-  nushell-setup
-  fish-setup
+  nushell-config
+  fish-config
 }
 
 def "main devtools" [] {
   let mise_bin = ($env.HOME | path join ".local/bin/mise")
 
-  if not ($mise_bin | path exists) {
+  if not (($mise_bin | path exists) and (has-cmd mise)) {
     error make { msg: "mise binary not found" }
   }
 
   log+ "Installing Node via mise"
   ^$mise_bin use -g node@latest
-
   ^$mise_bin use -g pnpm
 
   let use_pnpm = (has-cmd pnpm)
@@ -377,20 +302,7 @@ def "main claude" [] {
   ^curl -fsSL https://claude.ai/install.sh | ^bash
 }
 
-def "main setup-shell" [] {
-  mut items: list<record<description: string, handler: closure>> = []
-
-  $items = $items ++ [
-    { description: "Install system packages",           handler: { main system-shell } }
-    { description: "Install incus",                     handler: { main incus } }
-    { description: "Setup dotfiles with stow",          handler: { main dotfiles } }
-    { description: "Install shell tools",               handler: { main shell } }
-    { description: "Install devtools (mise, uv etc)",   handler: { main devtools } }
-    { description: "Install Neovim",                    handler: { main nvim } }
-    { description: "Install claude",                    handler: { main claude } }
-    { description: "Install rustup",                    handler: { main rust } }
-  ]
-
+def multi-task [items: list<record<description: string, handler: closure>>] {
   let selected = ($items | input list --multi --display description "Select tasks to execute:")
 
   if ($selected | is-empty) {
@@ -402,6 +314,19 @@ def "main setup-shell" [] {
     log+ $"Executing: ($item.description)"
     do $item.handler
   }
+}
+
+def "main setup-shell" [] {
+  multi-task [
+    { description: "Install system packages",           handler: { main system-shell } }
+    { description: "Install incus",                     handler: { main incus } }
+    { description: "Setup dotfiles with stow",          handler: { main dotfiles } }
+    { description: "Install pixi",                      handler: { main pixi } }
+    { description: "Install devtools (mise, uv etc)",   handler: { main devtools } }
+    { description: "Install Neovim",                    handler: { main nvim } }
+    { description: "Install claude",                    handler: { main claude } }
+    { description: "Install rustup",                    handler: { main rust } }
+  ]
 }
 
 def wm-install [] {
@@ -441,106 +366,94 @@ def wm-install [] {
   stow-package "systemd"
 }
 
+def touch-files [dir: string, files: list<string>] {
+  do -i { mkdir $dir }
+
+  for f in $files {
+    let file_path = ($dir | path join $f)
+    if not ($file_path | path exists) {
+      touch $file_path
+    }
+  }
+}
+
 def "main niri" [] {
   wm-install
 
   if (has-cmd dms) and (has-cmd niri) {
     log+ "niri and dms are already installed"
   } else {
-    log+ "Installing niri"
-    paru-install
+    log+ "Installing niri and dms"
     ^paru -S niri dms-shell-bin
   }
 
   stow-package "niri"
 
   let niri_dms = ($env.HOME | path join ".config/niri/dms")
-  do -i { mkdir $niri_dms }
-
-  let dms_files = ["alttab" "colors" "layout" "wpblur" "binds" "cursor" "outputs"]
-  for f in $dms_files {
-    let file_path = ($niri_dms | path join $"($f).kdl")
-    if not ($file_path | path exists) {
-      touch $file_path
-    }
-  }
+  touch-files $niri_dms ["alttab.kdl" "colors.kdl" "layout.kdl" "wpblur.kdl" "binds.kdl" "cursor.kdl" "outputs.kdl"]
 
   do -i { ^systemctl --user add-wants niri.service dms }
 }
 
-def "main mangowc" [] {
-  if (has-cmd dms) and (has-cmd mango) {
-    log+ "mangowc and dms are already installed"
-    return
-  }
-
+def "main mangowc install" [] {
   log+ "Installing mangowc"
   wm-install
-
-  paru-install
   ^paru -S mangowc-git dms-shell-bin
+}
 
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-
+def "main mangowc config" [] {
   log+ "Stowing mangowc dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME mango systemd
-  do -i { ^git -C $config_dir stash --include-untracked --message "Stashing mangowc dotfiles" }
+  stow-package "mango"
+  stow-package "systemd"
 
   let mango_dms = ($env.HOME | path join ".config/mango/dms")
-  do -i { mkdir $mango_dms }
-
   let dms_files = ["alttab" "colors" "layout" "wpblur" "binds" "cursor" "outputs"]
-  for f in $dms_files {
-    let file_path = ($mango_dms | path join $"($f).conf")
-    if not ($file_path | path exists) {
-      touch $file_path
-    }
-  }
+  touch-files $mango_dms $dms_files
 
   do -i { ^systemctl --user add-wants wm-session.target dms }
 }
 
-def "main hypr" [] {
-  if (has-cmd dms) and (has-cmd hyprctl) {
-    log+ "hyprland and dms are already installed"
-    return
-  }
+def "main mangowc" [] {
+  mangowc install
+  mangowc config
+}
 
+def "main hypr install" [] {
   log+ "Installing hyprland"
   wm-install
-
   paru-install
   ^paru -S hyprland dms-shell-bin
+}
 
+def "main hypr config" [] {
   stow-package "hypr"
 
   let hypr_dms = ($env.HOME | path join ".config/hypr/dms")
-  do -i { mkdir $hypr_dms }
-
   let dms_files = ["alttab" "colors" "layout" "wpblur" "binds" "cursor" "outputs"]
-  for f in $dms_files {
-    let file_path = ($hypr_dms | path join $"($f).conf")
-    if not ($file_path | path exists) {
-      touch $file_path
-    }
-  }
+  touch-files $hypr_dms $dms_files
 
   do -i { ^systemctl --user add-wants hyprland-session.target dms }
   do -i { ^systemctl --user add-wants wm-session.target dms }
 }
 
-def "main sway" [] {
-  if (has-cmd sway) {
-    log+ "sway is already installed"
-    return
-  }
+def "main hypr" [] {
+  hypr install
+  hypr config
+}
 
+def "main sway install" [] {
   log+ "Installing sway"
   wm-install
-
   si ["sway"]
+}
 
+def "main sway config" [] {
   stow-package "sway"
+}
+
+def "main sway" [] {
+  sway install
+  sway config
 }
 
 def "main flatpaks" [] {
@@ -552,17 +465,10 @@ def "main flatpaks" [] {
   ^flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
 
   let flatpaks = [
-    "app.zen_browser.zen"
     "com.github.tchx84.Flatseal"
-    "com.spotify.Client"
     "io.github.flattool.Ignition"
-    "io.github.kolunmi.Bazaar"
     "md.obsidian.Obsidian"
     "org.gnome.Firmware"
-    "org.gnome.Papers"
-    "org.gnome.World.PikaBackup"
-    "org.telegram.desktop"
-    "sh.loft.devpod"
   ]
 
   log+ "Installing flatpaks..."
@@ -575,15 +481,18 @@ def "main flatpaks" [] {
 def "main system-desktop" [] {
   update-packages
 
-  let pkgs = [
+  log+ "Installing system packages"
+  si [
     "flatpak"
     "gnome-keyring"
     "pass"
     "plocate"
   ]
 
-  log+ "Installing system packages"
-  si $pkgs
+  if not (has-cmd pipx) {
+    warn+ "pipx is not installed"
+    return
+  }
 
   log+ "Installing pywal packages"
   ^pipx install pywal pywalfox
@@ -591,23 +500,33 @@ def "main system-desktop" [] {
 
 def "main cockpit" [] {
   log+ "Installing cockpit"
-  let packages = ["cockpit" "cockpit-packagekit" "cockpit-storaged" "cockpit-podman" "cockpit-files" "cockpit-machines"]
-  si $packages
+  si [
+    "cockpit"
+    "cockpit-packagekit"
+    "cockpit-storaged"
+    "cockpit-podman"
+    "cockpit-files"
+    "cockpit-machines"
+  ]
 }
 
 def "main distrobox" [] {
   log+ "Installing distrobox"
-  let packages = ["podman" "distrobox"]
-  si $packages
+  si ["podman" "distrobox"]
 }
 
-def "main vscode" [] {
-  if not (has-cmd code) {
-    log+ "Installing vscode"
-    paru-install
-    ^paru -S visual-studio-code-bin
+def "main vscode install" [] {
+  if (has-cmd code) {
+    log+ "vscode is already installed"
+    return
   }
 
+  log+ "Installing vscode"
+  paru-install
+  ^paru -S visual-studio-code-bin
+}
+
+def "main vscode extensions" [] {
   let extensions = [
     "jdinhlife.gruvbox"
     "mads-hartmann.bash-ide-vscode"
@@ -621,9 +540,17 @@ def "main vscode" [] {
     log+ $"Installing ($ext)"
     do -i { ^code --install-extension $ext }
   }
+}
 
+def "main vscode config" [] {
   stow-package "vscode"
   stow-package "kitty"
+}
+
+def "main vscode" [] {
+  main vscode install
+  main vscode extensions
+  main vscode config
 }
 
 def "main zed" [] {
@@ -635,41 +562,19 @@ def "main zed" [] {
 
 def "main virt" [] {
   log+ "Installing virt-manager"
-  let packages = ["virt-manager" "virt-install" "virt-viewer" "libisofs" "guestfs-tools" "qemu-img"]
-  si $packages
+  si ["virt-manager" "virt-install" "virt-viewer" "libisofs" "guestfs-tools" "qemu-img"]
 
-  let groups = ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"]
-  for group in $groups {
+  for group in ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"] {
     do -i { ^sudo usermod -aG $group $env.USER }
   }
 
-  ^sudo systemctl enable --now libvirtd
-  ^sudo systemctl enable --now virtlogd
-
   if (has-cmd authselect) {
-    ^sudo authselect enable-feature with-libvirt
-  }
-}
-
-def bootstrap [] {
-  path add ([
-    "bin"
-    ".local/bin"
-    ".local/share/pnpm"
-    ".npm-packages"
-    ".pixi/bin"
-    ".local/share/linux-config/bin"
-  ] | each { $env.HOME | path join $in | path expand })
-
-  if not (is-arch) {
-    die "This script only supports Arch Linux. Quitting."
+    do -i { ^sudo authselect enable-feature with-libvirt }
   }
 }
 
 def "main setup-desktop" [] {
-  mut items: list<record<description: string, handler: closure>> = []
-
-  $items = $items ++ [
+  multi-task [
     { description: "Install desktop system packages", handler: { main system-desktop } }
     { description: "Install distrobox",               handler: { main distrobox } }
     { description: "Install virt-manager",            handler: { main virt } }
@@ -681,18 +586,6 @@ def "main setup-desktop" [] {
     { description: "Install hyprland", handler: { main hypr } }
     { description: "Install sway", handler: { main sway } }
   ]
-
-  let selected = ($items | input list --multi --display description "Select tasks to execute:")
-
-  if ($selected | is-empty) {
-    log+ "No tasks selected."
-    return
-  }
-
-  for item in $selected {
-    log+ $"Executing: ($item.description)"
-    do $item.handler
-  }
 }
 
 def "main stow" [package: string] {
@@ -731,9 +624,12 @@ def "main help" [] {
 
 def main [] {
     init-log-file
-    bootstrap
+
     let sudo_job_id = keep-sudo-alive
+
+    bootstrap
     main setup-shell
     main setup-desktop
+
     stop-sudo-alive $sudo_job_id
 }

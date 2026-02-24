@@ -4,8 +4,6 @@ export def default-if-empty [default_val: any] {
     if ($in | is-empty) { $default_val } else { $in }
 }
 
-
-
 export def ensure-parent-dir [path: string] {
     let parent = ($path | path dirname)
     if not ($parent | path exists) {
@@ -25,7 +23,7 @@ export def validate-path [path: string] {
 
 export def validate-file [path: string] {
     let file_type = do -i { $path | path type } | default "none"
-    if $file_type != 'file' and $file_type != 'symlink' {
+    if $file_type != 'file' {
         error make {
             msg: $"Not a file: ($path)"
             label: { text: $path, span: (metadata $path).span }
@@ -33,7 +31,6 @@ export def validate-file [path: string] {
     }
     $path
 }
-
 
 def has_cmd [app: string] {
     (which $app | is-not-empty)
@@ -45,14 +42,6 @@ export def is-linux [] {
 
 export def is-mac [] {
     (sys host).name == "Darwin"
-}
-
-export def os-release [] {
-    if ("/etc/os-release" | path exists) {
-        open "/etc/os-release"
-    } else {
-        {}
-    }
 }
 
 export def is-fedora-atomic [] {

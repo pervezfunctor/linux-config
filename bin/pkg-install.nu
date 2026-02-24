@@ -1,13 +1,13 @@
 #!/usr/bin/env nu
 
-def has_cmd [cmd: string] {
+def has-cmd [cmd: string] {
     (which $cmd | is-not-empty)
 }
 
-def install_installer [name: string] {
+def installer-install [name: string] {
     match $name {
         "brew" => {
-            if not (has_cmd brew) {
+            if not (has-cmd brew) {
                 print "Installing brew..."
                 ^/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
             }
@@ -60,7 +60,7 @@ def install_installer [name: string] {
     }
 }
 
-def install_packages [name: string, packages: list<string>] {
+def packages-install [name: string, packages: list<string>] {
     if ($packages | is-empty) {
         return
     }
@@ -118,7 +118,7 @@ def install_packages [name: string, packages: list<string>] {
     print $""
 }
 
-def get_packages [installer_data: any, groups: list<string>] {
+def get-packages [installer_data: any, groups: list<string>] {
     let is_flat_list = ($installer_data | describe | str contains "list")
 
     if $is_flat_list {
@@ -202,7 +202,7 @@ def main [
             continue
         }
 
-        let packages = (get_packages $installer_data $groups)
-        install_packages $name $packages
+        let packages = (get-packages $installer_data $groups)
+        packages-install $name $packages
     }
 }

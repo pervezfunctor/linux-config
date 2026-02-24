@@ -1,48 +1,268 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-has_cmd() {
-  command -v "$1" >/dev/null 2>&1
-}
+set -euo pipefail
 
-die() {
-  printf 'ERROR: %s\n' "$1" >&2
-  exit 1
-}
+if [[ "${BASH_SOURCE[0]:-}" != "${0}" ]]; then
+  echo "This script must be executed, not sourced." >&2
+  return 1 2>/dev/null || exit 1
+fi
 
-nu_install() {
-  if has_cmd dnf; then
-    sudo dnf install -y nu
-  elif has_cmd pacman; then
-    sudo pacman -S --noconfirm nushell
-  elif has_cmd brew; then
-    brew install nushell
-  else
-    if ! has_cmd pixi; then
-      curl -fsSL https://pixi.sh/install.sh | bash
+{
+  export DOT_DIR="$HOME/.local/share/linux-config"
+
+  has_cmd() {
+    command -v "$1" >/dev/null 2>&1
+  }
+
+  dir_exists() {
+    [ -d "$1" ]
+  }
+
+  is_trixie() {
+    [ -f /etc/os-release ] && grep -qi 'trixie' /etc/os-release 2>/dev/null
+  }
+
+  is_questing() {
+    [ -f /etc/os-release ] && grep -qi 'questing' /etc/os-release 2>/dev/null
+  }
+
+  is_fedora_atomic() {
+    has_cmd rpm-ostree
+  }
+
+  is_fedora() {
+    is_fedora_atomic && return 1
+    [ -f /etc/redhat-release ] && grep -q -i 'Fedora' /etc/redhat-release
+  }
+
+  is_linux() {
+    [ "$(uname -s)" = "Linux" ]
+  }
+
+  is_tw() {
+    [ -f /etc/os-release ] && grep -q 'Tumbleweed' /etc/os-release 2>/dev/null
+  }
+
+  is_arch() {
+    [ -f /etc/os-release ] && grep -q 'Arch Linux' /etc/os-release 2>/dev/null
+  }
+
+  is_pikaos() {
+    [ -f /etc/os-release ] && grep -q 'pika' /etc/os-release 2>/dev/null
+  }
+
+  is_apt() {
+    is_trixie || is_questing || is_pikaos
+  }
+
+  is_ubuntu() {
+    [ -f /etc/os-release ] && grep -q 'Ubuntu' /etc/os-release 2>/dev/null
+  }
+
+  is_gnome() {
+    [ "${XDG_CURRENT_DESKTOP:-}" = "GNOME" ] || [ "${XDG_SESSION_DESKTOP:-}" = "gnome" ]
+  }
+
+  is_ublue() {
+    is_fedora_atomic && has_cmd ujust
+  }
+
+  log_message() {
+    local level="$1"
+    local color="$2"
+    local symbol="$3"
+    local msg="$4"
+
+    echo -e "${color}${symbol} ${msg}\033[0m"
+  }
+
+  log() {
+    log_message "INFO" "\033[0;32m" "→" "$1"
+  }
+
+  warn() {
+    log_message "WARN" "\033[0;33m" "!" "$1"
+  }
+
+  error() {
+    log_message "ERROR" "\033[0;31m" "✗" "$1"
+  }
+
+  die() {
+    error "$1"
+    exit 1
+  }
+
+  keep_sudo_alive() {
+    log "Keeping sudo alive"
+    sudo -v
+    while true; do
+      sudo -n true
+      sleep 60
+      kill -0 "$$" || exit
+    done 2>/dev/null &
+  }
+
+  update_packages() {
+    log "Updating packages"
+
+    if is_ublue; then
+      brew update
+      brew upgrade
+    elif is_fedora; then
+      sudo dnf update -y
+    elif is_trixie || is_questing; then
+      sudo apt update && sudo apt upgrade -y
+    elif is_pikaos; then
+      pikman update && pikman upgrade
+    elif is_tw; then
+      sudo zypper refresh && sudo zypper update
+    elif is_arch; then
+      if has_cmd paru; then
+        paru -Syyu
+      else
+        sudo pacman -Syyu
+      fi
+    else
+      die "OS not supported. Quitting."
     fi
-    export PATH="$HOME/.pixi/bin:$PATH"
-    pixi global install nushell
-  fi
-  has_cmd nu || die "nu installation failed"
+  }
+
+  si() {
+    log "Installing $*"
+    if  is_ublue; then
+      brew install "$@"
+    elif is_fedora; then
+      sudo dnf install -y "$@"
+    elif is_trixie || is_questing; then
+      sudo apt install -y "$@"
+    elif is_pikaos; then
+      pikman install "$@"
+    elif is_tw; then
+      sudo zypper --non-interactive --quiet install --auto-agree-with-licenses "$@"
+    elif is_arch; then
+      sudo pacman -S --quiet --noconfirm "$@"
+    else
+      error "OS not supported. Not installing $*."
+      return 1
+    fi
+  }
+
+  safe_cd() {
+    cd "$1" || die "Failed to change to directory $1"
+  }
+
+  is_git_repo() {
+    git rev-parse --is-inside-work-tree >/dev/null 2>&1
+  }
+
+  git_status() {
+    git status --porcelain=v1 2>/dev/null
+  }
+
+  dotfiles_clone() {
+    local repo_dir="$DOT_DIR"
+    local repo_url="https://github.com/pervezfunctor/linux-config.git"
+
+    dir_exists "$repo_dir" || {
+      safe_cd "$HOME"
+
+      log "Cloning dotfiles"
+      git clone --depth 1 "$repo_url" "$repo_dir" || die "Failed to clone dotfiles"
+      return 0
+    }
+
+    safe_cd "$repo_dir"
+    is_git_repo || die "$repo_dir is not a git repository"
+
+    local repo_status
+    repo_status=$(git_status) || die "Unable to determine repository status"
+
+    if [ -z "$repo_status" ]; then
+      log "Dotfiles repo clean. Pulling latest changes"
+      if git pull --rebase --stat; then
+        log "Dotfiles updated"
+        return 0
+      fi
+
+      warn "git pull --rebase failed. Aborting rebase"
+      git rebase --abort >/dev/null 2>&1 || true
+      exit 1
+    }
+
+    log "Dotfiles repo has local changes. Stash them and run this script again."
+    exit 1
+  }
+
+  bootstrap() {
+    export PNPM_HOME="$HOME/.local/share/pnpm"
+    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PNPM_HOME:$HOME/.npm-packages/bin:$PATH"
+
+    keep_sudo_alive
+
+    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_fedora_atomic || {
+      die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS supported. Quitting."
+    }
+  }
+
+  base_install() {
+    log "Installing required packages..."
+    update_packages
+    si git stow trash-cli
+    dotfiles_clone
+  }
+
+  nu_install() {
+    log "Installing nushell..."
+    if is_fedora; then
+      si nu
+    elif is_arch || is_tw || is_pikaos; then
+      si nushell
+    elif has_cmd brew; then
+      brew install nushell
+    else
+      has_cmd "$HOME/.pixi/bin/pixi" || {
+        log "Installing pixi..."
+        curl -fsSL https://pixi.sh/install.sh | bash
+      }
+      "$HOME/.pixi/bin/pixi" global install nushell
+    fi
+    has_cmd nu || die "nu installation failed"
+  }
+
+  run_setup() {
+    local setup_script="$DOT_DIR/bin/setup.nu"
+
+    if [ -f "$setup_script" ]; then
+      log "Running local setup.nu"
+      nu "$setup_script"
+      return 0
+    fi
+
+    log "Local setup.nu not found, downloading from remote..."
+    local tmp
+    tmp=$(mktemp /tmp/setup.nu.XXXXXX)
+    local url="https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup.nu"
+
+    trap "rm -f \"$tmp\"" EXIT
+
+    if has_cmd curl; then
+      curl -fsSL "$url" -o "$tmp" || die "Failed to download setup.nu"
+    elif has_cmd wget; then
+      wget -qO "$tmp" "$url" || die "Failed to download setup.nu"
+    else
+      die "Neither curl nor wget found"
+    fi
+
+    nu "$tmp"
+  }
+
+  main() {
+    bootstrap "$@"
+    base_install
+    nu_install
+    run_setup
+  }
+
+  main "$@"
 }
-
-run_setup_nu() {
-  tmp=$(mktemp /tmp/setup.nu.XXXXXX)
-  url="https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup.nu"
-
-  if has_cmd curl; then
-    curl -fsSL "$url" -o "$tmp" || die "Failed to download setup.nu"
-  elif has_cmd wget; then
-    wget -qO "$tmp" "$url" || die "Failed to download setup.nu"
-  else
-    die "Neither curl nor wget found"
-  fi
-
-  nu "$tmp"
-  rm -f "$tmp"
-}
-
-export PATH="$HOME/.local/bin:$PATH"
-
-nu_install
-run_setup_nu

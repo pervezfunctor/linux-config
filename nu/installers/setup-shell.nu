@@ -5,23 +5,23 @@ use ../nu/lib.nu *
 use ../nu/setup-lib.nu *
 
 def "main nix" [] {
-  if (has-cmd nix) { return }
-  log+ "Installing nix"
-  let install_url = "https://install.determinate.systems/nix"
-  ^curl --proto '=https' --tlsv1.2 -sSf -L $install_url | ^sh -s -- install --determinate --no-confirm
-  let nix_profile = "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
-  if ($nix_profile | path exists) {
-    do -i { ^bash -c $"source ($nix_profile)" }
+  if (has-cmd nix) {
+    log+ "nix is already installed"
+    return
   }
+
+  log+ "Installing nix"
+  ^curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | ^sh -s -- install --determinate --no-confirm
 }
 
 def "main home-manager" [] {
   if not (has-cmd nix) {
     error make { msg: "nix is required for home-manager" }
   }
+
   log+ "Setting up home-manager"
   let flake_path = ($env.HOME | path join ".local/share/linux-config/home-manager")
-  ^nix run home-manager -- switch --flake $"($flake_path)#($env.USER)" --impure
+  ^nix run home-manager -- switch --flake $"($flake_path)#($env.USER)" --impure -b backup
 }
 
 def "main system" [] {
@@ -64,22 +64,6 @@ def "main system" [] {
     log+ "Updating locate database, this may take a while..."
     do -i { ^sudo updatedb }
   }
-}
-
-def pixi-install [] {
-  log+ "Installing pixi"
-
-  if not (has-cmd brew) {
-    error make { msg: "brew is not installed. Please install brew first." }
-  }
-
-  ^brew install pixi
-
-  if not (has-cmd pixi) {
-    error make { msg: "pixi failed to install. Aborting pixi package setup." }
-  }
-
-  pixi-install-packages
 }
 
 def pixi-install-packages [] {
@@ -125,6 +109,22 @@ def pixi-install-packages [] {
   }
 }
 
+def pixi-install [] {
+  log+ "Installing pixi"
+
+  if not (has-cmd brew) {
+    error make { msg: "brew is not installed. Please install brew first." }
+  }
+
+  ^brew install pixi
+
+  if not (has-cmd pixi) {
+    error make { msg: "pixi failed to install. Aborting pixi package setup." }
+  }
+
+  pixi-install-packages
+}
+
 def "main shell" [] {
   brew-install
   pixi-install
@@ -135,11 +135,12 @@ def "main rust" [] {
     log+ "rustup is already installed"
     return
   }
+
   log+ "Installing rustup"
   ^curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | ^sh
 }
 
-def nushell-setup [] {
+def nushell-config [] {
   let nu_path = (which nu | get path.0? | default "/usr/bin/nu")
   let shells = (open /etc/shells | lines)
 
@@ -175,25 +176,31 @@ def "main nvim" [] {
 
   do -i { ^trash $nvim_config_bak $nvim_share_bak $nvim_state_bak $nvim_cache_bak }
   do -i { ^mv $nvim_config $nvim_config_bak }
-  mkdir $nvim_config
   do -i { ^mv $nvim_share $nvim_share_bak }
   do -i { ^mv $nvim_state $nvim_state_bak }
   do -i { ^mv $nvim_cache $nvim_cache_bak }
 
+  mkdir $nvim_config
   ^git clone --depth 1 https://github.com/AstroNvim/template $nvim_config
   ^rm -rf $"($nvim_config)/.git"
 }
 
-def zshrc-setup [] {
+def zshrc-config [] {
+  if not (has-cmd zsh) {
+    error+ "zsh not found"
+    return
+  }
+
   stow-package "zsh"
-  log+ "Setting zsh as default shell"
-  let zsh_path = (which zsh | get path.0? | default "/usr/bin/zsh")
+
+  let zsh_path = (which zsh | get path.0)
   if (has-cmd chsh) {
+    log+ "Setting zsh as default shell"
     ^chsh -s $zsh_path
   }
 }
 
-def bashrc-setup [] {
+def bashrc-config [] {
   log+ "Setting up bashrc"
   let bashrc = ($env.HOME | path join ".bashrc")
   let source_line = "source ~/.local/share/linux-config/shellrc"
@@ -208,25 +215,25 @@ def bashrc-setup [] {
   }
 }
 
-def dotfiles-clone [] {
-  let repo_dir = ($env.HOME | path join ".local/share/linux-config")
-  let repo_url = "https://github.com/pervezfunctor/linux-config.git"
+const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
+let DOT_DIR = ($env.HOME | path join ".local/share/linux-config")
 
-  if not (dir-exists $repo_dir) {
+def dotfiles-clone [] {
+  if not (dir-exists $DOT_DIR) {
     log+ "Cloning dotfiles"
-    let clone_result = (do -i { ^git clone $repo_url $repo_dir } | complete)
+    let clone_result = (do -i { ^git clone $DOTFILES_URL $DOT_DIR } | complete)
     if $clone_result.exit_code != 0 {
       error make { msg: $"Failed to clone dotfiles: ($clone_result.stderr)" }
     }
     return
   }
 
-  let is_git = (do -i { ^git -C $repo_dir rev-parse --is-inside-work-tree } | complete)
+  let is_git = (do -i { ^git -C $DOT_DIR rev-parse --is-inside-work-tree } | complete)
   if $is_git.exit_code != 0 {
-    error make { msg: $"($repo_dir) exists but is not a git repository" }
+    error make { msg: $"($DOT_DIR) exists but is not a git repository" }
   }
 
-  let remote_url = (do -i { ^git -C $repo_dir remote get-url origin } | complete)
+  let remote_url = (do -i { ^git -C $DOT_DIR remote get-url origin } | complete)
   if $remote_url.exit_code != 0 {
     error make { msg: "Unable to get remote URL. Is 'origin' configured?" }
   }
@@ -234,38 +241,38 @@ def dotfiles-clone [] {
   if ($remote_url_str | is-empty) {
     error make { msg: "Remote URL is empty. Is 'origin' configured?" }
   }
-  if $remote_url_str != $repo_url {
-    error make { msg: $"Unexpected remote: expected '($repo_url)', got '($remote_url_str)'" }
+  if $remote_url_str != $DOTFILES_URL {
+    error make { msg: $"Unexpected remote: expected '($DOTFILES_URL)', got '($remote_url_str)'" }
   }
 
-  let status = (do -i { ^git -C $repo_dir status --porcelain=v1 } | complete)
+  let status = (do -i { ^git -C $DOT_DIR status --porcelain=v1 } | complete)
   if $status.exit_code != 0 {
     error make { msg: "Unable to determine repository status" }
   }
 
   if ($status.stdout | is-empty) {
     log+ "Dotfiles repo clean. Pulling latest changes"
-    let pull = (do -i { ^git -C $repo_dir pull --rebase --stat } | complete)
+    let pull = (do -i { ^git -C $DOT_DIR pull --rebase --stat } | complete)
     if $pull.exit_code == 0 {
       log+ "Dotfiles updated"
       return
     }
     warn+ "git pull --rebase failed. Attempting to abort rebase"
-    do -i { ^git -C $repo_dir rebase --abort }
+    do -i { ^git -C $DOT_DIR rebase --abort }
     error make { msg: "git pull --rebase failed on clean repo" }
   }
 
   log+ "Dotfiles repo has local changes. Stashing before pull"
   let stash_label = $"setup-autostash-(date now | format date '%s')"
-  let stash_result = (do -i { ^git -C $repo_dir stash push --include-untracked --message $stash_label } | complete)
+  let stash_result = (do -i { ^git -C $DOT_DIR stash push --include-untracked --message $stash_label } | complete)
   if $stash_result.exit_code != 0 {
     error make { msg: $"Failed to stash local changes: ($stash_result.stderr)" }
   }
 
-  let pull = (do -i { ^git -C $repo_dir pull --rebase --stat } | complete)
+  let pull = (do -i { ^git -C $DOT_DIR pull --rebase --stat } | complete)
   if $pull.exit_code == 0 {
     log+ "Pull succeeded. Restoring local changes"
-    let pop_result = (do -i { ^git -C $repo_dir stash pop } | complete)
+    let pop_result = (do -i { ^git -C $DOT_DIR stash pop } | complete)
     if $pop_result.exit_code != 0 {
       warn+ "Stash pop had conflicts. Resolve manually and check your local changes."
       warn+ $pop_result.stderr
@@ -274,8 +281,8 @@ def dotfiles-clone [] {
   }
 
   warn+ "git pull --rebase failed with local changes. Restoring state"
-  do -i { ^git -C $repo_dir rebase --abort }
-  let pop_result = (do -i { ^git -C $repo_dir stash pop } | complete)
+  do -i { ^git -C $DOT_DIR rebase --abort }
+  let pop_result = (do -i { ^git -C $DOT_DIR stash pop } | complete)
   if $pop_result.exit_code != 0 {
     warn+ "Stash pop had conflicts after abort. Resolve manually."
     warn+ $pop_result.stderr
@@ -287,10 +294,10 @@ def "main dotfiles" [] {
   dotfiles-clone
 
   if not (is-mac) {
-    bashrc-setup
+    bashrc-config
   }
-  nushell-setup
-  zshrc-setup
+  nushell-config
+  zshrc-config
 }
 
 def "main devtools" [] {
@@ -331,12 +338,12 @@ def "main devtools" [] {
   }
 }
 
-# Install claude CLI from Anthropic
 def "main claude" [] {
   if (has-cmd claude) {
     log+ "claude is already installed"
     return
   }
+
   log+ "Installing claude"
   ^curl -fsSL https://claude.ai/install.sh | ^bash
 }
@@ -347,9 +354,8 @@ def "main incus" [] {
     si ["incus"]
   }
 
-  incus-setup
+  incus-config
 }
-
 
 def "main setup-shell" [] {
   let supported = (is-fedora) or (is-trixie) or (is-questing) or (is-tw) or (is-arch) or (is-pikaos) or (is-mac) or (is-fedora-atomic)
@@ -360,42 +366,33 @@ def "main setup-shell" [] {
   init-log-file
   bootstrap
 
-  let items = (
-    []
-    | if (is-non-atomic-linux) {
-        append [
-          { description: "Install system packages", handler: { main system } }
-          { description: "Install incus", handler: { main incus } }
-        ]
-      } else {}
-    | append [
-        { description: "Setup dotfiles with stow", handler: { main dotfiles } }
-        { description: "Install shell tools", handler: { main shell } }
-        { description: "Install devtools (mise, uv etc)", handler: { main devtools } }
-        { description: "Install Neovim", handler: { main nvim } }
-        { description: "Install claude", handler: { main claude } }
-        { description: "Install rustup", handler: { main rust } }
-      ]
-    | if (not (is-fedora-atomic)) {
-        append [
-          { description: "Install nix", handler: { main nix } }
-        ]
-      } else {}
-  )
+  mut items = []
 
-  let selected = ($items | input list --multi --display description "Select tasks to execute:")
-
-  if ($selected | is-empty) {
-    log+ "No tasks selected."
-    return
+  if (is-non-atomic-linux) {
+    $items = $items ++ [
+      { description: "Install system packages", handler: { main system } }
+      { description: "Install incus", handler: { main incus } }
+    ]
   }
 
-  for item in $selected {
-    log+ $"Executing: ($item.description)"
-    do $item.handler
+  $items = $items ++ [
+    { description: "Setup dotfiles with stow", handler: { main dotfiles } }
+    { description: "Install shell tools", handler: { main shell } }
+    { description: "Install devtools (mise, uv etc)", handler: { main devtools } }
+    { description: "Install Neovim", handler: { main nvim } }
+    { description: "Install claude", handler: { main claude } }
+    { description: "Install rustup", handler: { main rust } }
+  ]
+
+
+  if not (is-fedora-atomic) {
+    $items = $items ++ [
+      { description: "Install nix", handler: { main nix } }
+    ]
   }
 
-  cleanup-sudo
+  multi-task $items
+
 }
 
 def "main help" [] {
@@ -405,6 +402,7 @@ def "main help" [] {
   print ""
   print "Commands:"
   print "  setup-shell  Interactive shell setup (packages, dotfiles, tools)"
+  print ""
   print "  system       Install system packages (non-interactive)"
   print "  dotfiles     Clone and stow dotfiles"
   print "  shell        Install shell tools (brew, pixi packages)"
@@ -424,9 +422,10 @@ def "main help" [] {
   print "  - openSUSE Tumbleweed"
   print "  - Arch Linux"
   print "  - PikaOS"
-  print "  - macOS"
 }
 
 def main [] {
+  let job_id = keep-sudo-alive
   main setup-shell
+  stop-sudo-alive $job_id
 }

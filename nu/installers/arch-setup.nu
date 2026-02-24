@@ -1,8 +1,10 @@
 #!/usr/bin/env nu
 
 use std/util 'path add'
-use ../nu/logs.nu *
-use ../nu/lib.nu *
+
+use ../lib/logs.nu *
+use ../lib/lib.nu *
+use ../lib/setup-lib.nu *
 
 def prompt-yn [prompt: string]: nothing -> bool {
   let response = (input $"(ansi cyan)? ($prompt)(ansi reset) (ansi yellow)[y/N](ansi reset) ")
@@ -81,7 +83,6 @@ def "main system-shell" [] {
     "fish"
     "fuse3"
     "fzf"
-    "g++"
     "gcc"
     "gdu"
     "git"
@@ -302,20 +303,6 @@ def "main claude" [] {
   ^curl -fsSL https://claude.ai/install.sh | ^bash
 }
 
-def multi-task [items: list<record<description: string, handler: closure>>] {
-  let selected = ($items | input list --multi --display description "Select tasks to execute:")
-
-  if ($selected | is-empty) {
-    log+ "No tasks selected."
-    return
-  }
-
-  for item in $selected {
-    log+ $"Executing: ($item.description)"
-    do $item.handler
-  }
-}
-
 def "main setup-shell" [] {
   multi-task [
     { description: "Install system packages",           handler: { main system-shell } }
@@ -364,17 +351,6 @@ def wm-install [] {
   do -i { mkdir $"($pictures)/Wallpapers" }
 
   stow-package "systemd"
-}
-
-def touch-files [dir: string, files: list<string>] {
-  do -i { mkdir $dir }
-
-  for f in $files {
-    let file_path = ($dir | path join $f)
-    if not ($file_path | path exists) {
-      touch $file_path
-    }
-  }
 }
 
 def "main niri" [] {

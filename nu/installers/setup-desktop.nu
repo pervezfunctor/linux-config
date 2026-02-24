@@ -5,8 +5,12 @@ use ../nu/lib.nu
 use ../nu/setup-lib.nu
 
 def snapper-config [] {
+  if (is-pikaos) {
+    log+ "snapper config only supported on pikaos"
+  }
+
   if not (has-cmd snapper) {
-    log+ "Snapper is not installed. Skipping setup."
+    warn+ "Snapper is not installed. Skipping setup."
     return
   }
 
@@ -17,10 +21,12 @@ def snapper-config [] {
   }
 
   log+ "Setting up snapper"
-  ^sudo snapper create-config /
-  ^sudo mkdir -p /var/lib/refind-btrfs
-  ^sudo chmod 755 /var/lib/refind-btrfs
-  ^sudo systemctl enable refind-btrfs --now
+  do -i {
+    ^sudo snapper create-config /
+    ^sudo mkdir -p /var/lib/refind-btrfs
+    ^sudo chmod 755 /var/lib/refind-btrfs
+    ^sudo systemctl enable refind-btrfs --now
+  }
 }
 
 def wm-install [] {
@@ -52,24 +58,27 @@ def wm-install [] {
 
   si $pkgs
 
-  if (is-arch) { paru-install }
+  if (is-arch) {
+    paru-install
+  }
 
   let pictures = ($env.HOME | path join "Pictures")
   do -i { mkdir $"($pictures)/Screenshots" }
   do -i { mkdir $"($pictures)/Wallpapers" }
 
   stow-package "systemd"
+  stow-package "kitty"
 }
 
 def niri-install [] {
+  wm-install
+
   if (has-cmd dms) and (has-cmd niri) {
     log+ "niri and dms are already installed"
     return
   }
 
   log+ "Installing niri"
-  wm-install
-
   if (is-pikaos) {
     ^pikman install pika-niri-desktop-minimal pika-niri-settings dms
   } else if (is-fedora) {
@@ -97,15 +106,7 @@ def niri-config [] {
   stow-package "niri"
 
   let niri_dms = ($env.HOME | path join ".config/niri/dms")
-  do -i { mkdir $niri_dms }
-
-  let dms_files = ["alttab" "colors" "layout" "wpblur" "binds" "cursor" "outputs"]
-  for f in $dms_files {
-    let file_path = ($niri_dms | path join $"($f).kdl")
-    if not ($file_path | path exists) {
-      touch $file_path
-    }
-  }
+  touch-files $niri_dms ["alttab.kdl" "colors.kdl" "layout.kdl" "wpblur.kdl" "binds.kdl" "cursor.kdl" "outputs.kdl"]
 
   do -i { ^systemctl --user add-wants niri.service dms }
 }
@@ -116,14 +117,14 @@ def "main niri" [] {
 }
 
 def mangowc-install [] {
+  wm-install
+
   if (has-cmd dms) and (has-cmd mango) {
     log+ "mangowc and dms are already installed"
     return
   }
 
   log+ "Installing mangowc"
-  wm-install
-
   if (is-pikaos) {
     ^pikman install mangowc
   } else if (is-arch) {
@@ -146,16 +147,7 @@ def mangowc-config [] {
   stow-package "systemd"
 
   let mango_dms = ($env.HOME | path join ".config/mango/dms")
-  do -i { mkdir $mango_dms }
-
-  let dms_files = ["alttab" "colors" "layout" "wpblur" "binds" "cursor" "outputs"]
-  for f in $dms_files {
-    let file_path = ($mango_dms | path join $"($f).conf")
-    if not ($file_path | path exists) {
-      touch $file_path
-    }
-  }
-
+  touch-files $mango_dms ["alttab.conf" "colors.conf" "layout.conf" "wpblur.conf" "binds.conf" "cursor.conf" "outputs.conf"]
   do -i { ^systemctl --user add-wants wm-session.target dms }
 }
 
@@ -165,14 +157,14 @@ def "main mangowc" [] {
 }
 
 def hypr-install [] {
+  wm-install
+
   if (has-cmd dms) and (has-cmd hyprctl) {
     log+ "hyprland and dms are already installed"
     return
   }
 
   log+ "Installing hyprland"
-  wm-install
-
   if (is-pikaos) {
     ^pikman install pika-hyprland-desktop-minimal pika-hyprland-settings dms
     ^pikman install hyprpolkitagent
@@ -193,16 +185,7 @@ def hypr-config [] {
   stow-package "hypr"
 
   let hypr_dms = ($env.HOME | path join ".config/hypr/dms")
-  do -i { mkdir $hypr_dms }
-
-  let dms_files = ["alttab" "colors" "layout" "wpblur" "binds" "cursor" "outputs"]
-  for f in $dms_files {
-    let file_path = ($hypr_dms | path join $"($f).conf")
-    if not ($file_path | path exists) {
-      touch $file_path
-    }
-  }
-
+  touch-files hypr_dms ["alttab" "colors" "layout" "wpblur" "binds" "cursor" "outputs"]
   do -i { ^systemctl --user add-wants hyprland-session.target dms }
   do -i { ^systemctl --user add-wants wm-session.target dms }
 }
@@ -263,28 +246,35 @@ def "main system" [] {
   log+ "Installing system packages"
   si $pkgs
 
-  if (is-pikaos) { snapper-config }
+  if (is-pikaos) {
+    snapper-config
+  }
 
-  log+ "Installing pywal packages"
-  ^pipx install pywal pywalfox
+  if (has-cmd pipx) {
+    log+ "Installing pywal packages"
+    ^pipx install pywal pywalfox
+  }
 }
 
 def "main distrobox" [] {
   log+ "Installing distrobox"
-  let packages = ["podman" "distrobox"]
-  si $packages
+  si ["podman" "distrobox"]
 }
 
-def "main vscode" [] {
+def "main vscode install" [] {
   if not (has-cmd code) {
-    if not (has-cmd brew) { brew-install }
+    if not (has-cmd brew) {
+      brew-install
+    }
 
     log+ "Installing vscode"
     ^brew tap ublue-os/tap
     ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
     ^brew install --cask visual-studio-code-linux
   }
+}
 
+def "main vscode extensions" [] {
   let extensions = [
     "jdinhlife.gruvbox"
     "jnoortheen.nix-ide"
@@ -299,9 +289,16 @@ def "main vscode" [] {
     log+ $"Installing ($ext)"
     do -i { ^code --install-extension $ext }
   }
+}
 
+def "main vscode config" [] {
   stow-package "vscode"
-  stow-package "kitty"
+}
+
+def "main vscode" [] {
+  main vscode install
+  main vscode extensions
+  main vscode config
 }
 
 def "main zed" [] {
@@ -318,32 +315,21 @@ def "main virt" [] {
   let packages = ["virt-manager" "virt-install" "virt-viewer"]
   si $packages
 
-  let groups = ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"]
-  for group in $groups {
+  for group in ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"] {
     do -i { ^sudo usermod -aG $group $env.USER }
   }
 
-  ^sudo systemctl enable --now libvirtd
-  ^sudo systemctl enable --now virtlogd
-
   if (has-cmd authselect) {
-    ^sudo authselect enable-feature with-libvirt
+    do -i { ^sudo authselect enable-feature with-libvirt }
   }
 }
 
 def gnome-extensions-install [] {
   if not (has-cmd gext) {
     if not (has-cmd pipx) {
-      if (has-cmd pip) {
-        ^pip install --user pipx
-      }
-    }
-
-    if not (has-cmd pipx) {
       warn+ "pipx not found, skipping gnome extensions"
       return
     }
-
     ^pipx install gnome-extensions-cli --system-site-packages
   }
 
@@ -353,10 +339,6 @@ def gnome-extensions-install [] {
   }
 
   let extensions = [
-    "AlphabeticalAppGrid@stuarthayhurst"
-    "blur-my-shell@aunetx"
-    "extension-list@tu.berry"
-    "just-perfection-desktop@just-perfection"
     "paperwm@paperwm.github.com"
     "search-light@icedman.github.com"
     "switcher@landau.fi"
@@ -364,6 +346,10 @@ def gnome-extensions-install [] {
   ]
 
   let optional = [
+    "just-perfection-desktop@just-perfection"
+    "blur-my-shell@aunetx"
+    "extension-list@tu.berry"
+    "AlphabeticalAppGrid@stuarthayhurst"
     "tilingshell@ferrarodomenico.com"
   ]
 
@@ -473,10 +459,12 @@ def gnome-keybindings-install [] {
 }
 
 def "main gnome" [] {
-  gnome-extensions-install
-  gnome-keybindings-install
-  gnome-settings-install
-  gnome-flatpaks-install
+  do -i {
+    gnome-extensions-install
+    gnome-keybindings-install
+    gnome-settings-install
+    gnome-flatpaks-install
+  }
 }
 
 def "main setup-desktop" [] {
@@ -562,7 +550,6 @@ def "main help" [] {
   print "  - openSUSE Tumbleweed"
   print "  - Arch Linux"
   print "  - PikaOS"
-  print "  - macOS (not supported for desktop)"
 }
 
 def main [] {

@@ -145,3 +145,28 @@ export def bootstrap [] {
     ".local/share/linux-config/bin"
   ] | each { $env.HOME | path join $in | path expand })
 }
+
+export def multi-task [items: list<record<description: string, handler: closure>>] {
+  let selected = ($items | input list --multi --display description "Select tasks to execute:")
+
+  if ($selected | is-empty) {
+    log+ "No tasks selected."
+    return
+  }
+
+  for item in $selected {
+    log+ $"Executing: ($item.description)"
+    do $item.handler
+  }
+}
+
+export def touch-files [dir: string, files: list<string>] {
+  do -i { mkdir $dir }
+
+  for f in $files {
+    let file_path = ($dir | path join $f)
+    if not ($file_path | path exists) {
+      touch $file_path
+    }
+  }
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env nu
 
-use ../nu/logs.nu *
-use ../nu/lib.nu *
+use ./lib/logs.nu *
+use ./lib/lib.nu *
 
 export-env {
     $env.DOT_DIR = ($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))

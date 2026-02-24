@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
-use ../nu/lib.nu [has-cmd]
+use ./lib/lib.nu [has-cmd]
 
 def show-help [] {
     print $"Usage: sudo-warm <tool> [args...]

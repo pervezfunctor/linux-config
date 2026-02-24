@@ -1,8 +1,8 @@
 #!/usr/bin/env nu
 
-use ../nu/logs.nu
-use ../nu/lib.nu
-use ../nu/setup-lib.nu
+use ../lib/logs.nu *
+use ../lib/lib.nu *
+use ../lib/setup-lib.nu *
 
 def snapper-config [] {
   if (is-pikaos) {

@@ -1,26 +1,5 @@
 #!/usr/bin/env nu
 
-# Test suite for build-servers-json.nu and generate-tmuxp.nu
-# Run from repo root: nu bin/test-tmuxp-scripts.nu
-
-# Validate IP address format (x.x.x.x with each octet 0-255)
-def is-valid-ip [ip: string]: nothing -> bool {
-  let parts = $ip | split row "."
-
-  if ($parts | length) != 4 {
-    return false
-  }
-
-  $parts | all {|p|
-    try {
-      let num = $p | into int
-      $num >= 0 and $num <= 255
-    } catch {
-      false
-    }
-  }
-}
-
 def test-is-valid-ip [] {
   print "(ansi cyan)Testing is-valid-ip...(ansi reset)"
 

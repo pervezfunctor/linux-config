@@ -166,6 +166,23 @@ def "main rust" [] {
   rustup default stable
 }
 
+def add-shell [shell_path: string] {
+  if not ($shell_path | path exists) {
+    warn+ "Shell path does not exist"
+    return
+  }
+
+  if not (has-cmd $shell_path) {
+    warn+ "sudo is not installed"
+    return
+  }
+
+  let shells = open /etc/shells | lines
+  if not ($shell_path in $shells) {
+    ^sudo echo $shell_path | ^sudo tee -a /etc/shells
+  }
+}
+
 def nushell-config [] {
   let nu_path = (which nu | first | get path)
   add-shell $nu_path

@@ -1,6 +1,6 @@
 use std/util "path add"
 
-def stow-package [package: string] {
+export def stow-package [package: string] {
   let config_dir = ($env.HOME | path join ".local/share/linux-config")
   validate-path $config_dir
 
@@ -15,7 +15,7 @@ def stow-package [package: string] {
   }
 }
 
-def group-add [group: string] {
+export def group-add [group: string] {
   let groups_output = (^getent group | lines)
   let group_names = ($groups_output | parse "{name}:x:{gid}:{members}" | get name)
 

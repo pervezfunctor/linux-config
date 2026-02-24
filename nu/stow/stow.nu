@@ -1,13 +1,7 @@
 #!/usr/bin/env nu
-# stow.nu requires running from bin/ directory or use: nu -I ./bin stow.nu
 
-use ../lib/lib.nu [
-    ensure-parent-dir
-    validate-path
-    validate-file
-    default-if-empty
-]
-use ../lib/logs.nu [log+ error+]
+use ../lib/lib.nu *
+use ../lib/logs.nu *
 
 # Resolves target, source, and backup directories to their final absolute
 # or default paths. If no custom paths are provided, defaults to $env.HOME

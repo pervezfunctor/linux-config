@@ -1,1 +1,0 @@
-../nu/stow/stow.nu

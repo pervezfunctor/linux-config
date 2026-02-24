@@ -1,6 +1,6 @@
 spawn-at-startup "/usr/bin/mate-polkit"
 spawn-sh-at-startup "wl-paste --watch cliphist store"
-spawn-sh-at-startup "nu ~/.local/share/linux-config/nu/idle.nu"
+spawn-sh-at-startup "~/.local/share/linux-config/nu/idle.nu"
 
 // spawn-sh-at-startup "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
 // spawn-sh-at-startup "gnome-keyring-daemon --start --components=pkcs11,secrets,ssh"

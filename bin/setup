@@ -232,7 +232,7 @@ fi
     base_install
     dotfiles_clone
     nu_install
-    nu ~/.local/share/linux-config/shell/nu/installers/setup.nu
+    nu ~/.local/share/linux-config/nu/installers/setup.nu
   }
 
   main "$@"

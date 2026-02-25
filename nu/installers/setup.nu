@@ -5,11 +5,11 @@ export-env {
 }
 
 def "main setup-shell" [] {
-  nu $"($env.DOT_DIR)/installers/setup-shell.nu"
+  nu $"($env.DOT_DIR)/nu/installers/setup-shell.nu"
 }
 
 def "main setup-desktop" [] {
-  nu $"($env.DOT_DIR)/installers/setup-desktop.nu"
+  nu $"($env.DOT_DIR)/nu/installers/setup-desktop.nu"
 }
 
 def main [] {

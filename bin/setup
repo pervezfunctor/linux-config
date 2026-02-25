@@ -4,7 +4,7 @@ set -euo pipefail
 
 if [[ "${BASH_SOURCE[0]:-}" != "${0}" ]]; then
   echo "This script must be executed, not sourced." >&2
-  return 1 2>/dev/null || exit 1
+  exit 1
 fi
 
 {
@@ -73,7 +73,7 @@ fi
     local symbol="$3"
     local msg="$4"
 
-    echo -e "${color}${symbol} ${msg}\033[0m"
+    echo -e "${color}${level}${symbol} ${msg}\033[0m"
   }
 
   log() {
@@ -130,7 +130,7 @@ fi
 
   si() {
     log "Installing $*"
-    if  is_ublue; then
+    if is_ublue; then
       brew install "$@"
     elif is_fedora; then
       sudo dnf install -y "$@"
@@ -188,7 +188,7 @@ fi
       warn "git pull --rebase failed. Aborting rebase"
       git rebase --abort >/dev/null 2>&1 || true
       exit 1
-    }
+    fi
 
     log "Dotfiles repo has local changes. Stash them and run this script again."
     exit 1
@@ -240,11 +240,10 @@ fi
     fi
 
     log "Local setup.nu not found, downloading from remote..."
+    local url="https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup.nu"
     local tmp
     tmp=$(mktemp /tmp/setup.nu.XXXXXX)
-    local url="https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup.nu"
-
-    trap "rm -f \"$tmp\"" EXIT
+    trap 'rm -f "$tmp"' RETURN
 
     if has_cmd curl; then
       curl -fsSL "$url" -o "$tmp" || die "Failed to download setup.nu"

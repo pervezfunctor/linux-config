@@ -54,7 +54,7 @@ def wm-install [] {
   if (is-ubuntu) { $pkgs = $pkgs ++ ["bibata-cursor-theme"] }
   if (is-fedora) { $pkgs = $pkgs ++ ["gvfs-smb"] }
   if (is-tw) { $pkgs = $pkgs ++ ["pipewire-pulseaudio"] }
-  if (is-arch) { $pkgs = $pkgs ++ ["pipewire-jack"] }
+  # if (is-arch) { $pkgs = $pkgs ++ ["pipewire-jack"] }
 
   si $pkgs
 

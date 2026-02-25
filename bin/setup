@@ -44,7 +44,7 @@ fi
   }
 
   is_arch() {
-    [ -f /etc/os-release ] && grep -q 'Arch Linux' /etc/os-release 2>/dev/null
+    [ -f /etc/os-release ] && grep -q 'arch' /etc/os-release 2>/dev/null
   }
 
   is_pikaos() {

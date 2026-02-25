@@ -194,17 +194,6 @@ fi
     exit 1
   }
 
-  bootstrap() {
-    export PNPM_HOME="$HOME/.local/share/pnpm"
-    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PNPM_HOME:$HOME/.npm-packages/bin:$PATH"
-
-    keep_sudo_alive
-
-    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_fedora_atomic || {
-      die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS supported. Quitting."
-    }
-  }
-
   base_install() {
     log "Installing required packages..."
     update_packages
@@ -230,37 +219,20 @@ fi
     has_cmd nu || die "nu installation failed"
   }
 
-  run_setup() {
-    local setup_script="$DOT_DIR/bin/setup.nu"
-
-    if [ -f "$setup_script" ]; then
-      log "Running local setup.nu"
-      nu "$setup_script"
-      return 0
-    fi
-
-    log "Local setup.nu not found, downloading from remote..."
-    local url="https://raw.githubusercontent.com/pervezfunctor/linux-config/master/bin/setup.nu"
-    local tmp
-    tmp=$(mktemp /tmp/setup.nu.XXXXXX)
-    trap 'rm -f "$tmp"' RETURN
-
-    if has_cmd curl; then
-      curl -fsSL "$url" -o "$tmp" || die "Failed to download setup.nu"
-    elif has_cmd wget; then
-      wget -qO "$tmp" "$url" || die "Failed to download setup.nu"
-    else
-      die "Neither curl nor wget found"
-    fi
-
-    nu "$tmp"
-  }
-
   main() {
-    bootstrap "$@"
+    export PNPM_HOME="$HOME/.local/share/pnpm"
+    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PNPM_HOME:$HOME/.npm-packages/bin:$PATH"
+
+    keep_sudo_alive
+
+    is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_fedora_atomic || {
+      die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS supported. Quitting."
+    }
+
     base_install
+    dotfiles_clone
     nu_install
-    run_setup
+    nu ~/.local/share/linux-config/shell/nu/installers/setup.nu
   }
 
   main "$@"

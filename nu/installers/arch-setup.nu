@@ -126,6 +126,7 @@ def "main system-shell" [] {
     "xh"
     "yazi"
     "zoxide"
+    "zsh"
     "zstd"
   ]
 

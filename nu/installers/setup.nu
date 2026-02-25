@@ -13,6 +13,7 @@ def "main setup-desktop" [] {
 }
 
 def main [] {
+  bootstrap
   main setup-shell
   main setup-desktop
 }

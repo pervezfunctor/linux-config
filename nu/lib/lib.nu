@@ -122,3 +122,12 @@ export def prompt-yn [prompt: string]: nothing -> bool {
   let response = (input $"(ansi cyan)? ($prompt)(ansi reset) (ansi yellow)[y/N](ansi reset) ")
   $response =~ "(?i)^y(es)?$"
 }
+
+def handle [block: closure] {
+    try {
+        do $block
+    } catch {|err|
+        $err | print -e
+        null
+    }
+}

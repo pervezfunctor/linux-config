@@ -2,7 +2,7 @@ $env.config = {
     show_banner: false
 }
 
-use ../../../nu/lib.nu [
+use ~/.local/share/linux-config/nu/lib/lib.nu [
     is-linux
     is-mac
     is-ubuntu

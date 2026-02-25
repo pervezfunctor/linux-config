@@ -10,13 +10,13 @@ def "main nix" [] {
     return
   }
 
-  log+ "Installing nix"
+  log+ "Installing nix..."
   ^curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | ^sh -s -- install --determinate --no-confirm
 }
 
 def "main home-manager" [] {
   if not (has-cmd nix) {
-    error make { msg: "nix is required for home-manager" }
+    main nix
   }
 
   log+ "Setting up home-manager"
@@ -33,8 +33,6 @@ def "main system" [] {
     "git"
     "make"
     "micro"
-    "rclone"
-    "rsync"
     "stow"
     "tar"
     "tmux"
@@ -46,13 +44,13 @@ def "main system" [] {
   ]
 
   let pkgs = if (is-tw) {
-    $pkgs ++ ["gcc-c++" "micro-editor" "python313-pipx"]
+    $pkgs ++ ["gcc-c++" "micro-editor" "python313-pipx" "starship"]
   } else if (is-apt) {
-    $pkgs ++ ["g++" "imagemagick" "starship" "pipx"]
+    $pkgs ++ ["g++" "starship" "pipx"]
   } else if (is-fedora) {
     $pkgs ++ ["g++" "nu" "pipx"]
   } else if (is-arch) {
-    $pkgs ++ ["g++" "python-pipx" "nushell"]
+    $pkgs ++ ["g++" "python-pipx" "nushell" "starship"]
   } else {
     $pkgs
   }
@@ -83,6 +81,7 @@ def pixi-install-packages [] {
     "gh"
     "go-gum"
     "go-shfmt"
+    "imagemagick"
     "jq"
     "just"
     "lazygit"
@@ -103,31 +102,21 @@ def pixi-install-packages [] {
   if not (has-cmd starship) { ^pixi global install starship }
   if not (has-cmd nu) { ^pixi global install nushell }
 
-  let tldr_path = ($env.HOME | path join ".pixi/bin/tldr")
-  if ($tldr_path | path exists) {
-    ^$tldr_path --update
-  }
+  do -i { ^tldr --update }
 }
 
-def pixi-install [] {
-  log+ "Installing pixi"
+def "main pixi" [] {
+    if not (has-cmd pixi) {
+      log+ "Installing pixi..."
+      curl -fsSL https://pixi.sh/install.sh | sh
+    }
 
-  if not (has-cmd brew) {
-    error make { msg: "brew is not installed. Please install brew first." }
-  }
-
-  ^brew install pixi
-
-  if not (has-cmd pixi) {
-    error make { msg: "pixi failed to install. Aborting pixi package setup." }
-  }
-
-  pixi-install-packages
+    pixi-install-packages
 }
 
 def "main shell" [] {
-  brew-install
-  pixi-install
+  main pixi
+  main brew
 }
 
 def "main rust" [] {
@@ -136,26 +125,34 @@ def "main rust" [] {
     return
   }
 
-  log+ "Installing rustup"
+  log+ "Installing rustup..."
   ^curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | ^sh
 }
 
-def nushell-config [] {
+def "main nushell config" [] {
   let nu_path = (which nu | get path.0? | default "/usr/bin/nu")
-  let shells = (open /etc/shells | lines)
-
-  if not ($nu_path in $shells) {
-    $nu_path | ^sudo tee -a /etc/shells | ignore
-  }
-
+  add-shell $nu_path
   stow-package "nushell"
 }
 
-def "main nvim" [] {
-  if not (has-cmd nvim) {
-    ^brew install nvim
+def "main nvim install" [] {
+  if (has-cmd nvim) {
+    log+ "nvim already installed"
+    return
   }
 
+  if (has-cmd pixi) {
+    log+ "Installing neovim with pixi..."
+    ^pixi global install nvim
+  } else if (has-cmd brew) {
+    log+ "Installing neovim with brew..."
+    ^brew install neovim
+  } else {
+    error+ "Cannot install neovim"
+  }
+}
+
+def "main nvim config" [] {
   let nvim_config = ($env.HOME | path join ".config/nvim")
 
   if (dir-exists $nvim_config) {
@@ -164,7 +161,7 @@ def "main nvim" [] {
     }
   }
 
-  log+ "Installing AstroNvim"
+  log+ "Setting up AstroNvim..."
 
   let nvim_config_bak = ($env.HOME | path join ".config/nvim.bak")
   let nvim_share = ($env.HOME | path join ".local/share/nvim")
@@ -185,32 +182,43 @@ def "main nvim" [] {
   ^rm -rf $"($nvim_config)/.git"
 }
 
-def zshrc-config [] {
+def "main nvim" [] {
+  main nvim install
+  main nvim config
+}
+
+def "main zsh config" [] {
   if not (has-cmd zsh) {
     error+ "zsh not found"
     return
   }
 
+  log+ "setting up zsh..."
   stow-package "zsh"
-
-  let zsh_path = (which zsh | get path.0)
-  if (has-cmd chsh) {
-    log+ "Setting zsh as default shell"
-    ^chsh -s $zsh_path
-  }
 }
 
-def bashrc-config [] {
-  log+ "Setting up bashrc"
+def "main fish config" [] {
+  if not (has-cmd fish) {
+    error+ "zsh not found"
+    return
+  }
+
+  log+ "setting up fish..."
+  stow-package "fish"
+}
+
+def "main bash config" [] {
   let bashrc = ($env.HOME | path join ".bashrc")
   let source_line = "source ~/.local/share/linux-config/shellrc"
 
   if ($bashrc | path exists) {
     let content = (open $bashrc)
     if not ($content =~ "linux-config/shellrc") {
+      log+ "Setting up bashrc..."
       $source_line | save -a $bashrc
     }
   } else {
+    log+ $"Creating $bashc"
     $source_line | save $bashrc
   }
 }
@@ -218,7 +226,7 @@ def bashrc-config [] {
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
 let DOT_DIR = ($env.HOME | path join ".local/share/linux-config")
 
-def dotfiles-clone [] {
+def "main dotfiles clone" [] {
   if not (dir-exists $DOT_DIR) {
     log+ "Cloning dotfiles"
     let clone_result = (do -i { ^git clone $DOTFILES_URL $DOT_DIR } | complete)
@@ -291,39 +299,59 @@ def dotfiles-clone [] {
 }
 
 def "main dotfiles" [] {
-  dotfiles-clone
+  main dotfiles clone
 
   if not (is-mac) {
-    bashrc-config
+    main bash config
   }
-  nushell-config
-  zshrc-config
+
+  main nushell config
+  main zsh config
+  main fish config
+}
+
+def "main brew" [] {
+  brew-install
+}
+
+def "main node" [] {
+  if not (has-cmd volta) {
+    log+ "Installing volta..."
+    ^curl https://get.volta.sh | bash
+  }
+
+  log+ "Installing latest node with volta..."
+  ^volta install node@latest
+}
+
+def "main uv" [] {
+  if (has-cmd uv) {
+    log+ "uv already installed"
+  } else {
+    log+ "Installing uv..."
+    ^curl -LsSf https://astral.sh/uv/install.sh | sh
+  }
+
+  if not (has-cmd pipx) {
+    log+ "Installing pipx with uv..."
+    ^uv tool install pipx
+  }
+}
+
+def "main mise" [] {
+  if (has-cmd mise) {
+      log+ "mise already installed"
+      return
+  }
+
+  log+ "Installing mise"
+  ^curl https://mise.run | sh
 }
 
 def "main devtools" [] {
-  if not (has-cmd mise) {
-    ^curl https://mise.run | ^sh
-  }
-
-  log+ "Installing devtools (mise, uv etc)"
-  ^brew install uv mise
-
-  let mise_bin = ($env.HOME | path join ".local/bin/mise")
-
-  if not ($mise_bin | path exists) {
-    error make { msg: "mise binary not found after install" }
-  }
-
-  log+ "Installing Node via mise"
-  ^$mise_bin use -g node@latest
-
-  ^$mise_bin use -g pnpm
-
-  let use_pnpm = (has-cmd pnpm)
-
-  if $use_pnpm {
-    ^pnpm setup
-  }
+  main mise
+  main uv
+  main node
 
   let npm_pkgs = [
     "@mermaid-js/mermaid-cli"
@@ -332,9 +360,8 @@ def "main devtools" [] {
   ]
 
   log+ "Installing npm packages"
-  $npm_pkgs | each { |pkg|
-    log+ $"Installing ($pkg)"
-    if $use_pnpm { ^pnpm install -g $pkg } else { ^npm install -g $pkg }
+  for pkg in $npm_pkgs {
+    ^npm install -g $pkg
   }
 }
 
@@ -348,18 +375,28 @@ def "main claude" [] {
   ^curl -fsSL https://claude.ai/install.sh | ^bash
 }
 
-def "main incus" [] {
-  if not (has-cmd incus) {
-    log+ "Installing incus"
-    si ["incus"]
-  }
+def "main incus config" [] {
+    log+ "Setting up incus..."
+    do -i {
+      ^sudo usermod -aG incus "$USER"
+      ^sudo usermod -aG incus-admin "$USER"
+      ^sudo systemctl enable --now incus.socket
+      ^sudo incus admin init --minimal
+    }
+}
 
-  incus-config
+def "main incus install" [] {
+  log+ "Installing incus"
+  si ["incus"]
+}
+
+def "main incus" [] {
+  main incus install
+  main incus config
 }
 
 def "main setup-shell" [] {
-  let supported = (is-fedora) or (is-trixie) or (is-questing) or (is-tw) or (is-arch) or (is-pikaos) or (is-mac) or (is-fedora-atomic)
-  if not $supported {
+  if not ((is-fedora) or (is-trixie) or (is-questing) or (is-tw) or (is-arch) or (is-pikaos) or (is-mac) or (is-fedora-atomic)) {
     die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS, macOS, and Fedora Atomic supported. Quitting."
   }
 
@@ -384,7 +421,6 @@ def "main setup-shell" [] {
     { description: "Install rustup", handler: { main rust } }
   ]
 
-
   if not (is-fedora-atomic) {
     $items = $items ++ [
       { description: "Install nix", handler: { main nix } }
@@ -392,7 +428,6 @@ def "main setup-shell" [] {
   }
 
   multi-task $items
-
 }
 
 def "main help" [] {

@@ -1,4 +1,6 @@
 {
+  "tab_size": 2,
+  "icon_theme": "Zed (Default)",
   "buffer_font_family": "JetBrainsMono Nerd Font",
   "indent_guides": {
     "coloring": "indent_aware",

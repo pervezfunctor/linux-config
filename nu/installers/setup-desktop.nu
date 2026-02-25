@@ -4,13 +4,14 @@ use ../lib/logs.nu *
 use ../lib/lib.nu *
 use ../lib/setup-lib.nu *
 
-def snapper-config [] {
-  if (is-pikaos) {
-    log+ "snapper config only supported on pikaos"
-  }
-
+def "main snapper" [] {
   if not (has-cmd snapper) {
     warn+ "Snapper is not installed. Skipping setup."
+    return
+  }
+
+  if not (is-pikaos) {
+    log+ "snapper config only supported on pikaos"
     return
   }
 
@@ -51,15 +52,24 @@ def wm-install [] {
     "xdg-desktop-portal-wlr"
   ]
 
-  if (is-ubuntu) { $pkgs = $pkgs ++ ["bibata-cursor-theme"] }
-  if (is-fedora) { $pkgs = $pkgs ++ ["gvfs-smb"] }
-  if (is-tw) { $pkgs = $pkgs ++ ["pipewire-pulseaudio"] }
-  # if (is-arch) { $pkgs = $pkgs ++ ["pipewire-jack"] }
+  if (is-apt ) { $pkgs = $pkgs ++ ["bibata-cursor-theme"] }
+  if (is-fedora) { $pkgs = $pkgs ++ ["gvfs-smb" "adw3-gtk-theme"] }
+  if (is-tw) { $pkgs = $pkgs ++ ["pipewire-pulseaudio" "gtk3-metatheme-adwaita"] }
+  if (is-arch) {
+    $pkgs = $pkgs ++ [
+      adw-gtk-theme
+      cava
+      cups-pk-helper
+      kimageformats
+      matugen
+    ]
+  }
 
   si $pkgs
 
   if (is-arch) {
     paru-install
+    paru -S bibata-cursor-theme
   }
 
   let pictures = ($env.HOME | path join "Pictures")
@@ -68,9 +78,11 @@ def wm-install [] {
 
   stow-package "systemd"
   stow-package "kitty"
+
+  main brew fonts
 }
 
-def niri-install [] {
+def "main niri install" [] {
   wm-install
 
   if (has-cmd dms) and (has-cmd niri) {
@@ -94,7 +106,6 @@ def niri-install [] {
     ^sudo zypper refresh
     si ["niri" "dms"]
   } else if (is-arch) {
-    paru-install
     ^paru -S niri dms-shell-bin
   } else {
     error+ "OS not supported. Not installing niri."
@@ -102,7 +113,7 @@ def niri-install [] {
   }
 }
 
-def niri-config [] {
+def "main niri config" [] {
   stow-package "niri"
 
   let niri_dms = ($env.HOME | path join ".config/niri/dms")
@@ -112,11 +123,11 @@ def niri-config [] {
 }
 
 def "main niri" [] {
-  niri-install
-  niri-config
+  main niri install
+  main niri config
 }
 
-def mangowc-install [] {
+def "main mangowc install" [] {
   wm-install
 
   if (has-cmd dms) and (has-cmd mango) {
@@ -128,7 +139,6 @@ def mangowc-install [] {
   if (is-pikaos) {
     ^pikman install mangowc
   } else if (is-arch) {
-    paru-install
     ^paru -S mangowc-git dms-shell-bin
   } else if (is-fedora) {
     if (prompt-yn "need terra repository for installing mango. This is NOT stable. Still enable it?") {
@@ -138,25 +148,25 @@ def mangowc-install [] {
     }
   } else {
     error+ "Unsupported OS. Not installing mangowc."
-    return
   }
 }
 
-def mangowc-config [] {
+def "main mangowc config" [] {
   stow-package "mango"
   stow-package "systemd"
 
   let mango_dms = ($env.HOME | path join ".config/mango/dms")
   touch-files $mango_dms ["alttab.conf" "colors.conf" "layout.conf" "wpblur.conf" "binds.conf" "cursor.conf" "outputs.conf"]
+
   do -i { ^systemctl --user add-wants wm-session.target dms }
 }
 
 def "main mangowc" [] {
-  mangowc-install
-  mangowc-config
+  main mangowc install
+  main mangowc config
 }
 
-def hypr-install [] {
+def "main hypr install" [] {
   wm-install
 
   if (has-cmd dms) and (has-cmd hyprctl) {
@@ -169,7 +179,6 @@ def hypr-install [] {
     ^pikman install pika-hyprland-desktop-minimal pika-hyprland-settings dms
     ^pikman install hyprpolkitagent
   } else if (is-arch) {
-    paru-install
     ^paru -S hyprland dms-shell-bin
   } else if (is-tw) {
     ^sudo zypper addrepo https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo
@@ -181,18 +190,19 @@ def hypr-install [] {
   }
 }
 
-def hypr-config [] {
+def "main hypr config" [] {
   stow-package "hypr"
 
   let hypr_dms = ($env.HOME | path join ".config/hypr/dms")
   touch-files hypr_dms ["alttab" "colors" "layout" "wpblur" "binds" "cursor" "outputs"]
+
   do -i { ^systemctl --user add-wants hyprland-session.target dms }
   do -i { ^systemctl --user add-wants wm-session.target dms }
 }
 
 def "main hypr" [] {
-  hypr-install
-  hypr-config
+  main hypr install
+  main hypr config
 }
 
 def "main flatpaks" [] {
@@ -204,17 +214,12 @@ def "main flatpaks" [] {
   ^flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
 
   let flatpaks = [
-    "app.zen_browser.zen"
     "com.github.tchx84.Flatseal"
     "com.spotify.Client"
-    "io.github.flattool.Ignition"
-    "io.github.kolunmi.Bazaar"
     "md.obsidian.Obsidian"
     "org.gnome.Firmware"
     "org.gnome.Papers"
-    "org.gnome.World.PikaBackup"
     "org.telegram.desktop"
-    "sh.loft.devpod"
   ]
 
   log+ "Installing flatpaks..."
@@ -247,7 +252,7 @@ def "main system" [] {
   si $pkgs
 
   if (is-pikaos) {
-    snapper-config
+    main snapper
   }
 
   if (has-cmd pipx) {
@@ -261,17 +266,24 @@ def "main distrobox" [] {
   si ["podman" "distrobox"]
 }
 
-def "main vscode install" [] {
-  if not (has-cmd code) {
-    if not (has-cmd brew) {
-      brew-install
-    }
-
-    log+ "Installing vscode"
-    ^brew tap ublue-os/tap
-    ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
-    ^brew install --cask visual-studio-code-linux
+def "main brew fonts" [] {
+  if not (has-cmd brew) {
+    error+ "brew not installed, cannot install fonts"
+    return
   }
+
+  ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
+}
+
+def "main vscode install" [] {
+  if (has-cmd code) {
+    log+ "vscode already installed!"
+    return
+  }
+
+  log+ "Installing vscode"
+  main brew fonts
+  ^brew install --cask visual-studio-code-linux
 }
 
 def "main vscode extensions" [] {
@@ -280,7 +292,6 @@ def "main vscode extensions" [] {
     "jnoortheen.nix-ide"
     "mads-hartmann.bash-ide-vscode"
     "TheNuProjectContributors.vscode-nushell-lang"
-    "timonwong.shellcheck"
     "wayou.vscode-todo-highlight"
   ]
 
@@ -307,14 +318,12 @@ def "main zed" [] {
     ^curl -f https://zed.dev/install.sh | ^sh
   }
 
+  main brew fonts
   stow-package "zed"
 }
 
-def "main virt" [] {
-  log+ "Installing virt-manager"
-  let packages = ["virt-manager" "virt-install" "virt-viewer"]
-  si $packages
-
+def "main virt config" [] {
+  log+ "Setting up libvirt"
   for group in ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"] {
     do -i { ^sudo usermod -aG $group $env.USER }
   }
@@ -324,17 +333,28 @@ def "main virt" [] {
   }
 }
 
-def gnome-extensions-install [] {
+def "main virt install" [] {
+  log+ "Installing virt-manager"
+  let packages = ["virt-manager" "virt-install" "virt-viewer"]
+  si $packages
+}
+
+def "main virt" [] {
+  main virt install
+  main virt config
+}
+
+def "main gnome extensions" [] {
   if not (has-cmd gext) {
     if not (has-cmd pipx) {
-      warn+ "pipx not found, skipping gnome extensions"
+      error+ "pipx not found, skipping gnome extensions"
       return
     }
     ^pipx install gnome-extensions-cli --system-site-packages
   }
 
   if not (has-cmd gext) {
-    warn+ "gext not found, skipping gnome extensions"
+    error+ "gext not found, skipping gnome extensions"
     return
   }
 
@@ -363,7 +383,7 @@ def gnome-extensions-install [] {
   }
 }
 
-def gnome-flatpaks-install [] {
+def "main gnome flatpaks" [] {
   let flatpaks = [
     "com.mattjakeman.ExtensionManager"
     "org.gtk.Gtk3theme.adw-gtk3"
@@ -378,7 +398,7 @@ def gnome-flatpaks-install [] {
   }
 }
 
-def gnome-settings-install [] {
+def "main gnome settings" [] {
   ^gsettings set org.gnome.mutter experimental-features "['scale-monitor-framebuffer']"
   ^gsettings set org.gnome.desktop.input-sources xkb-options "['caps:ctrl_modifier']"
 
@@ -397,7 +417,7 @@ def gnome-settings-install [] {
   ^gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
 }
 
-def gnome-keybindings-install [] {
+def "main gnome keybindings" [] {
   ^dconf write /org/gnome/shell/extensions/paperwm/keybindings/close-window "['<Super>BackSpace', '<Super>q']"
 
   ^dconf write /org/gnome/shell/extensions/paperwm/keybindings/switch-right "['<Super>Right']"
@@ -460,10 +480,10 @@ def gnome-keybindings-install [] {
 
 def "main gnome" [] {
   do -i {
-    gnome-extensions-install
-    gnome-keybindings-install
-    gnome-settings-install
-    gnome-flatpaks-install
+    main gnome extensions
+    main gnome keybindings
+    main gnome settings
+    main gnome flatpaks
   }
 }
 

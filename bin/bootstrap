@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
-
 {
   export DOT_DIR="$HOME/.local/share/linux-config"
   LOG_ROOT="${LINUX_CONFIG_LOG_DIR:-$HOME/.linux-config-logs}"
@@ -339,5 +337,5 @@ set -euo pipefail
     fi
   }
 
-  main "$@"
+  # main "$@"
 }

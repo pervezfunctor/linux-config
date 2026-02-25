@@ -85,7 +85,9 @@ export def brew-install [] {
   } else {
     path add "/home/linuxbrew/.linuxbrew/bin"
   }
-  ^brew install topgrade gum
+
+  ^brew tap ublue-os/tap
+  ^brew install topgrade
 }
 
 export def paru-install [] {
@@ -141,6 +143,8 @@ export def bootstrap [] {
     ".local/bin"
     ".local/share/pnpm"
     ".npm-packages"
+    ".local/share/mise/shims"
+    ".volta/bin"
     ".pixi/bin"
     ".local/share/linux-config/bin"
   ] | each { $env.HOME | path join $in | path expand })

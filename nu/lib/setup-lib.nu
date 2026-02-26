@@ -135,6 +135,7 @@ export def base-install [] {
 }
 
 export def bootstrap [] {
+  init-log-file
   path add "/opt/homebrew/bin"
   path add "/home/linuxbrew/.linuxbrew/bin"
 

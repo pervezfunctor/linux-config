@@ -461,6 +461,7 @@ def "main help" [] {
 
 def main [] {
   let job_id = keep-sudo-alive
+  bootstrap
   main setup-shell
   stop-sudo-alive $job_id
 }

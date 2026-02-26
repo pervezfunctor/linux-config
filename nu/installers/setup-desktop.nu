@@ -515,7 +515,7 @@ def "main setup-desktop" [] {
 
   if not (is-fedora-atomic) {
     $items = $items ++ [
-      { description: "Install desktop system packages", handler: { main system } }
+      { description: "Install system packages(required)", handler: { main system } }
       { description: "Install distrobox", handler: { main distrobox } }
       { description: "Install virt-manager", handler: { main virt } }
     ]

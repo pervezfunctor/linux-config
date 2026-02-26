@@ -136,19 +136,20 @@ export def base-install [] {
 
 export def bootstrap [] {
   init-log-file
-  path add "/opt/homebrew/bin"
   path add "/home/linuxbrew/.linuxbrew/bin"
 
-  path add ([
+  for p in [
     "bin"
     ".local/bin"
     ".local/share/pnpm"
     ".npm-packages"
     ".local/share/mise/shims"
-    ".volta/bin"
     ".pixi/bin"
+    ".volta/bin"
     ".local/share/linux-config/bin"
-  ] | each { $env.HOME | path join $in | path expand })
+  ] {
+    path add ($env.HOME | path join $p | path expand)
+  }
 }
 
 export def multi-task [items: list<record<description: string, handler: closure>>] {

@@ -141,6 +141,7 @@ export def --env bootstrap [] {
   for p in [
     "bin"
     ".local/bin"
+    ".cargo/bin"
     ".local/share/pnpm"
     ".npm-packages"
     ".local/share/mise/shims"

@@ -407,13 +407,13 @@ def "main setup-shell" [] {
 
   if (is-non-atomic-linux) {
     $items = $items ++ [
-      { description: "Install system packages", handler: { main system } }
+      { description: "Install system packages(required)", handler: { main system } }
       { description: "Install incus", handler: { main incus } }
     ]
   }
 
   $items = $items ++ [
-    { description: "Setup dotfiles with stow", handler: { main dotfiles } }
+    { description: "Setup dotfiles with stow(recommended)", handler: { main dotfiles } }
     { description: "Install shell tools", handler: { main shell } }
     { description: "Install devtools (mise, uv etc)", handler: { main devtools } }
     { description: "Install Neovim", handler: { main nvim } }

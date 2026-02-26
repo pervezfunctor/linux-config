@@ -402,7 +402,7 @@ export def multi-task [items: list<record<description: string, handler: closure>
     try {
       log+ $"Executing: ($item.description)"
       $item.handler
-    } catch {|err| {
+    } catch {|err|
       error+ "%ask ($item.description) failed."
       print $err
     }

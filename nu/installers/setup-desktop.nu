@@ -328,6 +328,7 @@ def "main virt config" [] {
     do -i { ^sudo usermod -aG $group $env.USER }
   }
 
+  do -i { sudo systemctl enable --now libvirtd }
   if (has-cmd authselect) {
     do -i { ^sudo authselect enable-feature with-libvirt }
   }
@@ -335,7 +336,20 @@ def "main virt config" [] {
 
 def "main virt install" [] {
   log+ "Installing virt-manager"
-  let packages = ["virt-manager" "virt-install" "virt-viewer"]
+  let packages = [
+    "dnsmasq"
+    "libvirt"
+    "openbsd-netcat"
+    "qemu-hw-display-virtio-gpu"
+    "qemu-hw-display-virtio-gpu-gl"
+    "qemu-hw-usb-host"
+    "qemu-img"
+    "qemu-system-x86"
+    "qemu-tools"
+    "virt-install"
+    "virt-manager"
+    "virt-viewer"
+  ]
   si $packages
 }
 

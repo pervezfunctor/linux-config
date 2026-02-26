@@ -117,9 +117,10 @@ set -euo pipefail
         paru -Syyu
       else
         sudo pacman -Syyu
+        sudo pacman -Fy
       fi
     else
-      die "OS not supported. Quitting."
+      warn "OS not supported. Not Updating."
     fi
   }
 
@@ -138,7 +139,7 @@ set -euo pipefail
     elif is_arch; then
       sudo pacman -S --quiet --noconfirm "$@"
     else
-      error "OS not supported. Not installing $*."
+      warn "OS not supported. Not installing $*."
       return 1
     fi
   }
@@ -192,26 +193,22 @@ set -euo pipefail
   base_install() {
     log "Installing required packages..."
     update_packages
-    si git stow trash-cli
-    dotfiles_clone
-  }
+    has_cmd git || si git
+    has_cmd git || die "git not installed. Quitting."
 
-  nu_install() {
-    log "Installing nushell..."
-    if is_fedora; then
-      si nu
-    elif is_arch || is_tw || is_pikaos; then
-      si nushell
-    elif has_cmd brew; then
-      brew install nushell
-    else
-      has_cmd "$HOME/.pixi/bin/pixi" || {
-        log "Installing pixi..."
-        curl -fsSL https://pixi.sh/install.sh | bash
-      }
-      "$HOME/.pixi/bin/pixi" global install nushell
+    has_cmd trash || si trash-cli
+    has_cmd stow || si stow
+
+    log "Installing pixi and essential packages..."
+    if ! has_cmd pixi; then
+      curl -fsSL https://pixi.sh/install.sh | sh
     fi
-    has_cmd nu || die "nu installation failed"
+    has_cmd pixi || die "pixi not installed or not in PATH. Quitting."
+
+    has_cmd trash || pixi global install trash-cli
+    has_cmd stow || pixi global install stow
+    pixi global install nushell
+    has_cmd nu || die "nu not installed. Quitting"
   }
 
   main() {
@@ -221,12 +218,12 @@ set -euo pipefail
     keep_sudo_alive
 
     is_fedora || is_trixie || is_questing || is_tw || is_arch || is_pikaos || is_fedora_atomic || {
-      die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS supported. Quitting."
+      die "Only Fedora, Ubuntu Questing, Tumbleweed, Arch, Debian Trixie and PikaOS supported. Quitting."
     }
 
     base_install
     dotfiles_clone
-    nu_install
+
     nu ~/.local/share/linux-config/nu/installers/setup.nu
   }
 

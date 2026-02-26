@@ -71,6 +71,7 @@ export def update-packages []: nothing -> nothing {
     ^sudo zypper update
   } else if (is-arch) {
     ^sudo pacman -Syu
+    ^sudo pacman -Fy
   } else {
     die "OS not supported for package updates."
   }
@@ -90,16 +91,25 @@ export def brew-install [] {
   ^brew install topgrade
 }
 
-export def paru-install [] {
-  if (has-cmd paru) { return }
+def paru-install [] {
+  if (has-cmd paru) {
+    log+ "paru is already installed"
+    return
+  }
+
   log+ "Installing paru"
+
   si ["base-devel"]
   do -i { ^rm -rf /tmp/paru }
   ^git clone https://aur.archlinux.org/paru.git /tmp/paru
-  do {
+
+  try {
     cd /tmp/paru
     ^makepkg --syncdeps --noconfirm --install
+  } catch {
+    warn+ "Failed to install paru"
   }
+
   do -i { ^rm -rf /tmp/paru }
 }
 
@@ -176,4 +186,13 @@ export def touch-files [dir: string, files: list<string>] {
       touch $file_path
     }
   }
+}
+
+export def pixi-install [] {
+  if (has-cmd pixi) {
+    return
+  }
+
+  log+ "Installing pixi..."
+  ^curl -fsSL https://pixi.sh/install.sh | ^sh
 }

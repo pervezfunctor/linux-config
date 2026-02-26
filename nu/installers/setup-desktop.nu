@@ -324,13 +324,18 @@ def "main zed" [] {
 
 def "main virt config" [] {
   log+ "Setting up libvirt"
-  for group in ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"] {
-    do -i { ^sudo usermod -aG $group $env.USER }
-  }
 
-  do -i { sudo systemctl enable --now libvirtd }
-  if (has-cmd authselect) {
-    do -i { ^sudo authselect enable-feature with-libvirt }
+  do -i {
+    for group in ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"] {
+      ^sudo usermod -aG $group $env.USER
+    }
+
+    ^sudo systemctl enable --now libvirtd
+    ^systemctl enable --now libvirtd.socket
+    ^sudo virsh net-autostart default
+    if (has-cmd authselect) {
+      ^sudo authselect enable-feature with-libvirt
+    }
   }
 }
 
@@ -340,13 +345,14 @@ def "main virt install" [] {
     "dnsmasq"
     "libvirt"
     "openbsd-netcat"
+    "qemu-full"
     "qemu-hw-display-virtio-gpu"
     "qemu-hw-display-virtio-gpu-gl"
-    "qemu-hw-usb-host"
     "qemu-img"
-    "qemu-system-x86"
     "qemu-tools"
+    "swtpm"
     "virt-install"
+    "virt-manager"
     "virt-manager"
     "virt-viewer"
   ]

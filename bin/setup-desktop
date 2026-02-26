@@ -46,7 +46,6 @@ wm_install() {
   is_ubuntu && pkgs+=(bibata-cursor-theme)
   is_fedora && pkgs+=(gvfs-smb)
   is_tw && pkgs+=(pipewire-pulseaudio)
-  is_arch && pkgs+=(pipewire-jack)
   si "${pkgs[@]}"
 
   is_arch && paru_install

@@ -64,7 +64,7 @@ def "main system" [] {
   }
 }
 
-def pixi-install-packages [] {
+def "main pixi packages" [] {
   log+ "Installing shell tools with pixi"
 
   let pixi_pkgs = [
@@ -101,17 +101,14 @@ def pixi-install-packages [] {
 
   if not (has-cmd starship) { ^pixi global install starship }
   if not (has-cmd nu) { ^pixi global install nushell }
+  if not (tmux nu) { ^pixi global install tmux }
+  if not (has-cmd trash) { ^pixi global install trash-cli }
 
   do -i { ^tldr --update }
 }
 
 def "main pixi" [] {
-    if not (has-cmd pixi) {
-      log+ "Installing pixi..."
-      curl -fsSL https://pixi.sh/install.sh | sh
-    }
-
-    pixi-install-packages
+  main pixi packages
 }
 
 def "main shell" [] {
@@ -131,7 +128,6 @@ def "main rust" [] {
 
 def "main nushell config" [] {
   let nu_path = (which nu | get path.0? | default "/usr/bin/nu")
-  add-shell $nu_path
   stow-package "nushell"
 }
 

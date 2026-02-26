@@ -341,21 +341,32 @@ def "main virt config" [] {
 
 def "main virt install" [] {
   log+ "Installing virt-manager"
-  let packages = [
-    "dnsmasq"
-    "libvirt"
-    "openbsd-netcat"
-    "qemu-full"
-    "qemu-hw-display-virtio-gpu"
-    "qemu-hw-display-virtio-gpu-gl"
-    "qemu-img"
-    "qemu-tools"
-    "swtpm"
+  # @TODO: NEED TO TEST FOR ALL OS
+  mut packages = [
     "virt-install"
-    "virt-manager"
     "virt-manager"
     "virt-viewer"
   ]
+
+  if (is-fedora) or (is-arch) {
+    $packages ++= [
+      "dnsmasq"
+      "libvirt"
+      "qemu-img"
+      "qemu-tools"
+      "swtpm"
+    ]
+  }
+
+  if (is-arch) {
+    $packages ++= [
+      "openbsd-netcat"
+      "qemu-full"
+      "qemu-hw-display-virtio-gpu"
+      "qemu-hw-display-virtio-gpu-gl"
+    ]
+  }
+
   si $packages
 }
 

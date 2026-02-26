@@ -123,7 +123,7 @@ export def prompt-yn [prompt: string]: nothing -> bool {
   $response =~ "(?i)^y(es)?$"
 }
 
-def handle [block: closure] {
+export def handle [block: closure] {
     try {
         do $block
     } catch {|err|
@@ -132,7 +132,7 @@ def handle [block: closure] {
     }
 }
 
-def add-shell [shell_path: string] {
+export def add-shell [shell_path: string] {
   if not ($shell_path | path exists) {
     warn+ "Shell path does not exist"
     return

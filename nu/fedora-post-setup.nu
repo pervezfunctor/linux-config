@@ -137,7 +137,7 @@ def brave [] {
 }
 
 def librewolf [] {
-  curl -fsSL https://repo.librewolf.net/librewolf.repo | sudo tee /etc/yum.repos.d/librewolf.repo | ignore
+  http get https://repo.librewolf.net/librewolf.repo | ^sudo save /etc/yum.repos.d/librewolf.repo
   sudo dnf install -y librewolf
 }
 

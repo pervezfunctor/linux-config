@@ -1,5 +1,7 @@
 use std/util "path add"
 
+export use ./lib.nu *
+
 export def stow-package [package: string] {
   let config_dir = ($env.HOME | path join ".local/share/linux-config")
   validate-path $config_dir
@@ -203,5 +205,5 @@ export def pixi-install [] {
   }
 
   log+ "Installing pixi..."
-  ^curl -fsSL https://pixi.sh/install.sh | ^sh
+  sh -c (http get https://pixi.sh/install.sh)
 }

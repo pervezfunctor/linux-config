@@ -11,7 +11,7 @@ def "main nix" [] {
   }
 
   log+ "Installing nix..."
-  ^curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | ^sh -s -- install --determinate --no-confirm
+  http get https://install.determinate.systems/nix | ^sh -s -- install --determinate --no-confirm
 }
 
 def "main home-manager" [] {
@@ -124,7 +124,7 @@ def "main rust" [] {
   }
 
   log+ "Installing rustup..."
-  ^curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | ^sh
+  (http get https://sh.rustup.rs) | ^sh
 }
 
 def "main nushell config" [] {
@@ -319,7 +319,7 @@ def "main brew" [] {
 def "main node" [] {
   if not (has-cmd volta) {
     log+ "Installing volta..."
-    ^curl https://get.volta.sh | bash
+    bash -c (http get https://get.volta.sh)
   }
 
   log+ "Installing latest node with volta..."
@@ -331,7 +331,7 @@ def "main uv" [] {
     log+ "uv already installed"
   } else {
     log+ "Installing uv..."
-    ^curl -LsSf https://astral.sh/uv/install.sh | sh
+    sh -c (http get https://astral.sh/uv/install.sh)
   }
 
   if not (has-cmd pipx) {
@@ -347,7 +347,7 @@ def "main mise" [] {
   }
 
   log+ "Installing mise"
-  ^curl https://mise.run | sh
+  sh -c (http get https://mise.run)
 }
 
 def "main devtools" [] {
@@ -374,7 +374,7 @@ def "main claude" [] {
   }
 
   log+ "Installing claude"
-  ^curl -fsSL https://claude.ai/install.sh | ^bash
+  bash -c (http get https://claude.ai/install.sh)
 }
 
 def "main incus config" [] {

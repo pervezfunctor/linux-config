@@ -1,5 +1,7 @@
 #!/usr/bin/env nu
 
+export use ./logs.nu *
+
 export def default-if-empty [default_val: any] {
     if ($in | is-empty) { $default_val } else { $in }
 }

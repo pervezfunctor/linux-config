@@ -9,7 +9,7 @@ def installer-install [name: string] {
         "brew" => {
             if not (has-cmd brew) {
                 print "Installing brew..."
-                ^/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                ^bash -c  (http get https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)
             }
         }
         "pixi" => {
@@ -21,13 +21,13 @@ def installer-install [name: string] {
         "mise" => {
             if not (has_cmd mise) {
                 print "Installing mise..."
-                ^curl https://mise.run | sh
+                sh -c (http get https://mise.run)
             }
         }
         "cargo" => {
             if not (has_cmd cargo) {
                 print "Installing cargo (via rustup)..."
-                ^curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs | sh -s -- -y
+                http get https://sh.rustup.rs | ^sh -s -- -y
             }
         }
         "go" => {
@@ -51,7 +51,7 @@ def installer-install [name: string] {
         "pikman" => {
             if not (has_cmd pikman) {
                 print "Installing pikman..."
-                ^curl -fsSL https://get.pika.pink | bash
+                ^bash -c (http get https://get.pika.pink)
             }
         }
         _ => {

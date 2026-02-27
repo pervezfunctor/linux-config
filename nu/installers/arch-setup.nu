@@ -177,7 +177,7 @@ def "main system install" [] {
 
   ^pixi global install carapace mask
   ^rustup default stable
-  ^curl -fsSL https://claude.ai/install.sh | ^bash
+  bash -c (http get https://claude.ai/install.sh)
 }
 
 def "main system config" [] {

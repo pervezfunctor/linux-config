@@ -51,7 +51,7 @@ def "main system" [] {
   } else if (is-fedora) {
     $pkgs ++ ["g++" "nu" "pipx"]
   } else if (is-arch) {
-    $pkgs ++ ["g++" "python-pipx" "nushell" "starship"]
+    $pkgs ++ ["python-pipx" "nushell" "starship"]
   } else {
     $pkgs
   }

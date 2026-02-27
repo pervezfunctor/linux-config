@@ -432,6 +432,10 @@ def "main setup-shell" [] {
   multi-task $items
 }
 
+def "main stow" [package: string] {
+  stow-package $package
+}
+
 def "main help" [] {
   print "setup-shell.nu - Cross-platform shell setup script"
   print ""
@@ -440,6 +444,7 @@ def "main help" [] {
   print "Commands:"
   print "  setup-shell  Interactive shell setup (packages, dotfiles, tools)"
   print ""
+  print "  stow         Single package config like nushell"
   print "  system       Install system packages (non-interactive)"
   print "  dotfiles     Clone and stow dotfiles"
   print "  shell        Install shell tools (brew, pixi packages)"

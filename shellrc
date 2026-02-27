@@ -35,7 +35,7 @@ if has_cmd code; then
   VISUAL="code --wait"
 elif has_cmd zed; then
   VISUAL="zed --wait"
-elif flatpak list | grep -qi "com.visualstudio.code"; then
+elif flatpak list | grep -qi "com.visualstudio.code" 2>/dev/null; then
   # shellcheck disable=SC2034
   VISUAL="flatpak run com.visualstudio.code --wait"
 fi

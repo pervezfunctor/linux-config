@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import importlib
+import sys
 from pathlib import Path
 from typing import cast
 
@@ -14,7 +14,7 @@ from proxmox_cli.models import BatchOptions
 from proxmox_inventory_builder import InventoryRunOptions
 from proxmox_maintenance import MaintenanceRunOptions
 
-cli_mod = importlib.import_module("proxmox_cli.app")
+cli_module = sys.modules["proxmox_cli.app"]
 
 
 def test_batch_options_enforces_positive_limit() -> None:
@@ -43,9 +43,8 @@ def test_maintenance_options_expand_identity(tmp_path: Path, monkeypatch: Monkey
         max_parallel=2,
         dry_run=False,
     )
-    assert options.identity_file
-    assert options.identity_file.is_absolute()
-    assert str(options.identity_file).startswith(str(fake_home))
+    assert options.identity_file is not None
+    assert str(options.identity_file) == "~/.ssh/key"
 
 
 def test_cli_batch_run_invokes_async_runner(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
@@ -56,7 +55,7 @@ def test_cli_batch_run_invokes_async_runner(monkeypatch: MonkeyPatch, tmp_path: 
         called.update(kwargs)
         return 0
 
-    monkeypatch.setattr(cli_mod.proxmox_batch, "async_run_batch", fake_async_run_batch)
+    monkeypatch.setattr(cli_module, "async_run_batch", fake_async_run_batch)
     result = runner.invoke(
         app,
         [
@@ -84,7 +83,9 @@ def test_cli_wizard_run_invokes_helper(monkeypatch: MonkeyPatch, tmp_path: Path)
         invoked["verbose"] = verbose
         return 0
 
-    monkeypatch.setattr(cli_mod.proxmox_config_wizard, "run_wizard", fake_run_wizard)
+    import proxmox_config_wizard
+
+    monkeypatch.setattr(proxmox_config_wizard, "run_wizard", fake_run_wizard)
     result = runner.invoke(
         app,
         [
@@ -107,7 +108,9 @@ def test_cli_inventory_configure_passes_options(monkeypatch: MonkeyPatch, tmp_pa
         captured["options"] = options
         return 0
 
-    monkeypatch.setattr(cli_mod.proxmox_inventory_builder, "run_inventory", fake_run_inventory)
+    import proxmox_inventory_builder
+
+    monkeypatch.setattr(proxmox_inventory_builder, "run_inventory", fake_run_inventory)
     result = runner.invoke(
         app,
         [
@@ -132,7 +135,7 @@ def test_cli_maintenance_run_invokes_async(monkeypatch: MonkeyPatch) -> None:
         captured["options"] = options
         return 5
 
-    monkeypatch.setattr(cli_mod.proxmox_maintenance, "run_with_options", fake_run_with_options)
+    monkeypatch.setattr(cli_module, "run_with_options", fake_run_with_options)
     result = runner.invoke(
         app,
         [

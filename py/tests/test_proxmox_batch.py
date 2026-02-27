@@ -7,6 +7,8 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 import proxmox_batch
+from proxmox_cli.core import batch as core_batch
+from proxmox_cli.core.exceptions import HostSelectionError
 
 
 def _make_host(**overrides: object) -> proxmox_batch.HostConfig:
@@ -70,7 +72,7 @@ def test_host_filtering() -> None:
     host_b = _make_host(name="b", host="b.local")
     selected = proxmox_batch.select_hosts([host_a, host_b], ["b"])
     assert selected == [host_b]
-    with pytest.raises(ValueError):
+    with pytest.raises(HostSelectionError):
         proxmox_batch.select_hosts([host_a, host_b], ["unknown"])
 
 
@@ -115,12 +117,12 @@ async def test_async_run_batch_handles_mixed_results(monkeypatch: MonkeyPatch, t
     ) -> tuple[bool, str | None]:
         return (host.name == "success", None if host.name == "success" else "boom")
 
-    monkeypatch.setattr(proxmox_batch, "run_host", fake_run_host)
+    monkeypatch.setattr(core_batch, "run_host", fake_run_host)
 
     def fake_load_manifest(_path: Path) -> tuple[proxmox_batch.BatchDefaults, list[proxmox_batch.HostConfig]]:
         return proxmox_batch.BatchDefaults(), [host_success, host_failure]
 
-    monkeypatch.setattr(proxmox_batch, "load_manifest", fake_load_manifest)
+    monkeypatch.setattr(core_batch, "load_manifest", fake_load_manifest)
 
     exit_code = await proxmox_batch.async_run_batch(
         config_path=tmp_path / "dummy.toml",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 # Re-export core models for convenience
 from proxmox_cli.core.batch import DEFAULT_CONFIG_PATH
@@ -29,9 +29,16 @@ class BatchOptions(_CLIModel):
 
     manifest: Path
     hosts: tuple[str, ...]
-    limit: int | None
+    limit: int | None = None
     force_dry_run: bool
     verbose: bool
+
+    @field_validator("limit")
+    @classmethod
+    def _validate_limit(cls, value: int | None) -> int | None:
+        if value is not None and value <= 0:
+            raise ValueError("limit must be greater than zero")
+        return value
 
 
 class WizardOptions(_CLIModel):

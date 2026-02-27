@@ -29,6 +29,7 @@ def "main system" [] {
 
   let pkgs = [
     "cmake"
+    "fish"
     "gcc"
     "git"
     "make"

@@ -163,6 +163,15 @@ export def --env bootstrap [] {
   }
 }
 
+export def task-handler [item: record<description: string, handler: closure>] {
+  try {
+    $item.handler
+  } catch {|err|
+    error+ "($item.description) failed."
+    $err | print
+  }
+}
+
 export def multi-task [items: list<record<description: string, handler: closure>>] {
   let selected = ($items | input list --multi --display description "Select tasks to execute:")
 
@@ -173,7 +182,7 @@ export def multi-task [items: list<record<description: string, handler: closure>
 
   for item in $selected {
     log+ $"Executing: ($item.description)"
-    do $item.handler
+    task-handler $item
   }
 }
 

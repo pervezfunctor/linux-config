@@ -29,6 +29,7 @@ fish_add_path --global --move \
 
     $HOME/.local/share/flatpak/exports/bin \
     $DOT_DIR/nu/installers \
+    $DOT_DIR/nu \
     $HOME/.pixi/bin \
     $HOME/bin \
     $HOME/.local/bin \

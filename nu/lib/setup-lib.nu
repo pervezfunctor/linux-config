@@ -158,6 +158,7 @@ export def --env bootstrap [] {
     ".npm-packages"
     ".local/share/mise/shims"
     $"($env.DOT_DIR)/nu/installers"
+    $"($env.DOT_DIR)/nu"
     ".pixi/bin"
     ".volta/bin"
     ".local/share/linux-config/bin"

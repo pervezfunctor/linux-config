@@ -167,7 +167,7 @@ export def --env bootstrap [] {
 
 export def task-handler [item: record<description: string, handler: closure>] {
   try {
-    $item.handler
+    do $item.handler
   } catch {|err|
     error+ "($item.description) failed."
     $err | print

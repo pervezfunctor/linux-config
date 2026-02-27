@@ -101,7 +101,7 @@ def "main pixi packages" [] {
 
   if not (has-cmd starship) { ^pixi global install starship }
   if not (has-cmd nu) { ^pixi global install nushell }
-  if not (tmux nu) { ^pixi global install tmux }
+  if not (has-cmd tmux) { ^pixi global install tmux }
   if not (has-cmd trash) { ^pixi global install trash-cli }
 
   do -i { ^tldr --update }
@@ -409,8 +409,8 @@ def "main setup-shell" [] {
   }
 
   $items = $items ++ [
-    { description: "Setup dotfiles with stow(recommended)", handler: { main dotfiles } }
     { description: "Install shell tools", handler: { main shell } }
+    { description: "Setup dotfiles with stow(recommended)", handler: { main dotfiles } }
     { description: "Install devtools (mise, uv etc)", handler: { main devtools } }
     { description: "Install Neovim", handler: { main nvim } }
     { description: "Install claude", handler: { main claude } }

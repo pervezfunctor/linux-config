@@ -315,7 +315,7 @@ def "main vscode" [] {
 def "main zed" [] {
   if not (has-cmd zed) {
     log+ "Installing zed"
-    sh -c (http getf https://zed.dev/install.sh)
+    sh -c (http get https://zed.dev/install.sh)
   }
 
   main brew fonts

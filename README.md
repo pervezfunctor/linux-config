@@ -5,7 +5,7 @@ Setup development workstation with [niri](https://mangowc.vercel.app) or [mangow
 Open terminal and execute the following command. This is an interactive script.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/master/bin/setup | bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/master/bin/setup)"
 ```
 
 ## Documentation

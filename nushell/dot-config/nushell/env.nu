@@ -6,6 +6,7 @@ $env.VOLTA_HOME = ($env.HOME | path join .volta)
 $env.PATH = ($env.PATH | prepend [
     $"($env.HOME)/.local/share/flatpak/exports/bin",
     $"($env.HOME)/.pixi/bin",
+    $"($env.DOT_DIR)/nu/installers"
     $"($env.HOME)/bin",
     $"($env.HOME)/.local/bin",
     $"($env.VOLTA_HOME)/bin",

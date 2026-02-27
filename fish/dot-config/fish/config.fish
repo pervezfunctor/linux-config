@@ -8,7 +8,6 @@ if test -f ~/.fish_profile
   source ~/.fish_profile
 end
 
-
 set -gx DOT_DIR $HOME/.local/share/linux-config
 
 set -gx EDITOR "zeditor --wait"
@@ -24,9 +23,12 @@ set -gx XDG_DATA_DIRS $HOME/.local/share/flatpak/exports/share $XDG_DATA_DIRS
 set NPM_PACKAGES "$HOME/.npm-packages"
 set MANPATH $NPM_PACKAGES/share/man $MANPATH
 
+
 fish_add_path --global --move \
     /home/linuxbrew/.linuxbrew/bin \
+
     $HOME/.local/share/flatpak/exports/bin \
+    $DOT_DIR/nu/installers \
     $HOME/.pixi/bin \
     $HOME/bin \
     $HOME/.local/bin \
@@ -58,4 +60,3 @@ if has_cmd carapace
     set -Ux CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
     carapace _carapace | source
 end
-

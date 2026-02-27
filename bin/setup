@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -Eeuo pipefail
 
 {
   export DOT_DIR="$HOME/.local/share/linux-config"

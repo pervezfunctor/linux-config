@@ -93,7 +93,7 @@ export def brew-install [] {
   ^brew install topgrade
 }
 
-def paru-install [] {
+export def paru-install [] {
   if (has-cmd paru) {
     log+ "paru is already installed"
     return

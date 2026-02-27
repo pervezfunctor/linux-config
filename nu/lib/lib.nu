@@ -37,7 +37,7 @@ def has_cmd [app: string] {
 }
 
 export def is-linux [] {
-    (sys host).name == "Linux"
+    ((sys host).name =~ "Linux") or ((uname).kernel-name == "Linux") or ((sys host).long_os_version | str contains "Linux")
 }
 
 export def is-mac [] {

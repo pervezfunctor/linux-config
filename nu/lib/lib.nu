@@ -100,12 +100,7 @@ export def is-tw []: nothing -> bool {
 export def is-arch []: nothing -> bool {
   if not ("/etc/os-release" | path exists) { return false }
   let content = (open /etc/os-release)
-  let lines = ($content | lines)
-
-  let id = ($lines | where { $in =~ '^ID=' } | first | str replace '^ID=' '' | str trim --char '"')
-  let id_like = ($lines | where { $in =~ '^ID_LIKE=' } | first | default "" | str replace '^ID_LIKE=' '' | str trim --char '"')
-
-  $id == "arch" or ($id_like | str contains "arch")
+  $content =~ "arch" # @TODO: This is too simple, might break on some systems
 }
 
 export def is-pikaos []: nothing -> bool {

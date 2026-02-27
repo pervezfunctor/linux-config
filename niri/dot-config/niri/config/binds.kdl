@@ -24,7 +24,7 @@ binds {
     Mod+L  { focus-column-or-monitor-right; }
 
     Mod+S {
-      set-column-width 66%;
+      // set-column-width 66%;
       center-column;
     }
 

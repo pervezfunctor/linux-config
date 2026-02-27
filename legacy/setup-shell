@@ -80,7 +80,6 @@ system_install() {
     nu
   )
   is_arch && pkgs+=(
-    g++
     python-pipx
     nushell
   )

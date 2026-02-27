@@ -196,7 +196,7 @@ def "main zsh config" [] {
 
 def "main fish config" [] {
   if not (has-cmd fish) {
-    error+ "zsh not found"
+    error+ "fish not found"
     return
   }
 
@@ -205,6 +205,11 @@ def "main fish config" [] {
 }
 
 def "main bash config" [] {
+  if not (has-cmd bash) {
+    error+ "bash not found"
+    return
+  }
+
   let bashrc = ($env.HOME | path join ".bashrc")
   let source_line = "source ~/.local/share/linux-config/shellrc"
 

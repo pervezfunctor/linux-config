@@ -1,5 +1,5 @@
 {
-  "buffer_font_weight": 600.0,
+  "buffer_font_weight": 500.0,
   "tab_size": 2,
   "icon_theme": "Zed (Default)",
   "buffer_font_family": "JetBrainsMono Nerd Font",
@@ -20,7 +20,7 @@
   },
   "vim_mode": false,
   "ui_font_size": 16,
-  "buffer_font_size": 15.0,
+  "buffer_font_size": 14.0,
   "theme": {
     "mode": "system",
     "light": "Gruvbox Light",

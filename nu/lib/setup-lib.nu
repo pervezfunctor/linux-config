@@ -4,10 +4,10 @@ export use ./lib.nu *
 
 export def stow-package [package: string] {
   let config_dir = ($env.HOME | path join ".local/share/linux-config")
-  validate-path $config_dir
+  check-path $config_dir
 
   let package_dir = ($config_dir | path join $package)
-  validate-path $package_dir
+  check-path $package_dir
 
   # @TODO: Replace with stow.nu apply
   log+ $"Stowing ($package) dotfiles"

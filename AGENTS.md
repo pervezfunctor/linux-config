@@ -119,8 +119,8 @@ source ($nu.default-config-dir | path join aliases.nu)
 **Imports**:
 ```nu
 use ./lib.nu [
-    default-if-empty
-    validate-path
+    or-else
+    check-path
 ]
 use ./logs.nu
 ```
@@ -164,14 +164,14 @@ def safe-ln [src: string, dest: string] {
 }
 ```
 
-**Default Values**: Use `default-if-empty` for pipe-friendly defaults
+**Default Values**: Use `or-else` for pipe-friendly defaults
 ```nu
-let dir = ($input | default-if-empty $env.HOME)
+let dir = ($input | or-else $env.HOME)
 ```
 
 **Validation Functions**: Centralize validation logic
 ```nu
-def validate-path [path: string, --required] {
+def check-path [path: string, --required] {
     if $required and not ($path | path exists) {
         error make {
             msg: $"Path does not exist: ($path)"

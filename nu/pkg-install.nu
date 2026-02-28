@@ -13,43 +13,43 @@ def installer-install [name: string] {
             }
         }
         "pixi" => {
-            if not (has_cmd pixi) {
+            if not (has-cmd pixi) {
                 print "Installing pixi..."
                 ^brew install pixi
             }
         }
         "mise" => {
-            if not (has_cmd mise) {
+            if not (has-cmd mise) {
                 print "Installing mise..."
                 sh -c (http get https://mise.run)
             }
         }
         "cargo" => {
-            if not (has_cmd cargo) {
+            if not (has-cmd cargo) {
                 print "Installing cargo (via rustup)..."
                 http get https://sh.rustup.rs | ^sh -s -- -y
             }
         }
         "go" => {
-            if not (has_cmd go) {
+            if not (has-cmd go) {
                 print "Installing go..."
                 ^brew install go
             }
         }
         "npm" => {
-            if not (has_cmd npm) {
+            if not (has-cmd npm) {
                 print "Installing npm (via node)..."
                 ^brew install node
             }
         }
         "pipx" => {
-            if not (has_cmd pipx) {
+            if not (has-cmd pipx) {
                 print "Installing pipx..."
                 ^pip install --user pipx
             }
         }
         "pikman" => {
-            if not (has_cmd pikman) {
+            if not (has-cmd pikman) {
                 print "Installing pikman..."
                 ^bash -c (http get https://get.pika.pink)
             }
@@ -196,7 +196,7 @@ def main [
             continue
         }
 
-        let available = (has_cmd $name)
+        let available = (has-cmd $name)
         if not $available {
             print $"($name) is not available, skipping..."
             continue

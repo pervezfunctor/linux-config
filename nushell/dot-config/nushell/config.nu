@@ -37,7 +37,7 @@ def jupyter-lab [] {
     ^$jupyter lab
 }
 
-def has_cmd [app: string] {
+def has-cmd [app: string] {
     (which $app | is-not-empty)
 }
 

@@ -20,17 +20,17 @@ def resolve-dirs [
     --backup-dir: string = ""
 ] {
     {
-        target: ($target | default-if-empty $env.HOME)
+        target: ($target | or-else $env.HOME)
         source: (
             $source_dir
-            | default-if-empty (
+            | or-else (
                 $env.HOME
                 | path join '.local' 'share' 'linux-config'
             )
         )
         backup: (
             $backup_dir
-            | default-if-empty ($env.HOME | path join '.stow-backups')
+            | or-else ($env.HOME | path join '.stow-backups')
         )
     }
 }
@@ -195,8 +195,8 @@ export def "main add" [
     let dirs = (resolve-dirs $target $source_dir)
 
     try {
-        validate-path $path
-        validate-file $path
+        check-path $path
+        check-file $path
     } catch { |e|
         error+ $e.msg
         return
@@ -243,7 +243,7 @@ export def "main apply" [
 ] {
     let dirs = (resolve-dirs $target $source_dir --backup-dir $backup_dir)
 
-    if ($package | default-if-empty "" | is-empty) {
+    if ($package | or-else "" | is-empty) {
         error+ "package is required"
         return
     }
@@ -369,7 +369,7 @@ export def "main restore" [
 ] {
     let dirs = (resolve-dirs $target $source_dir --backup-dir $backup_dir)
 
-    if ($package | default-if-empty "" | is-empty) {
+    if ($package | or-else "" | is-empty) {
         error+ "package is required"
         return
     }

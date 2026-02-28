@@ -2,7 +2,7 @@
 
 export use ./logs.nu *
 
-export def default-if-empty [default_val: any] {
+export def or-else [default_val: any] {
     if ($in | is-empty) { $default_val } else { $in }
 }
 
@@ -13,7 +13,7 @@ export def ensure-parent-dir [path: string] {
     }
 }
 
-export def validate-path [path: string] {
+export def check-path [path: string] {
     if not ($path | path exists) {
         error make {
             msg: $"Path does not exist: ($path)"
@@ -23,7 +23,7 @@ export def validate-path [path: string] {
     $path
 }
 
-export def validate-file [path: string] {
+export def check-file [path: string] {
     let file_type = do -i { $path | path type } | default "none"
     if $file_type != 'file' {
         error make {
@@ -34,11 +34,11 @@ export def validate-file [path: string] {
     $path
 }
 
-def has_cmd [app: string] {
-    (which $app | is-not-empty)
+export def has-cmd [cmd: string]: nothing -> bool {
+  (which $cmd | is-not-empty)
 }
 
-export def is-linux [] {
+export def is-linux []: nothing -> bool {
     ((sys host).name =~ "Linux") or ((uname).kernel-name == "Linux") or ((sys host).long_os_version | str contains "Linux")
 }
 
@@ -46,24 +46,20 @@ export def is-mac [] {
     (sys host).name == "Darwin"
 }
 
-export def is-fedora-atomic [] {
-    has_cmd rpm-ostree
+export def is-fedora-atomic []: nothing -> bool {
+    has-cmd rpm-ostree
 }
 
-export def is-gnome [] {
+export def is-gnome []: nothing -> bool {
     ($env.XDG_CURRENT_DESKTOP? | default "" | str contains "GNOME") or ($env.XDG_SESSION_DESKTOP? | default "" | str contains "gnome")
 }
 
-export def is-ublue [] {
-    (is-fedora-atomic) and (has_cmd ujust)
+export def is-ublue []: nothing -> bool {
+    (is-fedora-atomic) and (has-cmd ujust)
 }
 
 export def dir-exists [path: string]: nothing -> bool {
   ($path | path exists) and ($path | path type) == "dir"
-}
-
-export def has-cmd [cmd: string]: nothing -> bool {
-  (which $cmd | is-not-empty)
 }
 
 export def is-fedora []: nothing -> bool {

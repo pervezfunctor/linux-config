@@ -193,6 +193,7 @@ export def "main add" [
     --source-dir: string
 ] {
     let dirs = (resolve-dirs $target $source_dir)
+    let expanded_source = ($dirs.source | path expand)
 
     try {
         check-path $path
@@ -208,7 +209,7 @@ export def "main add" [
     let stow_file = compute-stow-path {
         path: $expanded_path,
         target: $expanded_target,
-        source_dir: $dirs.source,
+        source_dir: $expanded_source,
         package: $package
     }
 
@@ -216,16 +217,15 @@ export def "main add" [
 
     if ($path | path type) == 'symlink' {
         let link_target = (do -i { ^readlink $path })
-        if $link_target != null {
-            # Check if symlink target is already in the stow source directory
-            if ($link_target | str starts-with $dirs.source) {
+        if $link_target != null {            # Check if symlink target is already in the stow source directory
+            if ($link_target | str starts-with $expanded_source) {
                 log+ $"Already managed by stow: ($path)"
                 return
             }
-            ^ln -s $link_target $stow_file
+            ^ln -sf $link_target $stow_file
         }
     } else {
-        open --raw $path | save $stow_file
+        open --raw $path | save --force $stow_file
     }
 
     let target_link = compute-target-link $expanded_target $expanded_path

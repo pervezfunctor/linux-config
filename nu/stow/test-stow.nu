@@ -12,12 +12,19 @@ mkdir $test_base
 let source_dir = $test_base | path join "source"
 let target_dir = $test_base | path join "target"
 let backup_dir = $test_base | path join "backups"
-
-log+ $"Test directory: ($test_base)"
+let log_dir = $test_base | path join "logs"
+let module_log_root = $test_base | path join ".linux-config-logs"
 
 mkdir $source_dir
 mkdir $target_dir
 mkdir $backup_dir
+mkdir $log_dir
+mkdir $module_log_root
+load-env {
+    HOME: $test_base
+}
+
+log+ $"Test directory: ($test_base)"
 
 mut test_results = { passed: 0, failed: 0 }
 
@@ -58,6 +65,32 @@ nu $stow_script add "nvim" $"($nested_dir)/init.lua" --target $target_dir --sour
 let nested_stow_file = $source_dir | path join "nvim/dot-config/nvim/init.lua"
 test-result "nested path creates correct stow structure" ($nested_stow_file | path exists) $"Expected: ($nested_stow_file)"
 test-result "nested target is symlink" (($nested_dir | path join "init.lua" | path type) == "symlink") "Should be symlink"
+
+log+ "=== Test Add: Re-adding Refreshes Managed File ==="
+^rm -f $"($target_dir)/.vimrc"
+"vimrc content v2" | save $"($target_dir)/.vimrc"
+nu $stow_script add "vim" $"($target_dir)/.vimrc" --target $target_dir --source-dir $source_dir
+test-result "re-add updates staged copy" ((open $stow_file) == "vimrc content v2") "Staged copy not refreshed"
+test-result "re-add recreates symlink" ((($target_dir | path join ".vimrc" | path type) == "symlink") and ((open ($target_dir | path join ".vimrc")) == "vimrc content v2")) "Symlink missing or stale"
+
+log+ "=== Test Add: Relative Source Directory ==="
+let rel_root = $test_base | path join "rel-source"
+let rel_source = $rel_root | path join "source"
+let rel_target = $rel_root | path join "target"
+mkdir $rel_root
+mkdir $rel_source
+mkdir $rel_target
+"rel config" | save $"($rel_target)/.relrc"
+let rel_cmd = $"cd '($rel_root)'; nu '($stow_script)' add relpkg target/.relrc --target target --source-dir source"
+nu -c $rel_cmd
+let rel_stow_file = $rel_source | path join "relpkg/dot-relrc"
+let rel_target_file = $rel_target | path join ".relrc"
+test-result "relative source creates file" ($rel_stow_file | path exists) "Missing staged file"
+test-result "relative source symlinks target" (($rel_target_file | path type) == "symlink") "Target should be symlinked"
+let rel_link = (do -i { ^readlink $rel_target_file } | default "")
+let rel_link_real = ($rel_link | path expand)
+let rel_expected_real = ($rel_stow_file | path expand)
+test-result "relative symlink points to expanded source" ($rel_link_real == $rel_expected_real) "Symlink destination mismatch"
 
 log+ "=== Test Add: Outside Target Bound ==="
 let outside_file = $test_base | path join "outside.txt"
@@ -151,3 +184,4 @@ test-result "from-stow-name" ($from_result == ".config") $"Got: ($from_result)"
 log+ ""
 log+ $"Test execution finished in ($test_base)."
 print $"Clean up: rm -rf ($test_base)"
+rm -rf $test_base

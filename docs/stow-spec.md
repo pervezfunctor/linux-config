@@ -46,7 +46,7 @@ Apply a stow package with automatic backup.
 
 ### `stow restore`
 
-Restore the symlinks for a package from the most recent backup.
+Restore previously backed-up files for a package (replaces active symlinks with the latest backups).
 
 **Parameters:**
 - `package` (required): Package name

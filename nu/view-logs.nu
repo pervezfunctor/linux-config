@@ -19,7 +19,7 @@ def load-logs [
     }
 
     let logs = try {
-        ls $"($log_dir)/*.log" | sort-by modified -r
+        glob ($log_dir | path join "*.log") | each { |f| ls $f } | flatten | sort-by modified -r
     } catch {
         []
     }
@@ -62,14 +62,36 @@ def "main clean" [
     print $"Kept ($name); removed ($to_remove | length) older log\(s\)."
 }
 
-def display-log [file_path: string] {
+def display-log [file_path: string, level: string, pattern: string] {
     let file_name = ($file_path | path basename)
     print $"==== ($file_name) ===="
 
-    if (which less | is-empty) {
-        open --raw $file_path | print
+    let content = open --raw $file_path
+
+    let level_filtered = if $level == "all" {
+        $content
     } else {
-        ^less -R $file_path
+        $content | lines | where { |line| $line | str upcase | str contains $"[($level | str upcase)]" } | str join "\n"
+    }
+
+    let filtered = if $pattern == "" or $pattern == ".*" {
+        $level_filtered
+    } else {
+        $level_filtered | lines | where { |line| $line =~ $pattern } | str join "\n"
+    }
+
+    if ($filtered | is-empty) {
+        let level_msg = if $level == "all" { "" } else { $" level='($level)'" }
+        let pattern_msg = if $pattern == "" or $pattern == ".*" { "" } else { $" pattern='($pattern)'" }
+        print $"No lines found matching filters:($level_msg)($pattern_msg)"
+        print "Try: --level all --pattern '.*' to show all lines"
+        return
+    }
+
+    if (which less | is-empty) {
+        print $filtered
+    } else {
+        $filtered | ^less -R
     }
 }
 
@@ -107,11 +129,43 @@ def select-interactively [logs: list<record>] {
     }
 }
 
+def pick-log-with-gum [logs: list<record>] {
+    if (which gum | is-empty) {
+        print -e "gum is not installed. Falling back to --select behavior."
+        return (select-interactively $logs)
+    }
+
+    let choices = ($logs | each { |log|
+        let name = ($log.name | path basename)
+        let size = ($log.size | into string)
+        let modified = ($log.modified | format date "%Y-%m-%d %H:%M:%S")
+        $"($name)\t($modified)\t($size)"
+    })
+
+    let selected = ($choices | str join "\n" | ^gum choose --header "Select a log file:")
+
+    if ($selected | is-empty) {
+        return null
+    }
+
+    let selected_name = ($selected | split row "\t" | first)
+    $logs | where { |it| ($it.name | path basename) == $selected_name } | first
+}
+
 def "main show" [
     --dir: string
     --timestamp (-t): string
     --select (-s)
+    --pick-log (-g)
+    --level (-l): string = "all"
+    --pattern (-p): string = ".*"
 ] {
+    let valid_levels = ["all" "info" "error" "warning" "warn" "debug" "trace"]
+    if not (($level | str downcase) in $valid_levels) {
+        print -e $"Invalid level: ($level). Valid levels are: ($valid_levels | str join ', ')"
+        return
+    }
+
     let log_dir = (get-log-dir $dir)
     let logs = try {
         load-logs $log_dir
@@ -119,7 +173,9 @@ def "main show" [
         return
     }
 
-    let target = if $select {
+    let target = if $pick_log {
+        pick-log-with-gum $logs
+    } else if $select {
         select-interactively $logs
     } else if $timestamp != null {
         find-log-by-timestamp $logs $timestamp
@@ -128,7 +184,7 @@ def "main show" [
     }
 
     if $target != null {
-        display-log $target.name
+        display-log $target.name ($level | str downcase) $pattern
     }
 }
 
@@ -144,7 +200,10 @@ def main [
     print ""
     print "Show options:"
     print "  -t, --timestamp <stamp>  Display the log matching the timestamp (YYYYMMDD-HHMMSS)."
-    print "  -s, --select             Interactively choose a log by timestamp or index."
+    print "  -s, --select             Interactively choose a log by timestamp or index (text-based)."
+    print "  -g, --pick-log           Interactively pick a log using gum (requires gum installed)."
+    print "  -l, --level <level>      Filter by log level: all, info, error, warning, debug, trace. (default: all)"
+    print "  -p, --pattern <regex>    Filter lines by regex pattern. (default: .*) (show all)"
     print ""
     print $"By default logs are read from ($default_dir)."
     print "Override with the LINUX_CONFIG_LOG_DIR environment variable or the --dir flag."

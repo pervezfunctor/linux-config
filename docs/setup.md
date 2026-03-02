@@ -8,14 +8,6 @@ Use the following script and select what you need. You MUST select at least syst
 bash -c "$(curl -sSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/master/bin/bootstrap)" -- all
 ```
 
-## Docker VM
-
-If you need docker run the following script to install docker inside a VM and use `devpod` for development. See [docs/docker-vm.md](docker-vm.md) for detailed documentation.
-
-```bash
-~/.local/share/linux-config/bin/docker-vm
-```
-
 ## Package Installation
 
 If you wish to install additional packages, first see if you operating system package manager has it. For eg.

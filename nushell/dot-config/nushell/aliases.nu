@@ -1,11 +1,21 @@
-alias c = code
+alias c = zeditor
+alias f = fd
 alias g = git
 alias h = btm
 alias p = pikman
 alias pi = pixi global install
 alias t = tmux
 alias v = nvim
-alias f = fd-find
+
+alias fpi = flatpak install --user
+alias fpr = flatpak remove --user
+alias fps = flatpak search
+alias fpu = flatpak update --user
+
+alias fpi = flatpak install --user
+alias fpr = flatpak remove --user
+alias fps = flatpak search
+alias fpu = flatpak update --user
 
 alias gs = git stash -u
 alias gp = git push
@@ -20,7 +30,9 @@ alias gfm = git pull
 alias gcm = git commit --message
 alias gia = git add
 alias gco = git checkout
-alias git-tree = git status --short | awk '{print $2}' | tree --fromfile
+def git-tree [] {
+    git status --short | awk '{print $2}' | tree --fromfile
+}
 
 alias stls = sudo systemctl status
 alias stle = sudo systemctl enable --now
@@ -37,8 +49,6 @@ alias utlr = systemctl --user restart
 alias utlg = systemctl --user list-units
 alias utlf = systemctl --user list-units --all --state=failed
 alias dms-logs = journalctl --user -u dms -f
-alias uv-jupyter-standalone = uv tool run jupyter lab
-alias uv-marimo-standalone = uvx --with pyzmq --from "marimo[sandbox]" marimo edit --sandbox
 
 # # eza (ls replacement)
 # alias ls = eza -al --color=always --group-directories-first --icons

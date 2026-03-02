@@ -28,4 +28,4 @@ A condensed guide to writing clean and idiomatic Nushell code, based on the offi
 
 - **Positional Parameters**: Default to using positional parameters when possible, but keep the total positional count to 2 or fewer (e.g., source and target).
 - **Options**: Use options/flags for any remaining variables, or when variables are optional but at least one is required. Provide both long and short option flags whenever possible.
-- **Documentation**: Provide documentation strings for all exported entities and their specific inputs.
+- **Documentation**: Provide documentation strings only for exported entities and their specific inputs.

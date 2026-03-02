@@ -54,10 +54,6 @@ set -Eeuo pipefail
     [ -f /etc/os-release ] && grep -q 'Ubuntu' /etc/os-release 2>/dev/null
   }
 
-  is_gnome() {
-    [ "${XDG_CURRENT_DESKTOP:-}" = "GNOME" ] || [ "${XDG_SESSION_DESKTOP:-}" = "gnome" ]
-  }
-
   is_ublue() {
     is_fedora_atomic && has_cmd ujust
   }
@@ -190,30 +186,61 @@ set -Eeuo pipefail
     exit 1
   }
 
-  base_install() {
-    log "Installing required packages..."
-    update_packages
-    has_cmd git || si git
-    has_cmd git || die "git not installed. Quitting."
-
-    has_cmd trash || si trash-cli
-    has_cmd stow || si stow
-
+  pixi_install() {
     log "Installing pixi and essential packages..."
     if ! has_cmd pixi; then
       curl -fsSL https://pixi.sh/install.sh | sh
     fi
     has_cmd pixi || die "pixi not installed or not in PATH. Quitting."
+  }
 
+  packages_install() {
+    has_cmd curl || si curl
+    has_cmd curl || die "curl not installed. Quitting."
+
+    has_cmd git || si git
+    has_cmd git || die "git not installed. Quitting."
+
+    has_cmd trash || si trash-cli
     has_cmd trash || pixi global install trash-cli
+
+    has_cmd stow || si stow
     has_cmd stow || pixi global install stow
+
+    has_cmd gum || pixi global install go-gum
+
     pixi global install nushell
     has_cmd nu || die "nu not installed. Quitting"
   }
 
+  base_install() {
+    log "Installing required packages..."
+    update_packages
+    packages_install
+  }
+
+  add_paths() {
+    local path=""
+    for dir in "$@"; do
+      path="$dir:$path"
+    done
+    export PATH="$path:$PATH"
+  }
+
   main() {
     export PNPM_HOME="$HOME/.local/share/pnpm"
-    export PATH="${DOT_DIR}/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.pixi/bin:$HOME/bin:$HOME/.local/bin:$PNPM_HOME:$HOME/.npm-packages/bin:$PATH"
+    local paths=(
+      "$HOME/bin"
+      "$HOME/.local/bin"
+      "$HOME/.cargo/bin"
+      "$HOME/.npm-packages/bin"
+      "$PNPM_HOME"
+      "$HOME/.pixi/bin"
+      "/home/linuxbrew/.linuxbrew/bin"
+      "${DOT_DIR}/bin"
+      "${DOT_DIR}/nu"
+    )
+    add_paths "${paths[@]}"
 
     keep_sudo_alive
 
@@ -223,8 +250,7 @@ set -Eeuo pipefail
 
     base_install
     dotfiles_clone
-
-    nu ~/.local/share/linux-config/nu/installers/setup.nu
+    nu ~/.local/share/linux-config/nu/setup.nu
   }
 
   main "$@"

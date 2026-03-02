@@ -1,8 +1,6 @@
 #!/usr/bin/env nu
 
-use ../lib/logs.nu *
-use ../lib/lib.nu *
-use ../lib/setup-lib.nu *
+use ./lib.nu *
 
 def "main nix" [] {
   if (has-cmd nix) {
@@ -40,7 +38,6 @@ def "main system" [] {
     "trash-cli"
     "tree"
     "unzip"
-    "zsh"
     "zstd"
   ]
 
@@ -184,16 +181,6 @@ def "main nvim" [] {
   main nvim config
 }
 
-def "main zsh config" [] {
-  if not (has-cmd zsh) {
-    error+ "zsh not found"
-    return
-  }
-
-  log+ "setting up zsh..."
-  stow-package "zsh"
-}
-
 def "main fish config" [] {
   if not (has-cmd fish) {
     error+ "fish not found"
@@ -220,7 +207,7 @@ def "main bash config" [] {
       $source_line | save -a $bashrc
     }
   } else {
-    log+ $"Creating $bashc"
+    log+ $"Creating $bashrc"
     $source_line | save $bashrc
   }
 }
@@ -302,13 +289,8 @@ def "main dotfiles clone" [] {
 
 def "main dotfiles" [] {
   main dotfiles clone
-
-  if not (is-mac) {
-    main bash config
-  }
-
+  if not (is-mac) { main bash config  }
   main nushell config
-  main zsh config
   main fish config
 }
 
@@ -319,7 +301,7 @@ def "main brew" [] {
 def "main node" [] {
   if not (has-cmd volta) {
     log+ "Installing volta..."
-    bash -c (http get https://get.volta.sh)
+    ^bash -c (http get https://get.volta.sh)
   }
 
   log+ "Installing latest node with volta..."
@@ -331,7 +313,7 @@ def "main uv" [] {
     log+ "uv already installed"
   } else {
     log+ "Installing uv..."
-    sh -c (http get https://astral.sh/uv/install.sh)
+    ^sh -c (http get https://astral.sh/uv/install.sh)
   }
 
   if not (has-cmd pipx) {
@@ -346,14 +328,25 @@ def "main mise" [] {
       return
   }
 
-  log+ "Installing mise"
-  sh -c (http get https://mise.run)
+    log+ "Installing mise"
+    ^sh -c (http get https://mise.run)
+}
+
+def "main claude" [] {
+  if (has-cmd claude) {
+    log+ "claude is already installed"
+    return
+  }
+
+    log+ "Installing claude"
+    ^bash -c (http get https://claude.ai/install.sh)
 }
 
 def "main devtools" [] {
   main mise
   main uv
   main node
+  main claude
 
   let npm_pkgs = [
     "@mermaid-js/mermaid-cli"
@@ -365,36 +358,6 @@ def "main devtools" [] {
   for pkg in $npm_pkgs {
     ^npm install -g $pkg
   }
-}
-
-def "main claude" [] {
-  if (has-cmd claude) {
-    log+ "claude is already installed"
-    return
-  }
-
-  log+ "Installing claude"
-  bash -c (http get https://claude.ai/install.sh)
-}
-
-def "main incus config" [] {
-    log+ "Setting up incus..."
-    do -i {
-      ^sudo usermod -aG incus "$USER"
-      ^sudo usermod -aG incus-admin "$USER"
-      ^sudo systemctl enable --now incus.socket
-      ^sudo incus admin init --minimal
-    }
-}
-
-def "main incus install" [] {
-  log+ "Installing incus"
-  si ["incus"]
-}
-
-def "main incus" [] {
-  main incus install
-  main incus config
 }
 
 def "main setup-shell" [] {
@@ -410,16 +373,14 @@ def "main setup-shell" [] {
   if (is-non-atomic-linux) {
     $items = $items ++ [
       { description: "Install system packages(required)", handler: { main system } }
-      { description: "Install incus", handler: { main incus } }
     ]
   }
 
   $items = $items ++ [
     { description: "Install shell tools", handler: { main shell } }
-    { description: "Setup dotfiles with stow(recommended)", handler: { main dotfiles } }
-    { description: "Install devtools (mise, uv etc)", handler: { main devtools } }
+    { description: "Setup dotfiles with stow", handler: { main dotfiles } }
+    { description: "Install devtools (mise/node/uv/claude)", handler: { main devtools } }
     { description: "Install Neovim", handler: { main nvim } }
-    { description: "Install claude", handler: { main claude } }
     { description: "Install rustup", handler: { main rust } }
   ]
 
@@ -452,7 +413,6 @@ def "main help" [] {
   print "  nvim         Install AstroNvim"
   print "  claude       Install claude CLI"
   print "  rust         Install rustup"
-  print "  incus        Install and configure incus"
   print "  nix          Install nix package manager"
   print "  home-manager Setup home-manager with nix"
   print "  help         Show this help message"

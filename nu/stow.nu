@@ -1,7 +1,6 @@
 #!/usr/bin/env nu
 
-use ../lib/lib.nu *
-use ../lib/logs.nu *
+use ./lib.nu *
 
 # Resolves target, source, and backup directories to their final absolute
 # or default paths. If no custom paths are provided, defaults to $env.HOME

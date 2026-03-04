@@ -41,7 +41,7 @@ def wm-install [] {
 
   if (is-arch) {
     paru-install
-    paru -S bibata-cursor-theme
+    ^paru -S bibata-cursor-theme
   }
 
   let pictures = ($env.HOME | path join "Pictures")
@@ -119,12 +119,13 @@ def "main mangowc install" [] {
     ^paru -S mangowc-git dms-shell-bin
   } else if (is-fedora) {
     if (prompt-yn "need terra repository for installing mango. This is NOT stable. Still enable it?") {
-      ^sudo dnf install --nogpgcheck --repofrompath $"terra,https://repos.fyralabs.com/terra$releasever" terra-release
+      ^sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release
       ^sudo dnf copr enable avengemedia/dms
       si ["mangowc" "dms"]
     }
   } else {
     error+ "Unsupported OS. Not installing mangowc."
+    return
   }
 }
 
@@ -186,7 +187,8 @@ def "main system" [] {
 
   if (has-cmd pipx) {
     log+ "Installing pywal packages"
-    ^pipx install pywal pywalfox
+    ^pipx install pywal
+    ^pipx install pywalfox
   }
 }
 
@@ -217,17 +219,15 @@ def "main zed" [] {
 def "main virt config" [] {
   log+ "Setting up libvirt"
 
-  do -i {
-    for group in ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"] {
-      ^sudo usermod -aG $group $env.USER
-    }
+  for group in ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"] {
+    ^sudo usermod -aG $group $env.USER
+  }
 
-    ^sudo systemctl enable --now libvirtd
-    ^systemctl enable --now libvirtd.socket
-    ^sudo virsh net-autostart default
-    if (has-cmd authselect) {
-      ^sudo authselect enable-feature with-libvirt
-    }
+  ^sudo systemctl enable --now libvirtd
+  ^sudo systemctl enable --now libvirtd.socket
+  ^sudo virsh net-autostart default
+  if (has-cmd authselect) {
+    ^sudo authselect enable-feature with-libvirt
   }
 }
 
@@ -267,9 +267,6 @@ def "main virt" [] {
 }
 
 def "main setup-desktop" [] {
-  init-log-file
-  bootstrap
-
   mut items: list<record<description: string, handler: closure>> = []
 
   if not (is-fedora-atomic) {
@@ -285,7 +282,6 @@ def "main setup-desktop" [] {
     { description: "Install zed", handler: { main zed } }
   ]
 
-
   if (is-fedora) or (is-questing) or (is-pikaos) or (is-tw) or (is-arch) {
     $items = $items ++ [
       { description: "Install niri", handler: { main niri } }
@@ -298,19 +294,7 @@ def "main setup-desktop" [] {
     ]
   }
 
-
-
-  let selected = ($items | input list --multi --display description "Select desktop tasks to execute:")
-
-  if ($selected | is-empty) {
-    log+ "No tasks selected."
-    return
-  }
-
-  for item in $selected {
-    log+ $"Executing: ($item.description)"
-    do $item.handler
-  }
+  multi-task $items
 }
 
 def "main help" [] {
@@ -322,12 +306,12 @@ def "main help" [] {
   print "  setup-desktop  Interactive desktop setup (WMs, flatpaks, apps)"
   print "  system         Install desktop system packages"
   print "  distrobox      Install distrobox"
-  print "  virt          Install virt-manager"
-  print "  flatpaks      Install flatpak applications"
-  print "  zed           Install zed editor"
-  print "  niri          Install niri WM"
-  print "  mangowc       Install mangowc WM"
-  print "  help          Show this help message"
+  print "  virt           Install virt-manager"
+  print "  flatpaks       Install flatpak applications"
+  print "  zed            Install zed editor"
+  print "  niri           Install niri WM"
+  print "  mangowc        Install mangowc WM"
+  print "  help           Show this help message"
   print ""
   print "Supported Systems:"
   print "  - Fedora (standard and atomic)"

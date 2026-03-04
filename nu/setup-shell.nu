@@ -215,76 +215,99 @@ def "main bash config" [] {
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
 let DOT_DIR = ($env.HOME | path join ".local/share/linux-config")
 
-def "main dotfiles clone" [] {
-  if not (dir-exists $DOT_DIR) {
-    log+ "Cloning dotfiles"
-    let clone_result = (do -i { ^git clone $DOTFILES_URL $DOT_DIR } | complete)
-    if $clone_result.exit_code != 0 {
-      error make { msg: $"Failed to clone dotfiles: ($clone_result.stderr)" }
-    }
-    return
-  }
-
-  let is_git = (do -i { ^git -C $DOT_DIR rev-parse --is-inside-work-tree } | complete)
-  if $is_git.exit_code != 0 {
-    error make { msg: $"($DOT_DIR) exists but is not a git repository" }
-  }
-
-  let remote_url = (do -i { ^git -C $DOT_DIR remote get-url origin } | complete)
-  if $remote_url.exit_code != 0 {
-    error make { msg: "Unable to get remote URL. Is 'origin' configured?" }
-  }
-  let remote_url_str = ($remote_url.stdout | str trim)
-  if ($remote_url_str | is-empty) {
-    error make { msg: "Remote URL is empty. Is 'origin' configured?" }
-  }
-  if $remote_url_str != $DOTFILES_URL {
-    error make { msg: $"Unexpected remote: expected '($DOTFILES_URL)', got '($remote_url_str)'" }
-  }
-
-  let status = (do -i { ^git -C $DOT_DIR status --porcelain=v1 } | complete)
-  if $status.exit_code != 0 {
-    error make { msg: "Unable to determine repository status" }
-  }
-
-  if ($status.stdout | is-empty) {
-    log+ "Dotfiles repo clean. Pulling latest changes"
-    let pull = (do -i { ^git -C $DOT_DIR pull --rebase --stat } | complete)
-    if $pull.exit_code == 0 {
-      log+ "Dotfiles updated"
-      return
-    }
-    warn+ "git pull --rebase failed. Attempting to abort rebase"
+def abort-rebase-if-needed [] {
+  let rebase_merge = ($DOT_DIR | path join ".git" "rebase-merge")
+  let rebase_apply = ($DOT_DIR | path join ".git" "rebase-apply")
+  if ($rebase_merge | path exists) or ($rebase_apply | path exists) {
+    warn+ "Aborting rebase"
     do -i { ^git -C $DOT_DIR rebase --abort }
-    error make { msg: "git pull --rebase failed on clean repo" }
   }
+}
 
-  log+ "Dotfiles repo has local changes. Stashing before pull"
-  let stash_label = $"setup-autostash-(date now | format date '%s')"
-  let stash_result = (do -i { ^git -C $DOT_DIR stash push --include-untracked --message $stash_label } | complete)
-  if $stash_result.exit_code != 0 {
-    error make { msg: $"Failed to stash local changes: ($stash_result.stderr)" }
-  }
+def dotfiles-clone [] {
+  log+ "Cloning dotfiles"
+  ^git clone $DOTFILES_URL $DOT_DIR
+}
 
-  let pull = (do -i { ^git -C $DOT_DIR pull --rebase --stat } | complete)
-  if $pull.exit_code == 0 {
-    log+ "Pull succeeded. Restoring local changes"
-    let pop_result = (do -i { ^git -C $DOT_DIR stash pop } | complete)
-    if $pop_result.exit_code != 0 {
-      warn+ "Stash pop had conflicts. Resolve manually and check your local changes."
-      warn+ $pop_result.stderr
+def dotfiles-validate [] {
+  ^git -C $DOT_DIR rev-parse --is-inside-work-tree
+    | ignore
+  let remote_url = (
+    ^git -C $DOT_DIR remote get-url origin | str trim
+  )
+  if ($remote_url | is-empty) {
+    error make {
+      msg: "Remote URL is empty. Is 'origin' configured?"
     }
+  }
+  if $remote_url != $DOTFILES_URL {
+    error make {
+      msg: $"Unexpected remote: expected '($DOTFILES_URL)', got '($remote_url)'"
+    }
+  }
+
+  ^git -C $DOT_DIR status --porcelain=v1
+}
+
+def dotfiles-pull-clean [] {
+  log+ "Pulling latest changes (clean repo)"
+  let result = (
+    do { ^git -C $DOT_DIR pull --rebase --stat } | complete
+  )
+  if $result.exit_code != 0 {
+    abort-rebase-if-needed
+    error make {
+      msg: "git pull --rebase failed on clean repo"
+    }
+  }
+  log+ "Dotfiles updated"
+}
+
+def dotfiles-pull-dirty [] {
+  log+ "Stashing local changes before pull"
+  let stash_label = (
+    $"setup-autostash-(date now | format date '%s')"
+  )
+  ^git -C $DOT_DIR stash push --include-untracked -m $stash_label
+
+  let pull = (
+    do { ^git -C $DOT_DIR pull --rebase --stat } | complete
+  )
+  if $pull.exit_code != 0 {
+    abort-rebase-if-needed
+  }
+
+  log+ "Restoring local changes from stash"
+  let pop = (
+    do { ^git -C $DOT_DIR stash pop } | complete
+  )
+  if $pop.exit_code != 0 {
+    error make {
+      msg: "Stash pop failed — working tree may have conflicts"
+    }
+  }
+
+  if $pull.exit_code != 0 {
+    error make {
+      msg: "git pull --rebase failed; local changes restored"
+    }
+  }
+  log+ "Dotfiles updated"
+}
+
+def "main dotfiles clone" [] {
+  let git_dir = ($DOT_DIR | path join ".git")
+  if not ($git_dir | path exists) {
+    dotfiles-clone
     return
   }
 
-  warn+ "git pull --rebase failed with local changes. Restoring state"
-  do -i { ^git -C $DOT_DIR rebase --abort }
-  let pop_result = (do -i { ^git -C $DOT_DIR stash pop } | complete)
-  if $pop_result.exit_code != 0 {
-    warn+ "Stash pop had conflicts after abort. Resolve manually."
-    warn+ $pop_result.stderr
+  let status = (dotfiles-validate)
+  if ($status | is-empty) {
+    dotfiles-pull-clean
+  } else {
+    dotfiles-pull-dirty
   }
-  error make { msg: "git pull --rebase failed; local changes restored" }
 }
 
 def "main dotfiles" [] {

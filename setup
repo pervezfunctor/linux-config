@@ -145,7 +145,7 @@ set -Eeuo pipefail
   }
 
   is_git_repo() {
-    git rev-parse --is-inside-work-tree >/dev/null 2>&1
+    dir_exists "$1/.git"
   }
 
   git_status() {
@@ -156,16 +156,13 @@ set -Eeuo pipefail
     local repo_dir="$DOT_DIR"
     local repo_url="https://github.com/pervezfunctor/linux-config.git"
 
-    dir_exists "$repo_dir" || {
-      safe_cd "$HOME"
-
+    is_git_repo "$repo_dir" || {
       log "Cloning dotfiles"
       git clone --depth 1 "$repo_url" "$repo_dir" || die "Failed to clone dotfiles"
       return 0
     }
 
     safe_cd "$repo_dir"
-    is_git_repo || die "$repo_dir is not a git repository"
 
     local repo_status
     repo_status=$(git_status) || die "Unable to determine repository status"
@@ -177,8 +174,11 @@ set -Eeuo pipefail
         return 0
       fi
 
-      warn "git pull --rebase failed. Aborting rebase"
-      git rebase --abort >/dev/null 2>&1
+      warn "git pull --rebase failed. Checking for in-progress rebase..."
+      if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
+        warn "Aborting rebase"
+        git rebase --abort >/dev/null 2>&1
+      fi
       exit 1
     fi
 

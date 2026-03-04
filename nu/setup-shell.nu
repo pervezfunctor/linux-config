@@ -106,6 +106,7 @@ def "main pixi packages" [] {
 }
 
 def "main pixi" [] {
+  pixi-install
   main pixi packages
 }
 
@@ -213,7 +214,7 @@ def "main bash config" [] {
 }
 
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
-let DOT_DIR = ($env.HOME | path join ".local/share/linux-config")
+let DOT_DIR = ($nu.home-path | path join ".local/share/linux-config")
 
 def abort-rebase-if-needed [] {
   let rebase_merge = ($DOT_DIR | path join ".git" "rebase-merge")
@@ -312,7 +313,7 @@ def "main dotfiles clone" [] {
 
 def "main dotfiles" [] {
   main dotfiles clone
-  if not (is-mac) { main bash config  }
+
   main nushell config
   main fish config
 }
@@ -324,7 +325,7 @@ def "main brew" [] {
 def "main node" [] {
   if not (has-cmd volta) {
     log+ "Installing volta..."
-    ^bash -c (http get https://get.volta.sh)
+    (http get https://get.volta.sh) | ^bash
   }
 
   log+ "Installing latest node with volta..."
@@ -336,7 +337,7 @@ def "main uv" [] {
     log+ "uv already installed"
   } else {
     log+ "Installing uv..."
-    ^sh -c (http get https://astral.sh/uv/install.sh)
+    (http get https://astral.sh/uv/install.sh) | ^bash
   }
 
   if not (has-cmd pipx) {
@@ -347,12 +348,12 @@ def "main uv" [] {
 
 def "main mise" [] {
   if (has-cmd mise) {
-      log+ "mise already installed"
-      return
+    log+ "mise already installed"
+    return
   }
 
-    log+ "Installing mise"
-    ^sh -c (http get https://mise.run)
+  log+ "Installing mise"
+  (http get https://mise.run) | ^bash
 }
 
 def "main claude" [] {
@@ -361,8 +362,8 @@ def "main claude" [] {
     return
   }
 
-    log+ "Installing claude"
-    ^bash -c (http get https://claude.ai/install.sh)
+  log+ "Installing claude"
+  (http get https://claude.ai/install.sh) | ^bash
 }
 
 def "main devtools" [] {
@@ -384,8 +385,8 @@ def "main devtools" [] {
 }
 
 def "main setup-shell" [] {
-  if not ((is-fedora) or (is-trixie) or (is-questing) or (is-tw) or (is-arch) or (is-pikaos) or (is-mac) or (is-fedora-atomic)) {
-    die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS, macOS, and Fedora Atomic supported. Quitting."
+  if not ((is-fedora) or (is-trixie) or (is-questing) or (is-tw) or (is-arch) or (is-pikaos) or (is-fedora-atomic)) {
+    die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS, and Fedora Atomic supported. Quitting."
   }
 
   init-log-file

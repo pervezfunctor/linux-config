@@ -214,7 +214,7 @@ def "main bash config" [] {
 }
 
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
-let DOT_DIR = ($nu.home-path | path join ".local/share/linux-config")
+const DOT_DIR = ($nu.home-dir | path join ".local/share/linux-config")
 
 def abort-rebase-if-needed [] {
   let rebase_merge = ($DOT_DIR | path join ".git" "rebase-merge")

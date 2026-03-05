@@ -135,8 +135,6 @@ def "main mangowc config" [] {
 
   let mango_dms = ($env.HOME | path join ".config/mango/dms")
   touch-files $mango_dms ["alttab.conf" "colors.conf" "layout.conf" "wpblur.conf" "binds.conf" "cursor.conf" "outputs.conf"]
-
-  do -i { ^systemctl --user add-wants wm-session.target dms }
 }
 
 def "main mangowc" [] {
@@ -213,21 +211,21 @@ def "main zed" [] {
   }
 
   main brew fonts
-  stow-package "zed"
 }
 
 def "main virt config" [] {
   log+ "Setting up libvirt"
 
   for group in ["libvirt" "qemu" "libvirt-qemu" "kvm" "libvirtd"] {
-    ^sudo usermod -aG $group $env.USER
+    do -i { ^sudo usermod -aG $group $env.USER }
   }
 
-  ^sudo systemctl enable --now libvirtd
-  ^sudo systemctl enable --now libvirtd.socket
-  ^sudo virsh net-autostart default
+  do -i { ^sudo systemctl enable --now libvirtd }
+  do -i { ^sudo systemctl enable --now libvirtd.socket }
+  do -i { ^sudo virsh net-autostart default }
+
   if (has-cmd authselect) {
-    ^sudo authselect enable-feature with-libvirt
+    do -i { ^sudo authselect enable-feature with-libvirt }
   }
 }
 

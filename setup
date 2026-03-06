@@ -188,7 +188,7 @@ set -Eeuo pipefail
 
   cmd_check() {
     for cmd in "$@"; do
-      has_cmd "$1" || die "$1 not installed. Quitting."
+      has_cmd "$cmd" || die "$cmd not installed. Quitting."
     done
   }
 
@@ -206,7 +206,7 @@ set -Eeuo pipefail
     has_cmd fish || si fish || true
     cmd_check fish
 
-    pixi global install nushell stow trash-cli go-gum
+    pixi global install nushell stow trash-cli go-gum starship
     cmd_check nu stow trash starship
   }
 

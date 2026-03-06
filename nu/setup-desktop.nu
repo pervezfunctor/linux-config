@@ -69,7 +69,7 @@ def wm-install [] {
     ^paru -S bibata-cursor-theme
   }
 
-  main brew fonts
+  main fonts
 
   if (has-cmd pipx) {
     log+ "Installing pywal packages"
@@ -213,7 +213,10 @@ def "main distrobox" [] {
     si ["podman" "distrobox"]
 }
 
-def "main brew fonts" [] {
+def "main fonts" [] {
+  if not (has-cmd brew) {
+    brew-install
+  }
   if not (has-cmd brew) {
     error+ "brew not installed, cannot install fonts"
     return
@@ -228,7 +231,7 @@ def "main zed" [] {
     ^sh -c (http get https://zed.dev/install.sh)
   }
 
-  main brew fonts
+  main fonts
 }
 
 def "main virt config" [] {
@@ -327,20 +330,31 @@ def "main setup-desktop" [] {
 }
 
 def "main help" [] {
-  print "setup-desktop.nu - Cross-platform desktop setup script"
+  print "setup-desktop.nu - Linux desktop setup script"
   print ""
-  print "Usage: nu setup-desktop.nu <command>"
+  print "Usage: nu setup-desktop.nu <command> [args]"
   print ""
   print "Commands:"
-  print "  setup-desktop  Interactive desktop setup (WMs, flatpaks, apps)"
-  print "  system         Install desktop system packages"
-  print "  distrobox      Install distrobox"
-  print "  virt           Install virt-manager"
-  print "  flatpaks       Install flatpak applications"
-  print "  zed            Install zed editor"
-  print "  niri           Install niri WM"
-  print "  mangowc        Install mangowc WM"
-  print "  help           Show this help message"
+  print "  setup-desktop    Interactive desktop setup (WMs, flatpaks, apps)"
+  print ""
+  print "  system           Install desktop system packages"
+  print "  distrobox        Install distrobox"
+  print "  flatpaks         Install flatpak applications"
+  print "  zed              Install zed editor and fonts"
+  print "  fonts            Install desktop fonts with Homebrew"
+  print ""
+  print "  virt             Install and configure virt-manager/libvirt"
+  print "  virt install     Install virt-manager/libvirt packages"
+  print "  virt config      Configure libvirt for the current user"
+  print ""
+  print "  niri             Install and configure niri WM"
+  print "  niri install     Install niri and dms"
+  print "  niri config      Apply niri config"
+  print ""
+  print "  mangowc          Install and configure mangowc WM"
+  print "  mangowc install  Install mangowc and dms"
+  print "  mangowc config   Apply mangowc config"
+  print "  help             Show this help message"
   print ""
   print "Supported Systems:"
   print "  - Fedora (standard and atomic)"

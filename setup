@@ -203,6 +203,8 @@ set -Eeuo pipefail
   packages_install() {
     has_cmd git || si git || true
     cmd_check git
+    has_cmd fish || si fish || true
+    cmd_check fish
 
     pixi global install nushell stow trash-cli go-gum
     cmd_check nu stow trash starship
@@ -247,7 +249,7 @@ set -Eeuo pipefail
     packages_install
     dotfiles_clone
 
-    nu ~/.local/share/linux-config/nu/setup-shell.nu fish
+    nu ~/.local/share/linux-config/nu/setup-shell.nu fish config
   }
 
   main "$@"

@@ -216,21 +216,6 @@ set -Eeuo pipefail
     export PATH="$path:$PATH"
   }
 
-  bash_config() {
-    local bashrc="$HOME/.bashrc"
-    local source_line='source ~/.local/share/linux-config/shellrc'
-
-    if [[ -f "$bashrc" ]]; then
-      grep -Fq 'linux-config/shellrc' "$bashrc" || {
-        log "Setting up bashrc..."
-        echo "$source_line" >> "$bashrc"
-      }
-    else
-      echo "Creating $bashrc" >&2
-      echo "$source_line" > "$bashrc"
-    fi
-  }
-
   main() {
     export PNPM_HOME="$HOME/.local/share/pnpm"
     local paths=(
@@ -263,7 +248,7 @@ set -Eeuo pipefail
     dotfiles_clone
     bash_config
 
-    nu ~/.local/share/linux-config/nu/setup.nu
+    nu ~/.local/share/linux-config/nu/setup-shell.nu fish
   }
 
   main "$@"

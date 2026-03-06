@@ -1,3 +1,4 @@
 -d ~/.local/share/linux-config
 --dotfiles
+--no-folding
 -t ~/

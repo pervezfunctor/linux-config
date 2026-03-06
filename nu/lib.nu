@@ -168,16 +168,16 @@ export def add-shell [shell_path: string] {
 }
 
 export def stow-package [package: string] {
-  let config_dir = ($env.HOME | path join ".local/share/linux-config")
-  check-path $config_dir
-
-  let package_dir = ($config_dir | path join $package)
-  check-path $package_dir
-
-  # @TODO: Replace with stow.nu apply
-  log+ $"Stowing ($package) dotfiles"
-  ^stow --no-folding --adopt --dir $config_dir --target $env.HOME $package
   do -i {
+    let config_dir = ($env.HOME | path join ".local/share/linux-config")
+    check-path $config_dir
+
+    let package_dir = ($config_dir | path join $package)
+    check-path $package_dir
+
+    # @TODO: Replace with stow.nu apply
+    log+ $"Stowing ($package) dotfiles"
+    ^stow --adopt --dir $config_dir --target $env.HOME $package
     ^git -C $config_dir stash --include-untracked --message $"Stashing ($package) dotfiles"
   }
 }

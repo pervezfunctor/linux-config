@@ -4,7 +4,6 @@ use ./lib.nu *
 
 def wm-install [] {
   mut pkgs = [
-    "cliphist"
     "grim"
     "gvfs"
     "imv"
@@ -23,25 +22,59 @@ def wm-install [] {
     "xdg-desktop-portal-gtk"
     "xdg-desktop-portal-wlr"
   ]
-
-  if (is-apt ) { $pkgs = $pkgs ++ ["bibata-cursor-theme"] }
-  if (is-fedora) { $pkgs = $pkgs ++ ["gvfs-smb" "adw3-gtk-theme"] }
-  if (is-tw) { $pkgs = $pkgs ++ ["pipewire-pulseaudio" "gtk3-metatheme-adwaita"] }
+  if (is-apt ) {
+    $pkgs = $pkgs ++ [
+      "bibata-cursor-theme"
+      "cliphist"
+      "gvfs-backends"
+      "gvfs-fuse"
+      "libsecret-tools"
+    ]
+  }
+  if (is-fedora) {
+    $pkgs = $pkgs ++ [
+      "adw-gtk3-theme"
+      "gvfs-fuse"
+      "gvfs-smb"
+      "libsecret"
+    ]
+  }
+  if (is-tw) {
+    $pkgs = $pkgs ++ [
+      "cliphist"
+      "git-credential-libsecret"
+      "gtk3-metatheme-adwaita"
+      "gvfs-backend-samba"
+      "gvfs-fuse"
+      "libsecret-1-0"
+      "pipewire-pulseaudio"
+    ]
+  }
   if (is-arch) {
     $pkgs = $pkgs ++ [
       "adw-gtk-theme"
       "cava"
+      "cliphist"
       "cups-pk-helper"
+      "gvfs-smb"
       "kimageformats"
+      "libsecret"
       "matugen"
     ]
   }
-
   si $pkgs
 
   if (is-arch) {
     paru-install
     ^paru -S bibata-cursor-theme
+  }
+
+  main brew fonts
+
+  if (has-cmd pipx) {
+    log+ "Installing pywal packages"
+    ^pipx install pywal
+    ^pipx install pywalfox
   }
 
   let pictures = ($env.HOME | path join "Pictures")
@@ -50,8 +83,6 @@ def wm-install [] {
 
   stow-package "systemd"
   stow-package "kitty"
-
-  main brew fonts
 }
 
 def "main niri install" [] {
@@ -67,7 +98,7 @@ def "main niri install" [] {
     ^pikman install pika-niri-desktop-minimal pika-niri-settings dms
   } else if (is-fedora) {
     ^sudo dnf copr enable avengemedia/dms
-    si ["niri" "dms"]
+    si ["niri" "dms" "cliphist"]
   } else if (is-questing) {
     ^sudo add-apt-repository ppa:avengemedia/danklinux
     ^sudo add-apt-repository ppa:avengemedia/dms
@@ -170,24 +201,11 @@ def "main system" [] {
   mut pkgs = [
     "flatpak"
     "gnome-keyring"
-    "pass"
     "plocate"
-    "gvfs"
   ]
-
-  if (is-tw) { $pkgs = $pkgs ++ ["gopass"] }
-  if (is-apt) { $pkgs = $pkgs ++ ["libsecret-tools"] }
-  if (is-fedora) { $pkgs = $pkgs ++ ["gvfs-smb"] }
-  if (is-arch) { $pkgs = $pkgs ++ ["gvfs-smb"] }
 
   log+ "Installing system packages"
   si $pkgs
-
-  if (has-cmd pipx) {
-    log+ "Installing pywal packages"
-    ^pipx install pywal
-    ^pipx install pywalfox
-  }
 }
 
 def "main distrobox" [] {
@@ -231,19 +249,32 @@ def "main virt config" [] {
 
 def "main virt install" [] {
   log+ "Installing virt-manager"
+
+  if not (is-arch) {
+    warn+ "OS other than arch is not tested for virt-manager"
+  }
+
   mut packages = [
     "virt-install"
     "virt-manager"
     "virt-viewer"
   ]
 
-  if (is-fedora) or (is-arch) {
+  if (is-fedora) or (is-arch) or (is-tw) {
     $packages ++= [
       "dnsmasq"
       "libvirt"
       "qemu-img"
       "qemu-tools"
       "swtpm"
+    ]
+  }
+  if (is-tw) {
+    $packages ++= [
+      "qemu"
+      "qemu-x86"
+      "qemu-ui-gtk"
+      "qemu-ui-opengl"
     ]
   }
 

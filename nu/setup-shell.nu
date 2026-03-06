@@ -174,6 +174,9 @@ def "main fish config" [] {
 
   log+ "setting up fish..."
   stow-package "fish"
+
+  log+ "Change default shell to fish"
+  do -i { ^chsh -s (which fish | get path.0) }
 }
 
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"

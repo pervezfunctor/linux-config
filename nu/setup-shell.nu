@@ -26,32 +26,16 @@ def "main system" [] {
   update-packages
 
   let pkgs = [
-    "cmake"
     "fish"
     "gcc"
     "git"
     "make"
-    "micro"
-    "stow"
     "tar"
     "tmux"
-    "trash-cli"
     "tree"
     "unzip"
     "zstd"
   ]
-
-  let pkgs = if (is-tw) {
-    $pkgs ++ ["gcc-c++" "micro-editor" "python313-pipx" "starship"]
-  } else if (is-apt) {
-    $pkgs ++ ["g++" "starship" "pipx"]
-  } else if (is-fedora) {
-    $pkgs ++ ["g++" "nu" "pipx"]
-  } else if (is-arch) {
-    $pkgs ++ ["python-pipx" "nushell" "starship"]
-  } else {
-    $pkgs
-  }
 
   log+ "Installing system packages"
   si $pkgs
@@ -84,12 +68,15 @@ def "main pixi packages" [] {
     "just"
     "lazygit"
     "mask"
+    "nushell"
     "ripgrep"
     "shellcheck"
+    "stow"
     "tealdeer"
     "tectonic"
     "television"
     "tmuxp"
+    "trash-cli"
     "xh"
     "yazi"
     "zoxide"
@@ -97,10 +84,7 @@ def "main pixi packages" [] {
 
   ^pixi global install ...$pixi_pkgs
 
-  if not (has-cmd starship) { ^pixi global install starship }
-  if not (has-cmd nu) { ^pixi global install nushell }
   if not (has-cmd tmux) { ^pixi global install tmux }
-  if not (has-cmd trash) { ^pixi global install trash-cli }
 
   do -i { ^tldr --update }
 }
@@ -190,27 +174,6 @@ def "main fish config" [] {
 
   log+ "setting up fish..."
   stow-package "fish"
-}
-
-def "main bash config" [] {
-  if not (has-cmd bash) {
-    error+ "bash not found"
-    return
-  }
-
-  let bashrc = ($env.HOME | path join ".bashrc")
-  let source_line = "source ~/.local/share/linux-config/shellrc"
-
-  if ($bashrc | path exists) {
-    let content = (open $bashrc)
-    if not ($content =~ "linux-config/shellrc") {
-      log+ "Setting up bashrc..."
-      $source_line | save -a $bashrc
-    }
-  } else {
-    log+ $"Creating $bashrc"
-    $source_line | save $bashrc
-  }
 }
 
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"

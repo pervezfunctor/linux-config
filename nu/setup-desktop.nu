@@ -34,9 +34,11 @@ def wm-install [] {
   if (is-fedora) {
     $pkgs = $pkgs ++ [
       "adw-gtk3-theme"
+      "cups-pk-helper"
       "gvfs-fuse"
       "gvfs-smb"
       "libsecret"
+      # "power-profiles-daemon"
     ]
   }
   if (is-tw) {

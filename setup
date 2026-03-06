@@ -204,16 +204,8 @@ set -Eeuo pipefail
     has_cmd git || si git || true
     cmd_check git
 
-    has_cmd trash || si trash-cli || true
-    has_cmd trash || pixi global install trash-cli
-    cmd_check trash
-
-    has_cmd stow || si stow || true
-    has_cmd stow || pixi global install stow
-    has_cmd starship || pixi global install starship
-    has_cmd gum || pixi global install go-gum
-    pixi global install nushell
-    cmd_check stow starship gum nushell
+    pixi global install nushell stow trash-cli go-gum
+    cmd_check nu stow trash starship
   }
 
   add_paths() {
@@ -222,6 +214,21 @@ set -Eeuo pipefail
       path="$dir:$path"
     done
     export PATH="$path:$PATH"
+  }
+
+  bash_config() {
+    local bashrc="$HOME/.bashrc"
+    local source_line='source ~/.local/share/linux-config/shellrc'
+
+    if [[ -f "$bashrc" ]]; then
+      grep -Fq 'linux-config/shellrc' "$bashrc" || {
+        log "Setting up bashrc..."
+        echo "$source_line" >> "$bashrc"
+      }
+    else
+      echo "Creating $bashrc" >&2
+      echo "$source_line" > "$bashrc"
+    fi
   }
 
   main() {
@@ -254,6 +261,7 @@ set -Eeuo pipefail
     pixi_install
     packages_install
     dotfiles_clone
+    bash_config
 
     nu ~/.local/share/linux-config/nu/setup.nu
   }

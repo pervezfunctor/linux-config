@@ -195,9 +195,6 @@ set -Eeuo pipefail
   }
 
   packages_install() {
-    has_cmd curl || si curl
-    has_cmd curl || die "curl not installed. Quitting."
-
     has_cmd git || si git
     has_cmd git || die "git not installed. Quitting."
 
@@ -216,6 +213,12 @@ set -Eeuo pipefail
   base_install() {
     log "Installing required packages..."
     update_packages
+
+    has_cmd curl || si curl
+    has_cmd curl || die "curl not installed. Quitting."
+
+    pixi_install
+
     packages_install
   }
 

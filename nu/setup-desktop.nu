@@ -188,6 +188,7 @@ def "main flatpaks" [] {
     "md.obsidian.Obsidian"
     "org.gnome.Firmware"
     "org.gnome.Papers"
+    "app.zen_browser.zen"
   ]
 
   log+ "Installing flatpaks..."

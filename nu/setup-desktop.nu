@@ -16,6 +16,8 @@ def wm-install [] {
     "qt5ct"
     "qt6ct"
     "slurp"
+    "udiskie"
+    "udisks2"
     "wireplumber"
     "wl-clipboard"
     "xdg-desktop-portal-gnome"

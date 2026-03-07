@@ -210,7 +210,7 @@ set -Eeuo pipefail
     cmd_check nu stow trash starship
   }
 
-  add_paths() {
+  paths_add() {
     local path=""
     for dir in "$@"; do
       path="$dir:$path"
@@ -224,14 +224,15 @@ set -Eeuo pipefail
       "$HOME/bin"
       "$HOME/.local/bin"
       "$HOME/.cargo/bin"
-      "$HOME/.npm-packages/bin"
       "$PNPM_HOME"
-      "$HOME/.pixi/bin"
+      ".local/share/mise/shims"
       "/home/linuxbrew/.linuxbrew/bin"
       "${DOT_DIR}/bin"
       "${DOT_DIR}/nu"
+      "$HOME/.pixi/bin"
+      ".volta/bin"
     )
-    add_paths "${paths[@]}"
+    paths_add "${paths[@]}"
 
     keep_sudo_alive
 

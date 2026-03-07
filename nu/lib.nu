@@ -317,12 +317,11 @@ export def --env bootstrap [] {
     ".local/bin"
     ".cargo/bin"
     ".local/share/pnpm"
-    ".npm-packages"
     ".local/share/mise/shims"
     $"($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))/nu"
+    $"($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))/bin"
     ".pixi/bin"
     ".volta/bin"
-    ".local/share/linux-config/bin"
   ] {
     path add ($env.HOME | path join $p | path expand)
   }

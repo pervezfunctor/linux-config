@@ -372,10 +372,14 @@ def "main help" [] {
 }
 
 def main [] {
+  let job_id = keep-sudo-alive
+
   if (is-mac) {
     die "desktop option is not available for mac"
   }
 
   bootstrap
   main setup-desktop
+
+  stop-sudo-alive $job_id
 }

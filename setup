@@ -250,6 +250,8 @@ set -Eeuo pipefail
     dotfiles_clone
 
     nu ~/.local/share/linux-config/nu/setup-shell.nu fish config
+    nu ~/.local/share/linux-config/nu/setup-shell.nu
+    nu ~/.local/share/linux-config/nu/setup-desktop.nu
   }
 
   main "$@"

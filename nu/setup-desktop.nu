@@ -88,6 +88,14 @@ def wm-install [] {
   stow-package "systemd"
   stow-package "kitty"
   stow-package "xdg"
+
+  # xdg-mime default org.gnome.Nautilus.desktop inode/directory`
+  # xdg-mime default firefox.desktop x-scheme-handler/http
+  # xdg-mime default firefox.desktop x-scheme-handler/https
+  # xdg-mime default org.pwmt.zathura.desktop application/pdf
+  # xdg-mime default org.gnome.Loupe.desktop image/png
+  # xdg-mime default org.gnome.Loupe.desktop image/jpeg
+  # xdg-mime default org.gnome.Loupe.desktop image/webp
 }
 
 def "main niri install" [] {

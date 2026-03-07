@@ -268,6 +268,11 @@ def "main virt install" [] {
     "virt-viewer"
   ]
 
+  if (is-fedora) or (is-tw) {
+    $packages ++= [
+      "libvirt-nss"
+    ]
+  }
   if (is-fedora) or (is-arch) or (is-tw) {
     $packages ++= [
       "dnsmasq"

@@ -87,6 +87,7 @@ def wm-install [] {
 
   stow-package "systemd"
   stow-package "kitty"
+  stow-package "xdg"
 }
 
 def "main niri install" [] {

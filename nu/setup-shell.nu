@@ -25,7 +25,7 @@ def "main home-manager" [] {
 def "main system" [] {
   update-packages
 
-  let pkgs = [
+  mut pkgs = [
     "fish"
     "gcc"
     "git"
@@ -36,6 +36,13 @@ def "main system" [] {
     "unzip"
     "zstd"
   ]
+
+  if (is-tw) or (is-apt) {
+      $pkgs ++= ["libatomic1"]
+  }
+  else if (is-fedora) or (is-arch) {
+      $pkgs ++= ["libatomic"]
+  }
 
   log+ "Installing system packages"
   si $pkgs
@@ -332,22 +339,32 @@ def "main claude" [] {
   (http get https://claude.ai/install.sh) | ^bash
 }
 
-def "main devtools" [] {
-  main mise
-  main uv
-  main node
-  main claude
+def "main npm pacakges" [] {
+  if not (has-cmd npm) {
+    error+ "npm not installed. Use 'setup-shell.nu node' to install."
+    return
+  }
 
   let npm_pkgs = [
-    "@mermaid-js/mermaid-cli"
     "@google/gemini-cli"
+    "@mermaid-js/mermaid-cli"
     "opencode-ai"
+    @openai/codex
+    "typescript"
   ]
 
   log+ "Installing npm packages"
   for pkg in $npm_pkgs {
     ^npm install -g $pkg
   }
+}
+
+def "main devtools" [] {
+  main mise
+  main uv
+  main claude
+  main node
+  main npm pacakges
 }
 
 def "main setup-shell" [] {

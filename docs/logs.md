@@ -6,6 +6,8 @@ Every invocation of the bootstrap script records a timestamped log file under `~
 
 Use the `view-logs.nu` helper script to inspect logs:
 
+In Nushell, pass flags after the subcommand they belong to. For example, use `view-logs.nu show --dir /tmp/my-logs`, not `view-logs.nu --dir /tmp/my-logs show`.
+
 ```bash
 # View the most recent log (shows all lines by default)
 ~/.local/share/linux-config/nu/view-logs.nu show
@@ -92,5 +94,8 @@ Keep only the latest log and remove older ones:
 LINUX_CONFIG_LOG_DIR=/tmp/my-logs ~/.local/share/linux-config/nu/view-logs.nu show
 
 # Specify directory via flag
-~/.local/share/linux-config/nu/view-logs.nu --dir /tmp/my-logs show
+~/.local/share/linux-config/nu/view-logs.nu show --dir /tmp/my-logs
+
+# Clean logs in an alternate directory
+~/.local/share/linux-config/nu/view-logs.nu clean --dir /tmp/my-logs
 ```

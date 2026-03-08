@@ -206,8 +206,8 @@ set -Eeuo pipefail
     has_cmd fish || si fish || true
     cmd_check fish
 
-    pixi global install nushell stow trash-cli go-gum starship
-    cmd_check nu stow trash starship
+    pixi global install nushell stow trash-cli go-gum starship gh
+    cmd_check nu stow trash starship gh
   }
 
   paths_add() {

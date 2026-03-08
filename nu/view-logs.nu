@@ -38,6 +38,10 @@ def load-logs [
 def "main clean" [
     --dir: string
 ] {
+    clean-logs $dir
+}
+
+def clean-logs [dir?: string] {
     let log_dir = (get-log-dir $dir)
     let logs = try {
         load-logs $log_dir
@@ -160,6 +164,17 @@ def "main show" [
     --level (-l): string = "all"
     --pattern (-p): string = ".*"
 ] {
+    show-logs $dir $timestamp $select $pick_log $level $pattern
+}
+
+def show-logs [
+    dir?: string
+    timestamp?: string
+    select: bool = false
+    pick_log: bool = false
+    level: string = "all"
+    pattern: string = ".*"
+] {
     let valid_levels = ["all" "info" "error" "warning" "warn" "debug" "trace"]
     if not (($level | str downcase) in $valid_levels) {
         print -e $"Invalid level: ($level). Valid levels are: ($valid_levels | str join ', ')"
@@ -188,23 +203,38 @@ def "main show" [
     }
 }
 
-def main [
-    --dir: string
-] {
+def print-show-help [] {
+    print "Show options:"
+    print "  -t, --timestamp <stamp>  Display the log matching the timestamp (MM-DD-HHMMSS, e.g. 03-03-012721)."
+    print "  -s, --select             Interactively choose a log by timestamp or index (text-based)."
+    print "  -g, --pick-log           Interactively pick a log using gum (requires gum installed)."
+    print "  -l, --level <level>      Filter by log level: all, info, error, warning, warn, debug, trace. (default: all)"
+    print "  -p, --pattern <regex>    Filter lines by regex pattern. (default: .*)"
+}
+
+def print-help [] {
     let default_dir = ($env.LINUX_CONFIG_LOG_DIR? | default $"($env.HOME)/.linux-config-logs")
-    print "Usage: logs <command> [options]"
+    print "view-logs.nu - Inspect bootstrap logs"
+    print ""
+    print "Usage:"
+    print "  view-logs.nu show [--dir <path>] [options]"
+    print "  view-logs.nu clean [--dir <path>]"
+    print "  view-logs.nu help"
     print ""
     print "Commands:"
     print "  clean             Remove all log files except the most recent one."
     print "  show [options]    Display log contents. Defaults to the most recent log."
     print ""
-    print "Show options:"
-    print "  -t, --timestamp <stamp>  Display the log matching the timestamp (YYYYMMDD-HHMMSS)."
-    print "  -s, --select             Interactively choose a log by timestamp or index (text-based)."
-    print "  -g, --pick-log           Interactively pick a log using gum (requires gum installed)."
-    print "  -l, --level <level>      Filter by log level: all, info, error, warning, debug, trace. (default: all)"
-    print "  -p, --pattern <regex>    Filter lines by regex pattern. (default: .*) (show all)"
+    print-show-help
     print ""
     print $"By default logs are read from ($default_dir)."
     print "Override with the LINUX_CONFIG_LOG_DIR environment variable or the --dir flag."
+}
+
+def "main help" [] {
+    print-help
+}
+
+def main [] {
+    print-help
 }

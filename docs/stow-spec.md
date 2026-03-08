@@ -1,125 +1,162 @@
 # stow Specification
 
-Dotfiles manager with symlink creation (pure Nushell implementation).
+Dotfiles manager that stages files into package directories and deploys them with symlinks.
 
 ## Overview
 
-Manages dotfiles by creating symlinks from a source directory to target locations, with automatic dot-prefix conversion.
+`stow.nu` manages dotfiles by:
+
+1. storing package contents under a source directory,
+2. translating leading `.` path segments to `dot-` inside the repository,
+3. applying packages by creating symlinks into a target directory,
+4. backing up replaced real files before linking.
 
 ## Syntax
 
-```
-stow add <package> <path>
+```nu
+stow add <package> <path> [--target <dir>] [--source-dir <dir>]
 stow apply <package> [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+stow remove <package> [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+stow status <package> [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+stow doctor <package> [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+stow restore <package> [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
 ```
 
 ## Commands
 
 ### `stow add`
 
-Add a file to a stow package.
+Adds a target-path file into a package and replaces the original path with a symlink to the staged copy.
 
-**Parameters:**
-- `package` (required): Package name
-- `path` (required): File path to add
+**Parameters**
+- `package`: package name; required and must be non-empty
+- `path`: path to add; must resolve under `--target`
 
-**Options:**
-- `--target`: Target directory (default: `~`)
-- `--source-dir`: Source directory (default: `~/.local/share/linux-config`)
+**Accepted inputs**
+- regular files
 
-**Behavior:**
-1. Validates path exists and is a file
-2. Copies file to source package directory with dot-prefix conversion
-3. Creates symlink in target directory
+**Rejected inputs**
+- directories
+- symlinks to files
+- symlinks to directories
+- broken symlinks
+
+**Behavior**
+1. Validates the requested path.
+2. Computes the staged path under `<source-dir>/<package>/...` using `dot-` conversion.
+3. Copies regular-file inputs into the staging area using metadata-preserving filesystem copy semantics (`cp -p`), preserving mode bits such as executability.
+4. Replaces the target path with a symlink to the staged item.
+5. Fails if `path` is not a regular file, including when it is already a symlink.
 
 ### `stow apply`
 
-Apply a stow package with automatic backup.
+Applies every staged item from a package into the target directory.
 
-**Parameters:**
-- `package` (required): Package name
+**Behavior**
+1. Fails if the package does not exist.
+2. Enumerates staged package items recursively.
+3. Removes pre-existing symlinks at destination paths.
+4. Backs up pre-existing regular files before linking.
+5. Fails on directory collisions.
+6. Creates symlinks from each target path to the staged item.
 
-**Options:**
-- `--target`: Target directory (default: `~`)
-- `--source-dir`: Source directory (default: `~/.local/share/linux-config`)
-- `--backup-dir`: Backup directory (default: `~/.stow-backups`)
+### `stow remove`
+
+Removes deployed symlinks for a package from the target directory and restores backups when available.
+
+**Behavior**
+1. Fails if the package does not exist.
+2. Enumerates the package's staged paths and corresponding target paths.
+3. Refuses to delete a target unless it is the exact symlink currently managed by that package.
+4. Removes managed symlinks.
+5. Restores the newest valid timestamped backup for each path when one exists.
+6. If no backup exists, leaves the target path absent after removing the managed symlink.
+7. Fails if backup data for a path exists but has no valid timestamp.
+8. Fails on directory collisions or other unmanaged target drift.
+
+### `stow status`
+
+Reports the current per-target state for every staged path in a package.
+
+**Behavior**
+1. Fails if the package does not exist.
+2. Enumerates the package's staged paths and corresponding target paths.
+3. Returns one record per path with:
+   - `target`: target path
+   - `stow`: staged source path
+   - `state`: one of `managed`, `missing`, `file`, `directory`, `foreign-symlink`
+   - `link_target`: the current symlink target when the target is a symlink, otherwise empty
+   - `backup_status`: one of `found`, `missing`, `invalid`
+   - `backup_path`: newest valid backup path when found, otherwise empty
+
+### `stow doctor`
+
+Checks whether a package is deployed cleanly to the target directory.
+
+**Behavior**
+1. Uses the same per-target inspection data as `stow status`.
+2. Succeeds when every target is in `managed` state and no path has `backup_status = invalid`.
+3. Prints the unhealthy path records before failing.
+4. Exits non-zero when any target is missing, replaced by a regular file, replaced by a foreign symlink, blocked by a directory, or has invalid backup data.
 
 ### `stow restore`
 
-Restore previously backed-up files for a package (replaces active symlinks with the latest backups).
+Restores the newest available backups for paths owned by a package.
 
-**Parameters:**
-- `package` (required): Package name
+**Behavior**
+1. Fails if the package does not exist.
+2. Enumerates the package's staged paths and corresponding target paths.
+3. Searches for backups only within that package's backup namespace.
+4. Restores the newest valid timestamped backup for each path, preferring the highest collision suffix when multiple backups share the same timestamp.
+5. If no backup exists and the current target is a regular file, fails with a non-zero error.
+6. If no backup exists and the current target is a symlink or missing, warns and skips that path.
+7. Fails on directory collisions during restore.
 
-**Options:**
-- `--target`: Target directory (default: `~`)
-- `--source-dir`: Source directory (default: `~/.local/share/linux-config`)
-- `--backup-dir`: Backup directory (default: `~/.stow-backups`)
+## Options
 
-**Behavior:**
-1. Collects all files mapped to the package.
-2. Searches the backup directory for the newest timestamped backup matching each file.
-3. Shows a warning if a mapped file lacks a valid backup. If the current target is a file, fails loudly with an explicit error.
-4. Safely destroys the current target symlink/file and restores the backup.
+- `--target`: target directory, default `~`
+- `--source-dir`: source directory, default `~/.local/share/linux-config`
+- `--backup-dir`: backup directory for `apply`, `remove`, `status`, `doctor`, and `restore`, default `~/.stow-backups`
+
+## Backup layout
+
+Regular files replaced by `stow apply` are backed up under:
+
+```text
+<backup-dir>/<package>/<target-scope>/<relative-target-path>-YYYYMMDD_HHMMSS[-N]
+```
+
+Examples:
+- `~/.stow-backups/vim/_root_/home/alice/.vimrc-20260308_120000`
+- `~/.stow-backups/vim/_root_/home/alice/.vimrc-20260308_120000-1`
+- `~/.stow-backups/nvim/_root_/home/alice/.config/nvim/init.lua-20260308_120000`
+
+Existing destination symlinks are removed and replaced directly; they are not copied into the backup directory.
+The `target-scope` segment is derived from the absolute `--target` path so the same package can be applied to multiple target roots without sharing backups.
+If a backup path for the current second already exists, `stow` appends `-1`, `-2`, and so on to preserve every backup instead of overwriting an older one.
+
+## Notes
+
+- Repository paths use `dot-` prefixes instead of leading dots.
+- Deployed links are symlinks to staged items in the source directory.
+- Major validation failures terminate the command with a non-zero exit.
 
 ## Examples
 
 ```nu
 stow add vim ~/.vimrc
-stow add nvim ~/.config/nvim/init.vim
+stow add nvim ~/.config/nvim/init.lua
+stow add shell ~/.aliases
+
 stow apply vim
-stow apply nvim --backup-dir ~/.backups
-stow apply nvim --backup-dir ~/.backups --target ~/foo-bar
+stow apply nvim --target ~/tmp-home --backup-dir ~/.backups
 
-# Restoring
+stow remove vim
+stow remove nvim --target ~/tmp-home --backup-dir ~/.backups
+
+stow status vim
+stow doctor nvim --target ~/tmp-home --backup-dir ~/.backups
+
 stow restore vim
-stow restore nvim --backup-dir ~/.backups --target ~/foo-bar
+stow restore nvim --target ~/tmp-home --backup-dir ~/.backups
 ```
-
-## Core Philosophy (stow.nu vs chezmoi)
-
-`stow.nu` is designed as a modernized, stateless, Nushell-native implementation of GNU Stow principles. It is specifically built for transparent "live-editing" using raw symlinks, contrasting with state-driven tools like `chezmoi`.
-
-Key differentiators:
-1. **Stateless Symlinking:** Applying a package maps symlinks into the target directory safely. Editing a config locally means explicitly editing the central repository copy, avoiding out-of-sync drifts. Tools like `chezmoi` use state databases and standalone copies tracking hashes and permissions.
-2. **Raw Configurations:** `stow.nu` treats managed dotfiles as 1:1 identical strings. It does not employ Go templating or secret-injection logic during deploy.
-3. **`dot-` Expansion:** `stow.nu` forces visibility on staged dotfiles via the `dot-` prefix pattern (i.e. `dot-bashrc`), similar to the `dot_` mechanism seen in other toolchains, making globbing safer and preventing hidden dotfile clusters in repository root paths.
-
-## Notes
-
-- Only files are allowed (directories not supported)
-- Files in target matching stow files are backed up before linking
-- Backup format: `<relative-path>-YYYYMMDD_HHMMSS`
-
-## Inner Workings (Developer)
-
-The logic governing `stow.nu` revolves around strict relative destination linking, safe path manipulation, and aggressive collision backups.
-
-To aid maintainability, below is an exhaustive breakdown of how the most complex internal functions operate to achieve this:
-
-### 1. `compute-stow-path` (Adding to the staging area)
-This function determines where a file should live inside the tracked package repository when a user calls `stow add`.
-
-It strictly enforces `path relative-to` boundaries. If a user tries to bundle a file that cannot be mathematically resolved against the target root (e.g., trying to execute `stow add nvim /etc/fstab` while `--target` is `~`), `compute-stow-path` traps the cross-bound attempt and throws an explicit terminating error.
-
-Assuming the path is safely within the target boundary, the function explodes the valid relative path into segments and applies `to-stow-name` on every segment. This converts any folder or file that natively starts with a `.` into a `dot-` equivalent.
-* **Example:** `~/.config/nvim/init.vim` mathematically reduces to `.config/nvim/init.vim`, and is successfully transformed into `dot-config/nvim/init.vim` inside the internal repository. This ensures visibility in graphical file managers and prevents native command-line recursive globs from skipping dotfiles.
-
-### 2. `collect-stow-files` (Crawling the staging area)
-This is the workhorse behind `stow apply` and `stow restore`. It takes an absolute package directory (e.g., `~/.local/share/linux-config/nvim`) and recursively finds all files inside it using Nushell's native `**/*` glob string.
-
-Because `compute-stow-path` replaced all starting dots with `dot-` prefixes, `**/*` captures everything reliably without needing special hidden file flags.
-
-Once the files are listed, `collect-stow-files` applies the inverse macro: `from-stow-name`. It maps the internal repository location back to what its true deployed target path should look like on the system (`dot-config` becomes `.config`). Critically, this function drops all generic directory objects from the output stream. It *only* streams file objects, effectively preventing symlinks from hijacking entire folders like `~/.config`.
-
-### 3. `backup-file` (Collision management during apply)
-Before `stow apply` generates a new symlink to a deployed path, it calls `backup-file` on the target location.
-* If a symlink already exists there, it is silently deleted (assumed to be a stale stow or safe overwrite).
-* If a genuine file exists there, its relative deployment path is calculated, and a formatted timestamp (`-YYYYMMDD_HHMMSS`) is appended to it. It is copied deep into the `$backup_dir` folder tree (e.g. `~/.stow-backups/.config/nvim/init.vim-2026...`), preventing data loss. Only after that copy perfectly succeeds is the target file forcefully deleted.
-
-### 4. `main restore` (Rollback mechanism)
-The restore command exists as an "undo" lever. Because `stow apply` inherently leaves old, timestamped copies of overwritten files inside the backup directory, `main restore` traces them down.
-
-For a requested package, it passes the package name into `collect-stow-files` to determine exactly which files the package owns. For each file mapping, it dives into the backup directory and does a timestamp-glob search (e.g., `glob ~/.stow-backups/.config/nvim/init.vim-*`).
-
-It then chronologically sorts these matches and picks the newest one. If it cannot find a valid timestamped backup file, it shows a warning and skips restoring that file. However, if the current target is a regular file, it fails loudly with an explicit `Cannot restore package` exception to prevent partial/corrupted un-stow operations. For backups located safely, it deletes the current active symlinks and copies the backup files back into their original locations.

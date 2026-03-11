@@ -5,7 +5,13 @@ Setup development workstation with [niri](https://mangowc.vercel.app) or [mangow
 Open terminal and execute the following command. This is an interactive script.
 
 ```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/master/setup)"
+curl -fsSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/main/setup.py | python3 -
+```
+
+If you don't have python3 installed, then use the following instead. This will install uv and python for you.
+
+```bash
+bash -c "$(curl -sSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/main/setup)"
 ```
 
 ## Examples
@@ -14,22 +20,22 @@ Once the repo has been bootstrapped to `~/.local/share/linux-config`, you can ru
 
 ```bash
 # Run the interactive shell setup
-nu ~/.local/share/linux-config/nu/setup-shell.nu
+nu setup-shell.nu
 
 # Install shell tools only
-nu ~/.local/share/linux-config/nu/setup-shell.nu shell
+nu setup-shell.nu shell
 
 # Clone/update dotfiles and apply Nushell + fish config
-nu ~/.local/share/linux-config/nu/setup-shell.nu dotfiles
+nu setup-shell.nu dotfiles
 
 # Run the interactive desktop setup
-nu ~/.local/share/linux-config/nu/setup-desktop.nu
+nu setup-desktop.nu
 
 # Install desktop apps from Flathub
-nu ~/.local/share/linux-config/nu/setup-desktop.nu flatpaks
+nu setup-desktop.nu flatpaks
 
 # Install and configure niri
-nu ~/.local/share/linux-config/nu/setup-desktop.nu niri
+nu setup-desktop.nu niri
 ```
 
 ## Install IDEs

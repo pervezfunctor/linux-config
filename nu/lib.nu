@@ -174,7 +174,7 @@ export def stow-package [package: string] {
 
   log+ $"Stowing ($package) dotfiles"
   do -i {
-    ^stow --adopt --dir $config_dir --target $env.HOME -- $package
+    ^stow --adopt --dir $config_dir --target $env.HOME $package
     ^git -C $config_dir stash --include-untracked --message $"Stashing ($package) dotfiles"
   }
 }

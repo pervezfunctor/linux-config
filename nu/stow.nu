@@ -371,11 +371,16 @@ def parse-backup-candidate [backup_path: string, prefix: string] {
 }
 
 def latest-valid-backup [backups: list<string>, prefix: string] {
-    $backups
-    | each { |b| parse-backup-candidate $b $prefix }
-    | where { |x| $x.timestamp != "" }
-    | sort-by timestamp sequence
-    | last
+    let candidates = (
+        $backups
+        | each { |b| parse-backup-candidate $b $prefix }
+        | where { |x| $x.timestamp != "" }
+        | sort-by timestamp sequence
+    )
+    if ($candidates | is-empty) {
+        return null
+    }
+    $candidates | last
 }
 
 def backup-lookup [
@@ -684,7 +689,7 @@ export def "main doctor" [
     }
 
     print $issues
-    fail $"Doctor found (($issues | length)) issue(s) for package: ($package)"
+    fail $"Doctor found (($issues | length)) issue\(s\) for package: ($package)"
 }
 
 # Best-effort restoration to decouple symlinked stows.

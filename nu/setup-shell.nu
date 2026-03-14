@@ -78,7 +78,6 @@ def "main pixi packages" [] {
     "nushell"
     "ripgrep"
     "shellcheck"
-    "stow"
     "tealdeer"
     "tectonic"
     "television"

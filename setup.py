@@ -9,15 +9,26 @@ import os
 import shutil
 import subprocess
 import sys
-from collections.abc import  Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, NoReturn, Literal, TextIO, cast
+from http.client import HTTPResponse
+from typing import Final, Literal, NoReturn, TextIO, cast
 from urllib.error import URLError
 from urllib.request import urlopen
 
 Target = Literal["shell", "desktop"]
-Platform = Literal["ublue", "fedora", "trixie", "questing", "pikaos", "tumbleweed", "arch", "fedora-atomic", "unsupported"]
+Platform = Literal[
+    "ublue",
+    "fedora",
+    "trixie",
+    "questing",
+    "pikaos",
+    "tumbleweed",
+    "arch",
+    "fedora-atomic",
+    "unsupported",
+]
 
 DEFAULT_REPO_URL: Final[str] = "https://github.com/pervezfunctor/linux-config.git"
 DEFAULT_TARGETS: Final[tuple[Target, ...]] = ("shell", "desktop")
@@ -158,24 +169,61 @@ class CommandRunner:
                 ".volta/bin",
             ],
         )
-        self.env = env
+        self.env: dict[str, str] = env
 
     def has_cmd(self, *commands: str) -> bool:
-        return all(shutil.which(command, path=self.env.get("PATH")) is not None for command in commands)
+        return all(
+            shutil.which(command, path=self.env.get("PATH")) is not None
+            for command in commands
+        )
 
     def check_cmd(self, *commands: str) -> None:
         for command in commands:
             if not self.has_cmd(command):
                 die(f"{command} not installed. Quitting.")
 
-    def exec(self, command: Sequence[str], *, check: bool = True, **kwargs: Any) -> subprocess.CompletedProcess[Any]:
-        return cast(subprocess.CompletedProcess[Any], subprocess.run(command, env=self.env, check=check, **kwargs))
+    def exec(
+        self,
+        command: Sequence[str],
+        *,
+        check: bool = True,
+        input: bytes | None = None,
+        cwd: Path | str | None = None,
+    ) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(command, env=self.env, check=check, input=input, cwd=cwd)
 
-    def exec_quiet(self, command: Sequence[str], *, check: bool = True, **kwargs: Any) -> subprocess.CompletedProcess[Any]:
-        return self.exec(command, check=check, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kwargs)
+    def exec_quiet(
+        self,
+        command: Sequence[str],
+        *,
+        check: bool = True,
+        cwd: Path | str | None = None,
+    ) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(
+            command,
+            env=self.env,
+            check=check,
+            cwd=cwd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
 
-    def exec_capture(self, command: Sequence[str], *, check: bool = True, **kwargs: Any) -> subprocess.CompletedProcess[str]:
-        return cast(subprocess.CompletedProcess[str], self.exec(command, check=check, capture_output=True, text=True, **kwargs))
+    def exec_capture(
+        self,
+        command: Sequence[str],
+        *,
+        check: bool = True,
+        cwd: Path | str | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            command,
+            env=self.env,
+            check=check,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+        )
+
 
 def run_setup(config: Config, targets: Sequence[Target]) -> None:
     runner = CommandRunner(config)
@@ -195,14 +243,23 @@ def run_setup(config: Config, targets: Sequence[Target]) -> None:
         elif platform == "pikaos":
             command = ["pikman", "install", *packages]
         elif platform == "tumbleweed":
-            command = ["sudo", "zypper", "--non-interactive", "--quiet", "install", "--auto-agree-with-licenses", *packages]
+            command = [
+                "sudo",
+                "zypper",
+                "--non-interactive",
+                "--quiet",
+                "install",
+                "--auto-agree-with-licenses",
+                *packages,
+            ]
         elif platform == "arch":
             command = ["sudo", "pacman", "-S", "--quiet", "--noconfirm", *packages]
         else:
             warn(f"OS not supported. Not installing {joined}.")
-            raise subprocess.CalledProcessError(returncode=1, cmd=["install", *packages])
-        runner.exec(command)
-
+            raise subprocess.CalledProcessError(
+                returncode=1, cmd=["install", *packages]
+            )
+        _ = runner.exec(command)
 
     def update_packages() -> None:
         log("Updating packages")
@@ -223,41 +280,72 @@ def run_setup(config: Config, targets: Sequence[Target]) -> None:
             warn("OS not supported. Not Updating.")
             return
         for command in commands:
-            runner.exec(command)
+            _ = runner.exec(command)
 
     def install_pixi() -> None:
         log("Installing pixi and essential packages...")
         if not runner.has_cmd("pixi"):
-            with urlopen("https://pixi.sh/install.sh") as response:
+            with cast(HTTPResponse, urlopen("https://pixi.sh/install.sh")) as response:
                 script = response.read()
-            runner.exec(["/bin/sh"], input=script)
+            _ = runner.exec(["/bin/sh"], input=script)
         runner.check_cmd("pixi")
 
     def sync_dotfiles() -> None:
         git_dir = config.dot_dir / ".git"
         if not git_dir.is_dir():
             log("Cloning dotfiles")
-            runner.exec(["git", "clone", "--depth", "1", config.repo_url, str(config.dot_dir)])
+            _ = runner.exec(
+                ["git", "clone", "--depth", "1", config.repo_url, str(config.dot_dir)]
+            )
             return
 
-        if runner.exec_capture(["git", "status", "--porcelain=v1"], cwd=config.dot_dir).stdout.strip():
-            die("Dotfiles repo has local changes. Stash them and run this script again.")
+        if runner.exec_capture(
+            ["git", "status", "--porcelain=v1"], cwd=config.dot_dir
+        ).stdout.strip():
+            die(
+                "Dotfiles repo has local changes. Stash them and run this script again."
+            )
 
         log("Dotfiles repo clean. Pulling latest changes")
-        if runner.exec(["git", "pull", "--rebase", "--stat"], cwd=config.dot_dir, check=False).returncode == 0:
+        if (
+            runner.exec(
+                ["git", "pull", "--rebase", "--stat"], cwd=config.dot_dir, check=False
+            ).returncode
+            == 0
+        ):
             log("Dotfiles updated")
             return
 
         warn("git pull --rebase failed. Checking for in-progress rebase...")
         if (git_dir / "rebase-merge").is_dir() or (git_dir / "rebase-apply").is_dir():
             warn("Aborting rebase")
-            runner.exec_quiet(["git", "rebase", "--abort"], cwd=config.dot_dir, check=False)
+            result = runner.exec_quiet(
+                ["git", "rebase", "--abort"], cwd=config.dot_dir, check=False
+            )
+            if result.returncode == 0:
+                log("Rebase aborted successfully")
+            else:
+                warn("Failed to abort rebase")
 
         raise SystemExit(1)
 
     def install_pixi_packages() -> None:
-        runner.exec(["pixi", "global", "install", "nushell", "stow", "trash-cli", "go-gum", "starship", "gh"])
-        runner.check_cmd("nu", "stow", "trash", "starship", "gh")
+        result = runner.exec(
+            [
+                "pixi",
+                "global",
+                "install",
+                "nushell",
+                "trash-cli",
+                "go-gum",
+                "starship",
+                "gh",
+            ]
+        )
+        if result.returncode != 0:
+            warn("pixi install failed. Quitting.")
+
+        runner.check_cmd("nu", "trash", "starship", "gh")
 
     def install_packages() -> None:
         log("Installing required packages...")
@@ -267,7 +355,9 @@ def run_setup(config: Config, targets: Sequence[Target]) -> None:
                 runner.check_cmd(pkg)
 
     if platform == "unsupported":
-        die("Only Fedora, Ubuntu Questing, Tumbleweed, Arch, Debian Trixie and PikaOS supported. Quitting.")
+        die(
+            "Only Fedora, Ubuntu Questing, Tumbleweed, Arch, Debian Trixie and PikaOS supported. Quitting."
+        )
 
     update_packages()
     install_packages()
@@ -277,17 +367,22 @@ def run_setup(config: Config, targets: Sequence[Target]) -> None:
 
     sync_dotfiles()
 
-    runner.exec(["nu", shell_setup, "fish", "config"])
+    _ = runner.exec(["nu", shell_setup, "fish", "config"])
     for target in targets:
         if target == "shell":
-            runner.exec(["nu", shell_setup])
+            _ = runner.exec(["nu", shell_setup])
         else:
-            runner.exec(["nu", desktop_setup])
+            _ = runner.exec(["nu", desktop_setup])
 
 
 def parse_cli_args(argv: Sequence[str]) -> list[Target]:
     parser = argparse.ArgumentParser(description="Linux workstation setup bootstrapper")
-    parser.add_argument("targets", nargs="*", choices=list(DEFAULT_TARGETS), help="Defaults to: shell desktop")
+    _ = parser.add_argument(
+        "targets",
+        nargs="*",
+        choices=list(DEFAULT_TARGETS),
+        help="Defaults to: shell desktop",
+    )
     namespace = parser.parse_args(list(argv))
     raw_targets = cast(list[Target], namespace.targets)
     return list(dict.fromkeys(raw_targets or list(DEFAULT_TARGETS)))

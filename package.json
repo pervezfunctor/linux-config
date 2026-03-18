@@ -15,10 +15,10 @@
     "doc": "docs"
   },
   "scripts": {
-    "start": "tsx setup.ts",
-    "test": "tsx --test *.test.ts",
-    "format": "oxfmt *.ts",
-    "lint": "oxlint *.ts",
+    "start": "tsx src/setup.ts",
+    "test": "bun test src/tests",
+    "format": "oxfmt src/*.ts src/tests/*.ts",
+    "lint": "oxlint src/*.ts src/tests/*.ts",
     "typecheck": "tsc --noEmit"
   },
   "repository": {

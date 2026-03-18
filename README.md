@@ -12,22 +12,22 @@ Once the repo has been bootstrapped to `~/.local/share/linux-config`, you can ru
 
 ```bash
 # Run the interactive shell setup
-nu setup-shell.nu
+bun setup.ts shell
 
-# Install shell tools only
-nu setup-shell.nu shell
+# Install shell tools only (pixi + brew)
+bun setup.ts pixi-pkgs
 
 # Clone/update dotfiles and apply Nushell + fish config
-nu setup-shell.nu dotfiles
+bun setup.ts dotfiles
 
 # Run the interactive desktop setup
-nu setup-desktop.nu
+bun setup.ts desktop
 
 # Install desktop apps from Flathub
-nu setup-desktop.nu flatpaks
+bun setup.ts flatpaks
 
 # Install and configure niri
-nu setup-desktop.nu niri
+bun setup.ts niri
 ```
 
 ## Install IDEs
@@ -35,7 +35,7 @@ nu setup-desktop.nu niri
 If you don't like `Zed` editor, you could install either VS Code and/or Antigravity using brew. Use the following instructions.
 
 ```bash
-nu ~/.local/share/linux-config/nu/setup-shell.nu brew
+bun setup.ts brew
 brew install --cask visual-studio-code-linux
 brew install --cask antigravity-linux
 ```
@@ -45,7 +45,7 @@ brew install --cask antigravity-linux
 There are three modern browsers avaialable on `flathub`: [LibreWolf](https://librewolf.net/), [Zen](https://zen-browser.app/) based on Firefox, and [Vivaldi](https://vivaldi.com/) based on Chromium. Use the following instructions to install any of them.
 
 ```bash
-nu ~/.local/share/linux-config/nu/setup-desktop.nu flatpaks
+bun setup.ts flatpaks
 fpi io.gitlab.librewolf-community
 fpi app.zen_browser.zen
 fpi com.vivaldi.Vivaldi

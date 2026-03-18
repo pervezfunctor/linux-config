@@ -6,7 +6,6 @@ if test -f ~/.fish_profile
 end
 
 set -gx DOT_DIR $HOME/.local/share/linux-config
-set -gx PNPM_HOME $HOME/.local/share/pnpm
 set -gx VOLTA_HOME $HOME/.volta
 set -gx XDG_DATA_DIRS $HOME/.local/share/flatpak/exports/share $XDG_DATA_DIRS
 set -gx NPM_PACKAGES "$HOME/.npm-packages"
@@ -21,8 +20,7 @@ fish_add_path --global --move \
     $HOME/bin \
     $HOME/.local/bin \
     $NPM_PACKAGES/bin \
-    $VOLTA_HOME/bin \
-    $PNPM_HOME
+    $VOLTA_HOME/bin
 
 
 function has_cmd
@@ -151,3 +149,7 @@ else if has_cmd pacman
 else if has_cmd rpm-ostree
     alias u 'sudo rpm-ostree update'
 end
+
+# bun
+set --export BUN_INSTALL "$HOME/.bun"
+set --export PATH $BUN_INSTALL/bin $PATH

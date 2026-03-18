@@ -294,6 +294,15 @@ def "main brew" [] {
   brew-install
 }
 
+def "main bun" [] {
+  if (has-cmd bun) {
+    warn+ "bun already installed. Skipping."
+  }
+
+  log+ "Installing bun..."
+  curl -fsSL https://bun.com/install | bash
+}
+
 def "main node" [] {
   if not (has-cmd volta) {
     log+ "Installing volta..."
@@ -363,6 +372,7 @@ def "main devtools" [] {
   main uv
   main claude
   main node
+  main bun
   main npm pacakges
 }
 
@@ -433,6 +443,7 @@ def "main help" [] {
   print "  mise             Install mise"
   print "  uv               Install uv and pipx"
   print "  node             Install Node.js with volta"
+  print "  bun              Install bun"
   print "  npm pacakges     Install global npm packages"
   print "  claude           Install claude CLI"
   print ""

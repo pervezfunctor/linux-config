@@ -5,8 +5,8 @@ $env.DOT_DIR = $"($env.HOME)/.local/share/linux-config"
 $env.EDITOR = ["code", "--wait"]
 $env.VISUAL = ["code", "--wait"]
 
-$env.PNPM_HOME = $"($env.HOME)/.local/share/pnpm"
 $env.VOLTA_HOME = ($env.HOME | path join .volta)
+$env.BUN_INSTALL = $"($env.HOME)/.bun"
 
 path add [
     $"($env.HOME)/.local/share/flatpak/exports/bin",
@@ -15,7 +15,7 @@ path add [
     $"($env.HOME)/bin",
     $"($env.HOME)/.local/bin",
     $"($env.VOLTA_HOME)/bin",
-    $"($env.PNPM_HOME)",
+    $"($env.BUN_INSTALL)/bin"
 ]
 
 $env.XDG_DATA_DIRS ++= $"($env.HOME)/.local/share/flatpak/exports/share"

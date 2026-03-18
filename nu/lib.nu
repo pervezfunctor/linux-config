@@ -309,7 +309,6 @@ export def --env bootstrap [] {
     "bin"
     ".local/bin"
     ".cargo/bin"
-    ".local/share/pnpm"
     ".local/share/mise/shims"
     $"($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))/nu"
     $"($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))/bin"

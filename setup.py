@@ -11,8 +11,8 @@ import subprocess
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from http.client import HTTPResponse
+from pathlib import Path
 from typing import Final, Literal, NoReturn, TextIO, cast
 from urllib.error import URLError
 from urllib.request import urlopen
@@ -107,7 +107,7 @@ def parse_os_release(text: str) -> dict[str, str]:
         key, raw_value = line.split("=", 1)
         value = raw_value.strip()
         if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-            value = value[1:-1]
+            value = value.strip("\"'")
         values[key.upper()] = value.lower()
     return values
 
@@ -152,15 +152,12 @@ class CommandRunner:
     def __init__(self, config: Config) -> None:
         super().__init__()
         env = dict(os.environ)
-        pnpm_home = config.home_dir / ".local/share/pnpm"
-        env["PNPM_HOME"] = str(pnpm_home)
         env["PATH"] = prepend_path(
             env.get("PATH", ""),
             [
                 str(config.home_dir / "bin"),
                 str(config.home_dir / ".local/bin"),
                 str(config.home_dir / ".cargo/bin"),
-                str(pnpm_home),
                 ".local/share/mise/shims",
                 "/home/linuxbrew/.linuxbrew/bin",
                 str(config.dot_dir / "bin"),
@@ -356,7 +353,8 @@ def run_setup(config: Config, targets: Sequence[Target]) -> None:
 
     if platform == "unsupported":
         die(
-            "Only Fedora, Ubuntu Questing, Tumbleweed, Arch, Debian Trixie and PikaOS supported. Quitting."
+            "Only Fedora, Ubuntu Questing, Tumbleweed, "
+            "Arch, Debian Trixie and PikaOS supported. Quitting."
         )
 
     update_packages()
@@ -385,11 +383,16 @@ def parse_cli_args(argv: Sequence[str]) -> list[Target]:
     )
     namespace = parser.parse_args(list(argv))
     raw_targets = cast(list[Target], namespace.targets)
-    return list(dict.fromkeys(raw_targets or list(DEFAULT_TARGETS)))
+    return cast(list[Target], list(dict.fromkeys(raw_targets or list(DEFAULT_TARGETS))))
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else list(argv)
+    if argv is None:
+        args: list[str] = []
+        for i in range(1, len(sys.argv)):
+            args.append(sys.argv[i])
+    else:
+        args = list(argv)
     configure_logger()
 
     home_dir = Path.home()

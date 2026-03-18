@@ -10,18 +10,17 @@ main() {
     exit 1
   }
 
-  command -v python3 >/dev/null 2>&1 || {
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    uv tool install python
-    export PATH="$HOME/.local/bin:$PATH"
+  command -v bun >/dev/null 2>&1 || {
+    curl -fsSL https://bun.sh/install | bash
+    export PATH="$HOME/.bun/bin:$PATH"
   }
 
-  command -v python3 >/dev/null 2>&1 || {
-    echo "setup launcher requires python3" >&2
+  command -v bun >/dev/null 2>&1 || {
+    echo "setup launcher requires bun" >&2
     exit 1
   }
 
-  exec bash -c 'curl -fsSL "$1" | python3 - "$@"' bash "${RAW_BASE_URL}/setup.py" "$@"
+  exec bash -c 'curl -fsSL "$1" | bun run -' bash "${RAW_BASE_URL}/setup.ts" "$@"
 }
 
 main "$@"

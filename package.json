@@ -1,0 +1,39 @@
+{
+  "devDependencies": {
+    "@types/bun": "^1.3.10",
+    "@types/node": "^25.5.0",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "name": "linux-config",
+  "version": "1.0.0",
+  "description": "Setup development workstation with [niri](https://mangowc.vercel.app) or [mangowc](https://mangowc.vercel.app) as your window manager.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "tsx setup.ts",
+    "test": "tsx --test *.test.ts",
+    "format": "oxfmt *.ts",
+    "lint": "oxlint *.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pervezfunctor/linux-config.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pervezfunctor/linux-config/issues"
+  },
+  "homepage": "https://github.com/pervezfunctor/linux-config#readme",
+  "dependencies": {
+    "zx": "^8.8.5"
+  }
+}

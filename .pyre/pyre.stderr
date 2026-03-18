@@ -1,0 +1,175 @@
+2026-03-18 21:12:00,495 [PID 101307] INFO No binary specified, looking for `pyre.bin` in PATH
+2026-03-18 21:12:00,495 [PID 101307] INFO Pyre binary is located at `/home/pervez/.local/share/linux-config/.venv/bin/pyre.bin`
+2026-03-18 21:12:00,495 [PID 101307] ERROR Invalid configuration: Cannot find any source files to analyze. Either `source_directories` or `targets` must be specified.
+2026-03-18 21:12:41,030 [PID 102434] INFO No binary specified, looking for `pyre.bin` in PATH
+2026-03-18 21:12:41,030 [PID 102434] INFO Pyre binary is located at `/home/pervez/.local/share/linux-config/.venv/bin/pyre.bin`
+2026-03-18 21:12:41,031 [PID 102434] INFO Could not determine the number of Pyre workers from configuration. Auto-set the value to 5.
+2026-03-18 21:12:41,031 [PID 102434] INFO No typeshed specified, looking for it...
+2026-03-18 21:12:41,031 [PID 102434] INFO Found: `/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed`
+2026-03-18 21:12:41,031 [PID 102434] INFO Writing arguments into /tmp/pyre_arguments_24ut91wf.json...
+2026-03-18 21:12:41,031 [PID 102434] DEBUG Arguments:
+{
+  "source_paths": {
+    "kind": "simple",
+    "paths": [
+      "/home/pervez/.local/share/linux-config"
+    ]
+  },
+  "search_paths": [
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stdlib",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/ExifRead",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/PyMySQL",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/PyYAML",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/aiofiles",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/chevron",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/colorama",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/ldap3",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/mysqlclient",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/paramiko",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/psycopg2",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/pycurl",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/python-dateutil",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/pytz",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/regex",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/requests",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/retry",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/tqdm",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/ujson"
+  ],
+  "excludes": [],
+  "checked_directory_allowlist": [
+    "/home/pervez/.local/share/linux-config"
+  ],
+  "checked_directory_blocklist": [],
+  "extensions": [],
+  "log_path": "/home/pervez/.local/share/linux-config/.pyre",
+  "global_root": "/home/pervez/.local/share/linux-config",
+  "debug": false,
+  "python_version": {
+    "major": 3,
+    "minor": 14,
+    "micro": 3
+  },
+  "system_platform": "linux",
+  "shared_memory": {},
+  "parallel": true,
+  "number_of_workers": 5,
+  "additional_logging_sections": [],
+  "show_error_traces": false,
+  "strict": false
+}
+2026-03-18 21:12:41,062 [PID 102434] PERFORMANCE  Initialized shared memory (heap size: 8589934592, dep table pow: 1, hash table pow: 26): 0.001s
+2026-03-18 21:12:41,062 [PID 102434] PERFORMANCE  Initialized multiprocessing workers (workers: 5): 0.002s
+2026-03-18 21:12:41,062 [PID 102434] INFO  Building module tracker...
+2026-03-18 21:12:41,236 [PID 102434] PERFORMANCE  Module tracker built: 0.171s
+2026-03-18 21:12:41,236 [PID 102434] PERFORMANCE  Full environment built: 0.172s
+2026-03-18 21:12:41,236 [PID 102434] INFO  Collecting all definitions...
+2026-03-18 21:12:42,203 [PID 102434] PERFORMANCE  Collected definitions (defines: 20410): 0.968s
+2026-03-18 21:12:42,203 [PID 102434] INFO  Checking 20410 functions...
+2026-03-18 21:12:45,105 [PID 102434] INFO  Processed 2042 of 20410 functions
+2026-03-18 21:12:45,258 [PID 102434] INFO  Processed 4084 of 20410 functions
+2026-03-18 21:12:45,361 [PID 102434] INFO  Processed 6126 of 20410 functions
+2026-03-18 21:12:45,454 [PID 102434] INFO  Processed 8168 of 20410 functions
+2026-03-18 21:12:45,825 [PID 102434] INFO  Processed 10210 of 20410 functions
+2026-03-18 21:12:47,521 [PID 102434] INFO  Processed 12252 of 20410 functions
+2026-03-18 21:12:47,674 [PID 102434] INFO  Processed 14294 of 20410 functions
+2026-03-18 21:12:47,807 [PID 102434] INFO  Processed 16336 of 20410 functions
+2026-03-18 21:12:47,889 [PID 102434] INFO  Processed 18378 of 20410 functions
+2026-03-18 21:12:48,141 [PID 102434] INFO  Processed 20410 of 20410 functions
+2026-03-18 21:12:48,142 [PID 102434] PERFORMANCE  Check_TypeCheck: 5.936s
+2026-03-18 21:12:48,142 [PID 102434] MEMORY  Shared memory size post-typecheck (size: 20)
+2026-03-18 21:12:48,142 [PID 102434] INFO  Postprocessing 918 sources...
+2026-03-18 21:12:48,315 [PID 102434] INFO  Postprocessed 184 of 918 sources
+2026-03-18 21:12:48,336 [PID 102434] INFO  Postprocessed 366 of 918 sources
+2026-03-18 21:12:48,357 [PID 102434] INFO  Postprocessed 550 of 918 sources
+2026-03-18 21:12:48,377 [PID 102434] INFO  Postprocessed 734 of 918 sources
+2026-03-18 21:12:48,388 [PID 102434] INFO  Postprocessed 918 of 918 sources
+2026-03-18 21:12:48,388 [PID 102434] PERFORMANCE  Check_Postprocessing: 0.245s
+2026-03-18 21:12:48,388 [PID 102434] PERFORMANCE  Check (request kind: FullCheck): 7.323s
+2026-03-18 21:12:48,432 [PID 102434] ERROR Found 1281 type errors!
+2026-03-18 21:13:22,105 [PID 102831] INFO No binary specified, looking for `pyre.bin` in PATH
+2026-03-18 21:13:22,106 [PID 102831] INFO Pyre binary is located at `/home/pervez/.local/share/linux-config/.venv/bin/pyre.bin`
+2026-03-18 21:13:22,106 [PID 102831] INFO Could not determine the number of Pyre workers from configuration. Auto-set the value to 5.
+2026-03-18 21:13:22,106 [PID 102831] INFO No typeshed specified, looking for it...
+2026-03-18 21:13:22,106 [PID 102831] INFO Found: `/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed`
+2026-03-18 21:13:22,107 [PID 102831] INFO Writing arguments into /tmp/pyre_arguments_zmenme21.json...
+2026-03-18 21:13:22,107 [PID 102831] DEBUG Arguments:
+{
+  "source_paths": {
+    "kind": "simple",
+    "paths": [
+      "/home/pervez/.local/share/linux-config"
+    ]
+  },
+  "search_paths": [
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stdlib",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/ExifRead",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/PyMySQL",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/PyYAML",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/aiofiles",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/chevron",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/colorama",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/ldap3",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/mysqlclient",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/paramiko",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/psycopg2",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/pycurl",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/python-dateutil",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/pytz",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/regex",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/requests",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/retry",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/tqdm",
+    "/home/pervez/.local/share/linux-config/.venv/lib/pyre_check/typeshed/stubs/ujson"
+  ],
+  "excludes": [],
+  "checked_directory_allowlist": [
+    "/home/pervez/.local/share/linux-config"
+  ],
+  "checked_directory_blocklist": [],
+  "extensions": [],
+  "log_path": "/home/pervez/.local/share/linux-config/.pyre",
+  "global_root": "/home/pervez/.local/share/linux-config",
+  "debug": false,
+  "python_version": {
+    "major": 3,
+    "minor": 14,
+    "micro": 3
+  },
+  "system_platform": "linux",
+  "shared_memory": {},
+  "parallel": true,
+  "number_of_workers": 5,
+  "additional_logging_sections": [],
+  "show_error_traces": false,
+  "strict": false
+}
+2026-03-18 21:13:22,128 [PID 102831] PERFORMANCE  Initialized shared memory (heap size: 8589934592, dep table pow: 1, hash table pow: 26): 0.001s
+2026-03-18 21:13:22,128 [PID 102831] PERFORMANCE  Initialized multiprocessing workers (workers: 5): 0.001s
+2026-03-18 21:13:22,128 [PID 102831] INFO  Building module tracker...
+2026-03-18 21:13:22,291 [PID 102831] PERFORMANCE  Module tracker built: 0.161s
+2026-03-18 21:13:22,291 [PID 102831] PERFORMANCE  Full environment built: 0.161s
+2026-03-18 21:13:22,291 [PID 102831] INFO  Collecting all definitions...
+2026-03-18 21:13:23,166 [PID 102831] PERFORMANCE  Collected definitions (defines: 20410): 0.872s
+2026-03-18 21:13:23,166 [PID 102831] INFO  Checking 20410 functions...
+2026-03-18 21:13:25,720 [PID 102831] INFO  Processed 2042 of 20410 functions
+2026-03-18 21:13:25,772 [PID 102831] INFO  Processed 4084 of 20410 functions
+2026-03-18 21:13:25,803 [PID 102831] INFO  Processed 6126 of 20410 functions
+2026-03-18 21:13:25,855 [PID 102831] INFO  Processed 8168 of 20410 functions
+2026-03-18 21:13:26,019 [PID 102831] INFO  Processed 10210 of 20410 functions
+2026-03-18 21:13:28,122 [PID 102831] INFO  Processed 12252 of 20410 functions
+2026-03-18 21:13:28,235 [PID 102831] INFO  Processed 14294 of 20410 functions
+2026-03-18 21:13:28,235 [PID 102831] INFO  Processed 16336 of 20410 functions
+2026-03-18 21:13:28,337 [PID 102831] INFO  Processed 18368 of 20410 functions
+2026-03-18 21:13:28,469 [PID 102831] INFO  Processed 20410 of 20410 functions
+2026-03-18 21:13:28,469 [PID 102831] PERFORMANCE  Check_TypeCheck: 5.298s
+2026-03-18 21:13:28,469 [PID 102831] MEMORY  Shared memory size post-typecheck (size: 20)
+2026-03-18 21:13:28,469 [PID 102831] INFO  Postprocessing 918 sources...
+2026-03-18 21:13:28,633 [PID 102831] INFO  Postprocessed 184 of 918 sources
+2026-03-18 21:13:28,643 [PID 102831] INFO  Postprocessed 366 of 918 sources
+2026-03-18 21:13:28,654 [PID 102831] INFO  Postprocessed 550 of 918 sources
+2026-03-18 21:13:28,665 [PID 102831] INFO  Postprocessed 734 of 918 sources
+2026-03-18 21:13:28,675 [PID 102831] INFO  Postprocessed 918 of 918 sources
+2026-03-18 21:13:28,675 [PID 102831] PERFORMANCE  Check_Postprocessing: 0.214s
+2026-03-18 21:13:28,675 [PID 102831] PERFORMANCE  Check (request kind: FullCheck): 6.546s
+2026-03-18 21:13:28,724 [PID 102831] ERROR Found 1281 type errors!

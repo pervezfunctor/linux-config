@@ -2,14 +2,6 @@
 
 Setup development workstation with [niri](https://mangowc.vercel.app) or [mangowc](https://mangowc.vercel.app) as your window manager.
 
-Open terminal and execute the following command. This is an interactive script.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/main/setup.py | python3 -
-```
-
-If you don't have python3 installed, then use the following instead. This will install uv and python for you.
-
 ```bash
 bash -c "$(curl -sSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/main/setup)"
 ```

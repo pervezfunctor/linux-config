@@ -140,7 +140,7 @@ async function promptYn(prompt: string): Promise<boolean> {
 }
 
 async function touchFiles(dir: string, files: string[]): Promise<void> {
-  await fs.mkdir(dir, { recursive: true }).catch(() => {});
+  await fs.mkdir(dir, { recursive: true }).catch(() => { });
   for (const f of files) {
     const fp = path.join(dir, f);
     if (!fsSync.existsSync(fp)) {
@@ -332,7 +332,7 @@ async function setupFishConfig(): Promise<void> {
   await stowPackage("fish");
   log.info("Change default shell to fish");
   const fishPath = (await $`which fish`.text()).trim();
-  await handle(() => $`chsh -s ${fishPath}`.then(() => {}));
+  await handle(() => $`chsh -s ${fishPath}`.then(() => { }));
 }
 
 async function installPixi(): Promise<void> {
@@ -682,8 +682,8 @@ async function installWmBase(): Promise<void> {
   }
 
   const pictures = path.join(HOME_DIR, "Pictures");
-  await fs.mkdir(path.join(pictures, "Screenshots"), { recursive: true }).catch(() => {});
-  await fs.mkdir(path.join(pictures, "Wallpapers"), { recursive: true }).catch(() => {});
+  await fs.mkdir(path.join(pictures, "Screenshots"), { recursive: true }).catch(() => { });
+  await fs.mkdir(path.join(pictures, "Wallpapers"), { recursive: true }).catch(() => { });
 
   await stowPackage("systemd");
   await stowPackage("kitty");
@@ -945,10 +945,11 @@ async function setupDesktop(): Promise<void> {
 
 function printHelp(): void {
   console.log(`
-setup.ts - Linux system setup script (TypeScript/Bun)
+linux-config - Linux system setup CLI
 
 Usage:
-  bun setup.ts [command]
+  linux-config [command]
+  bun run setup [command]
 
 Top-level commands:
   shell          Interactive shell environment setup
@@ -990,6 +991,11 @@ async function main(): Promise<number> {
 
   const args = process.argv.slice(2);
   const cmd = args[0];
+
+  if (cmd === "help" || cmd === "--help" || cmd === "-h") {
+    printHelp();
+    return 0;
+  }
 
   const timer = await keepSudoAlive();
   try {
@@ -1081,7 +1087,7 @@ async function main(): Promise<number> {
         break;
       case "stow":
         if (!args[1]) {
-          log.error("Usage: bun setup.ts stow <package>");
+          log.error("Usage: linux-config stow <package>");
           return 1;
         }
         await stowPackage(args[1]);
@@ -1090,11 +1096,6 @@ async function main(): Promise<number> {
       case "all":
         await setupShell();
         await setupDesktop();
-        break;
-      case "help":
-      case "--help":
-      case "-h":
-        printHelp();
         break;
       default:
         log.error(`Unknown command: ${cmd}`);
@@ -1111,4 +1112,8 @@ async function main(): Promise<number> {
   return 0;
 }
 
-main().then((code) => process.exit(code));
+export { main };
+
+if (import.meta.main) {
+  main().then((code) => process.exit(code));
+}

@@ -4,12 +4,15 @@ Every invocation of the bootstrap script records a timestamped log file under `~
 
 ## Viewing Logs
 
-Use the `view-logs.nu` helper script to inspect logs:
+Use either the `view-logs.nu` helper or the TypeScript CLI to inspect logs:
 
 In Nushell, pass flags after the subcommand they belong to. For example, use `view-logs.nu show --dir /tmp/my-logs`, not `view-logs.nu --dir /tmp/my-logs show`.
 
 ```bash
 # View the most recent log (shows all lines by default)
+bun run logs show
+
+# Or with the Nushell helper
 ~/.local/share/linux-config/nu/view-logs.nu show
 
 # Show only errors/warnings/fatal messages

@@ -10,15 +10,23 @@
   "name": "linux-config",
   "version": "1.0.0",
   "description": "Setup development workstation with [niri](https://mangowc.vercel.app) or [mangowc](https://mangowc.vercel.app) as your window manager.",
-  "main": "index.js",
+  "main": "src/setup.ts",
+  "bin": {
+    "linux-config-setup": "./src/setup.ts",
+    "linux-config-stow": "./src/stow.ts",
+    "linux-config-logs": "./src/view_logs.ts"
+  },
   "directories": {
-    "doc": "docs"
+    "test": "tests"
   },
   "scripts": {
-    "start": "tsx src/setup.ts",
-    "test": "bun test src/tests",
-    "format": "oxfmt src/*.ts src/tests/*.ts",
-    "lint": "oxlint src/*.ts src/tests/*.ts",
+    "start": "bun run ./src/setup.ts",
+    "setup": "bun run ./src/setup.ts",
+    "stow": "bun run ./src/stow.ts",
+    "logs": "bun run ./src/view_logs.ts",
+    "test": "bun test tests",
+    "format": "oxfmt src/*.ts tests/*.ts",
+    "lint": "oxlint src/*.ts tests/*.ts",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
@@ -28,12 +36,16 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
+  "engines": {
+    "bun": ">=1.0.0"
+  },
   "bugs": {
     "url": "https://github.com/pervezfunctor/linux-config/issues"
   },
   "homepage": "https://github.com/pervezfunctor/linux-config#readme",
   "dependencies": {
     "zx": "^8.8.5"
-  }
+  },
+  "private": true
 }

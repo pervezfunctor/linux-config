@@ -712,15 +712,15 @@ function cmdRestore(
 }
 
 function cmdHelp(): void {
-  console.log(`stow.ts — Dotfiles manager
+  console.log(`linux-config-stow — Dotfiles manager
 
 USAGE:
-    stow.ts add     <package> <path>   [--target <dir>] [--source-dir <dir>]
-    stow.ts apply   <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
-    stow.ts remove  <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
-    stow.ts status  <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
-    stow.ts doctor  <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
-    stow.ts restore <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+    linux-config-stow add     <package> <path>   [--target <dir>] [--source-dir <dir>]
+    linux-config-stow apply   <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+    linux-config-stow remove  <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+    linux-config-stow status  <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+    linux-config-stow doctor  <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
+    linux-config-stow restore <package>          [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>]
 
 OPTIONS:
     --target      Target directory (default: ~)
@@ -728,16 +728,16 @@ OPTIONS:
     --backup-dir  Backup directory (default: ~/.stow-backups)
 
 EXAMPLES:
-    stow.ts add vim ~/.vimrc
-    stow.ts add nvim ~/.config/nvim/init.vim
-    stow.ts apply vim
-    stow.ts apply nvim --backup-dir ~/.backups
-    stow.ts remove vim
-    stow.ts remove nvim --backup-dir ~/.backups
-    stow.ts status vim
-    stow.ts doctor vim --backup-dir ~/.backups
-    stow.ts restore vim
-    stow.ts restore nvim --backup-dir ~/.backups
+    linux-config-stow add vim ~/.vimrc
+    linux-config-stow add nvim ~/.config/nvim/init.vim
+    linux-config-stow apply vim
+    linux-config-stow apply nvim --backup-dir ~/.backups
+    linux-config-stow remove vim
+    linux-config-stow remove nvim --backup-dir ~/.backups
+    linux-config-stow status vim
+    linux-config-stow doctor vim --backup-dir ~/.backups
+    linux-config-stow restore vim
+    linux-config-stow restore nvim --backup-dir ~/.backups
 `);
 }
 
@@ -761,6 +761,7 @@ export {
   cmdStatus,
   cmdDoctor,
   cmdRestore,
+  main,
 };
 export type { Dirs, StowFile, StatusRecord, BackupLookupResult, BackupStatus, TargetState };
 
@@ -815,38 +816,38 @@ function main(): void {
     switch (command) {
       case "add": {
         const [pkg, filePath] = positional;
-        if (!pkg || !filePath) { log.error("Usage: stow.ts add <package> <path>"); process.exit(1); }
+        if (!pkg || !filePath) { log.error("Usage: linux-config-stow add <package> <path>"); process.exit(1); }
         cmdAdd(pkg, filePath, opts);
         break;
       }
       case "apply": {
         const [pkg] = positional;
-        if (!pkg) { log.error("Usage: stow.ts apply <package>"); process.exit(1); }
+        if (!pkg) { log.error("Usage: linux-config-stow apply <package>"); process.exit(1); }
         cmdApply(pkg, opts);
         break;
       }
       case "remove": {
         const [pkg] = positional;
-        if (!pkg) { log.error("Usage: stow.ts remove <package>"); process.exit(1); }
+        if (!pkg) { log.error("Usage: linux-config-stow remove <package>"); process.exit(1); }
         cmdRemove(pkg, opts);
         break;
       }
       case "status": {
         const [pkg] = positional;
-        if (!pkg) { log.error("Usage: stow.ts status <package>"); process.exit(1); }
+        if (!pkg) { log.error("Usage: linux-config-stow status <package>"); process.exit(1); }
         const records = cmdStatus(pkg, opts);
         console.table(records);
         break;
       }
       case "doctor": {
         const [pkg] = positional;
-        if (!pkg) { log.error("Usage: stow.ts doctor <package>"); process.exit(1); }
+        if (!pkg) { log.error("Usage: linux-config-stow doctor <package>"); process.exit(1); }
         cmdDoctor(pkg, opts);
         break;
       }
       case "restore": {
         const [pkg] = positional;
-        if (!pkg) { log.error("Usage: stow.ts restore <package>"); process.exit(1); }
+        if (!pkg) { log.error("Usage: linux-config-stow restore <package>"); process.exit(1); }
         cmdRestore(pkg, opts);
         break;
       }

@@ -4,8 +4,8 @@
  * test-stow.ts — Integration test suite for stow.ts
  *
  * Mirrors the behaviour tested in nu/tests/test-stow.nu.
- * Run with:  bun test tests/test-stow.ts
- *            (or: bun run tests/test-stow.ts)
+ * Run with:  bun test tests/stow.test.ts
+ *            (or: bun run tests/stow.test.ts)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
@@ -22,7 +22,7 @@ import {
   cmdStatus,
   cmdDoctor,
   cmdRestore,
-} from "../stow.ts";
+} from "../src/stow.ts";
 
 // ---------------------------------------------------------------------------
 // Test harness helpers

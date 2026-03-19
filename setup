@@ -7,53 +7,61 @@ has_cmd() {
 }
 
 die() {
-  echo "ERROR: $@" >&2
+  printf "ERROR: %s\n" "$*" >&2
   exit 1
 }
 
-check_commands() {
-  for cmd in "$@"; do
-    has_cmd "$cmd" || die "$cmd not available, quitting."
-  done
-}
-
-readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
-readonly DOT_DIR="$HOME/.local/share/linux-config"
-
 dotfiles_clone() {
+  readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
+  readonly DOT_DIR="$HOME/.local/share/linux-config"
+
   [ -d "$DOT_DIR" ] || {
-    echo "Directory $DOT_DIR does not exist. Cloning."
+    echo "Cloning dotfiles to $DOT_DIR."
     git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
     return
   }
 
   [ -z "$(git -C "$DOT_DIR" status --porcelain)" ] && {
-    echo "Directory $DOT_DIR is clean. Rebasing."
+    echo "Dotfiles repo clean. Pulling latest changes"
     git -C "$DOT_DIR" pull --rebase || {
       echo "Rebase failed. Aborting."
       git -C "$DOT_DIR" rebase --abort || die "Failed to abort rebase"
     }
   }
+}
 
-  [ -d "$DOT_DIR" ] || die "Directory $DOT_DIR does not exist. Skipping setup."
+si() {
+  has_cmd fish && return 0
+
+  if has_cmd dnf; then
+    sudo dnf install -y "$@"
+  elif has_cmd zypper; then
+    sudo zypper install --non-interactive --auto-agree-with-licenses "$@"
+  elif has_cmd pacman; then
+    sudo pacman -S --noconfirm "$@"
+  elif has_cmd apt; then
+    sudo apt update -y
+    sudo apt install -y "$@"
+  else
+    die "Failed to install packages. No package manager found."
+  fi
 }
 
 main() {
-  export PATH="$HOME/.bun/bin:$PATH"
+  export PATH="$HOME/.pixi/bin:$PATH"
 
-  check_commands curl git bash
-
-  has_cmd bun || {
-    echo "Bun is not installed. Installing Bun."
-    export BUN_INSTALL="$HOME/.bun"
-    curl -fsSL https://bun.sh/install | bash
-    check_commands "$HOME/.bun/bin/bun" bun
+  has_cmd pixi || {
+    echo "pixi is not installed. Installing pixi."
+    curl -fsSL https://get.pixi.run | bash
+    has_cmd pixi || die "Failed to install pixi"
   }
+  pixi global install nushell go-gum trash-cli starship gh
 
+  has_cmd git || si git || die "Failed to install git"
   dotfiles_clone
 
-  (cd "$DOT_DIR/ts" && bun install) || echo "Failed to install dependencies"
-  bun run "$DOT_DIR/ts/src/setup.ts" "$@"
+  has_cmd nu || die "Failed to install nushell"
+  nu "$DOT_DIR/nu/setup-shell.nu" fish
 }
 
 main "$@"

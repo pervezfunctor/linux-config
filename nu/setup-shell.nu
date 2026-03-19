@@ -185,6 +185,11 @@ def "main fish config" [] {
   do -i { ^chsh -s (which fish | get path.0) }
 }
 
+def "main fish" [] {
+  si ["fish"]
+  main fish config
+}
+
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
 const DOT_DIR = ($nu.home-dir | path join ".local/share/linux-config")
 

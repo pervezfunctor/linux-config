@@ -253,7 +253,7 @@ export def "main add" [
     }
 
     ensure-parent-dir $stow_file
-    ^cp -p --force $path $stow_file
+    ^cp -p -f $path $stow_file
 
     let target_link = compute-target-link $expanded_target $expanded_path
     ensure-parent-dir $target_link

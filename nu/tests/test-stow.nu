@@ -201,6 +201,19 @@ def test_add_nested [
             --source-dir $source_dir
     )
 
+    let broken_missing = ($test_base | path join "missing-real")
+    if ($broken_missing | path exists) {
+        ^rm -f $broken_missing
+    }
+    let broken_target = ($target_dir | path join ".brokenrc")
+    ^ln -sf $broken_missing $broken_target
+    let add_broken = (
+        run-stow-cmd $stow_script add "broken" $broken_target
+            --target $target_dir
+            --source-dir $source_dir
+    )
+    let staged_broken = ($source_dir | path join "broken/dot-brokenrc")
+
     [
         (check
             "add rejects directories"
@@ -250,6 +263,14 @@ def test_add_nested [
             "add outside target fails non-zero"
             ($add_outside.exit_code != 0)
             $add_outside.stderr)
+        (check
+            "add rejects broken symlink"
+            ($add_broken.exit_code != 0)
+            $add_broken.stderr)
+        (check
+            "add broken symlink skips staging"
+            (not ($staged_broken | path exists))
+            $staged_broken)
     ]
 }
 
@@ -423,7 +444,7 @@ def test_remove_and_status [
             --backup-dir $backup_dir
     )
     let status_ok_expr = (
-        "source '" + $stow_script + "'; "
+        "use '" + $stow_script + "' *; "
         + "(main status vim --target '" + $target_status_ok + "' "
         + "--source-dir '" + $source_dir + "' "
         + "--backup-dir '" + $backup_dir + "') "
@@ -496,15 +517,15 @@ def test_edge_cases [
     "first" | save $collision_base
     "second" | save $collision_one
     let next_collision = (run-inline (
-        "source " + $stow_script + "; "
+        "source '" + $stow_script + "'; "
         + "unique-backup-path '" + $collision_root + "' "
         + "'.vimrc' '20260101_010101'"
     ))
-    let next_collision_out = ($next_collision.stdout | str trim)
+    let next_collision_out = ($next_collision.stdout | lines | last | str trim)
 
-    let to_name = (run-inline $"source ($stow_script); to-stow-name '.config'")
+    let to_name = (run-inline $"source '($stow_script)'; to-stow-name '.config'")
     let from_name = (
-        run-inline $"source ($stow_script); from-stow-name 'dot-config'"
+        run-inline $"source '($stow_script)'; from-stow-name 'dot-config'"
     )
 
     mkdir ($source_dir | path join "multi/dot-config/app")
@@ -559,14 +580,14 @@ def test_edge_cases [
             "to-stow-name works"
             (
                 ($to_name.exit_code == 0)
-                and (($to_name.stdout | str trim) == "dot-config")
+                and ((($to_name.stdout | lines | last | str trim)) == "dot-config")
             )
             $to_name.stdout)
         (check
             "from-stow-name works"
             (
                 ($from_name.exit_code == 0)
-                and (($from_name.stdout | str trim) == ".config")
+                and ((($from_name.stdout | lines | last | str trim)) == ".config")
             )
             $from_name.stdout)
         (check
@@ -605,6 +626,511 @@ def test_edge_cases [
             "remove multi-file removes dot-prefixed link"
             (not ($profile | path exists))
             "still exists")
+    ]
+}
+
+def test_remove_validations [
+    test_base: string
+    source_dir: string
+    backup_dir: string
+    stow_script: string
+] {
+    let target_missing_pkg = ($test_base | path join "target-remove-missing-pkg")
+    mkdir $target_missing_pkg
+    let remove_missing_pkg = (
+        run-stow-cmd $stow_script remove "ghost"
+            --target $target_missing_pkg
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_drift_file = ($test_base | path join "target-drift-file")
+    mkdir $target_drift_file
+    let drift_file_path = ($target_drift_file | path join ".vimrc")
+    "drift start" | save $drift_file_path
+    let apply_drift_file = (
+        run-stow-cmd $stow_script apply "vim"
+            --target $target_drift_file
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    ^rm -f $drift_file_path
+    "drifted content" | save $drift_file_path
+    let remove_drift_file = (
+        run-stow-cmd $stow_script remove "vim"
+            --target $target_drift_file
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_drift_link = ($test_base | path join "target-drift-link")
+    mkdir $target_drift_link
+    let apply_drift_link = (
+        run-stow-cmd $stow_script apply "vim"
+            --target $target_drift_link
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    let drift_link_path = ($target_drift_link | path join ".vimrc")
+    let foreign_file = ($test_base | path join "foreign-file")
+    "foreign content" | save $foreign_file
+    ^rm -f $drift_link_path
+    ^ln -sf $foreign_file $drift_link_path
+    let remove_drift_link = (
+        run-stow-cmd $stow_script remove "vim"
+            --target $target_drift_link
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_drift_dir = ($test_base | path join "target-drift-dir")
+    mkdir $target_drift_dir
+    let apply_drift_dir = (
+        run-stow-cmd $stow_script apply "vim"
+            --target $target_drift_dir
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    let drift_dir_path = ($target_drift_dir | path join ".vimrc")
+    if ($drift_dir_path | path exists) {
+        ^rm -rf $drift_dir_path
+    }
+    mkdir $drift_dir_path
+    let remove_dir_block = (
+        run-stow-cmd $stow_script remove "vim"
+            --target $target_drift_dir
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_invalid_backup = ($test_base | path join "target-invalid-backup")
+    mkdir $target_invalid_backup
+    let apply_invalid_backup = (
+        run-stow-cmd $stow_script apply "vim"
+            --target $target_invalid_backup
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    let invalid_scope = (backup-scope $backup_dir "vim" $target_invalid_backup)
+    if not ($invalid_scope | path exists) {
+        mkdir $invalid_scope
+    }
+    let invalid_file = ($invalid_scope | path join ".vimrc-invalid")
+    "invalid backup" | save $invalid_file
+    let remove_invalid_backup = (
+        run-stow-cmd $stow_script remove "vim"
+            --target $target_invalid_backup
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    [
+        (check
+            "remove missing package fails"
+            ($remove_missing_pkg.exit_code != 0)
+            $remove_missing_pkg.stderr)
+        (check
+            "apply drifted file setup succeeds"
+            ($apply_drift_file.exit_code == 0)
+            $apply_drift_file.stderr)
+        (check
+            "remove rejects drifted file target"
+            ($remove_drift_file.exit_code != 0)
+            $remove_drift_file.stderr)
+        (check
+            "apply drifted foreign link setup succeeds"
+            ($apply_drift_link.exit_code == 0)
+            $apply_drift_link.stderr)
+        (check
+            "remove rejects foreign symlink target"
+            ($remove_drift_link.exit_code != 0)
+            $remove_drift_link.stderr)
+        (check
+            "apply directory drift setup succeeds"
+            ($apply_drift_dir.exit_code == 0)
+            $apply_drift_dir.stderr)
+        (check
+            "remove rejects directory target"
+            ($remove_dir_block.exit_code != 0)
+            $remove_dir_block.stderr)
+        (check
+            "apply invalid backup setup succeeds"
+            ($apply_invalid_backup.exit_code == 0)
+            $apply_invalid_backup.stderr)
+        (check
+            "remove fails on invalid backup metadata"
+            ($remove_invalid_backup.exit_code != 0)
+            $remove_invalid_backup.stderr)
+    ]
+}
+
+def test_status_and_doctor_states [
+    test_base: string
+    source_dir: string
+    backup_dir: string
+    stow_script: string
+] {
+    let target_status = ($test_base | path join "target-status-matrix")
+    mkdir $target_status
+
+    let managed_path = ($target_status | path join ".managed")
+    let missing_path = ($target_status | path join ".missing")
+    let file_path = ($target_status | path join ".file")
+    let dir_path = ($target_status | path join ".directory")
+    let foreign_path = ($target_status | path join ".foreign")
+    let invalid_path = ($target_status | path join ".invalid")
+
+    "managed original" | save $managed_path
+    "missing original" | save $missing_path
+    "file original" | save $file_path
+    "dir original" | save $dir_path
+    "foreign original" | save $foreign_path
+    "invalid original" | save $invalid_path
+
+    let add_managed = (
+        run-stow-cmd $stow_script add "states" $managed_path
+            --target $target_status
+            --source-dir $source_dir
+    )
+    let add_missing = (
+        run-stow-cmd $stow_script add "states" $missing_path
+            --target $target_status
+            --source-dir $source_dir
+    )
+    let add_file = (
+        run-stow-cmd $stow_script add "states" $file_path
+            --target $target_status
+            --source-dir $source_dir
+    )
+    let add_dir = (
+        run-stow-cmd $stow_script add "states" $dir_path
+            --target $target_status
+            --source-dir $source_dir
+    )
+    let add_foreign = (
+        run-stow-cmd $stow_script add "states" $foreign_path
+            --target $target_status
+            --source-dir $source_dir
+    )
+    let add_invalid = (
+        run-stow-cmd $stow_script add "states" $invalid_path
+            --target $target_status
+            --source-dir $source_dir
+    )
+
+    ^rm -f $managed_path
+    "managed drift" | save $managed_path
+    ^rm -f $invalid_path
+    let apply_states = (
+        run-stow-cmd $stow_script apply "states"
+            --target $target_status
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    ^rm -f $missing_path
+    ^rm -f $file_path
+    "new real file" | save $file_path
+    if ($dir_path | path exists) {
+        ^rm -rf $dir_path
+    }
+    mkdir $dir_path
+    let foreign_real = ($test_base | path join "foreign-real")
+    "foreign data" | save $foreign_real
+    ^rm -f $foreign_path
+    ^ln -sf $foreign_real $foreign_path
+
+    let states_backup_scope = (backup-scope $backup_dir "states" $target_status)
+    if not ($states_backup_scope | path exists) {
+        mkdir $states_backup_scope
+    }
+    let invalid_backup = ($states_backup_scope | path join ".invalid-INVALID")
+    "invalid" | save $invalid_backup
+
+    let status_expr = (
+        "use '" + $stow_script + "' *; "
+        + "(main status states --target '" + $target_status + "' "
+        + "--source-dir '" + $source_dir + "' "
+        + "--backup-dir '" + $backup_dir + "') | to json"
+    )
+    let status_json = (run-inline $status_expr)
+    let status_records = if ($status_json.exit_code == 0) {
+        $status_json.stdout | from json
+    } else {
+        []
+    }
+    let status_root = ($target_status | path expand)
+    let managed_key = ($status_root | path join ".managed")
+    let missing_key = ($status_root | path join ".missing")
+    let file_key = ($status_root | path join ".file")
+    let dir_key = ($status_root | path join ".directory")
+    let foreign_key = ($status_root | path join ".foreign")
+    let invalid_key = ($status_root | path join ".invalid")
+    let foreign_link = $foreign_real
+
+    let managed_record = (
+        $status_records
+        | where { |row| $row.target == $managed_key }
+        | first
+        | default {
+            state: ""
+            backup_status: ""
+            backup_path: ""
+            link_target: ""
+        }
+    )
+    let missing_record = (
+        $status_records
+        | where { |row| $row.target == $missing_key }
+        | first
+        | default { state: "" backup_status: "" link_target: "" }
+    )
+    let file_record = (
+        $status_records
+        | where { |row| $row.target == $file_key }
+        | first
+        | default { state: "" backup_status: "" link_target: "" }
+    )
+    let dir_record = (
+        $status_records
+        | where { |row| $row.target == $dir_key }
+        | first
+        | default { state: "" backup_status: "" link_target: "" }
+    )
+    let foreign_record = (
+        $status_records
+        | where { |row| $row.target == $foreign_key }
+        | first
+        | default { state: "" backup_status: "" link_target: "" }
+    )
+    let invalid_record = (
+        $status_records
+        | where { |row| $row.target == $invalid_key }
+        | first
+        | default { state: "" backup_status: "" link_target: "" }
+    )
+
+    let doctor_fail = (
+        run-stow-cmd $stow_script doctor "states"
+            --target $target_status
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    [
+        (check
+            "add states managed target succeeds"
+            ($add_managed.exit_code == 0)
+            $add_managed.stderr)
+        (check
+            "add states missing target succeeds"
+            ($add_missing.exit_code == 0)
+            $add_missing.stderr)
+        (check
+            "status managed record shows backup found"
+            (
+                ($status_json.exit_code == 0)
+                and ($managed_record.state == "managed")
+                and ($managed_record.backup_status == "found")
+                and (not ($managed_record.backup_path | is-empty))
+            )
+            "managed status mismatch")
+        (check
+            "status missing record detected"
+            (
+                ($missing_record.state == "missing")
+                and ($missing_record.backup_status == "missing")
+            )
+            "missing status mismatch")
+        (check
+            "status detects drifted file"
+            (
+                ($file_record.state == "file")
+                and ($file_record.backup_status == "missing")
+            )
+            "file status mismatch")
+        (check
+            "status detects directory collision"
+            (
+                ($dir_record.state == "directory")
+                and ($dir_record.backup_status == "missing")
+            )
+            "directory status mismatch")
+        (check
+            "status detects foreign symlink"
+            (
+                ($foreign_record.state == "foreign-symlink")
+                and ($foreign_record.backup_status == "missing")
+                and ($foreign_record.link_target == $foreign_link)
+            )
+            "foreign status mismatch")
+        (check
+            "status reports invalid backup metadata"
+            (
+                ($invalid_record.backup_status == "invalid")
+                and ($invalid_record.state == "managed")
+            )
+            "invalid backup status mismatch")
+        (check
+            "doctor fails when targets unhealthy"
+            ($doctor_fail.exit_code != 0)
+            ($doctor_fail.stdout + $doctor_fail.stderr))
+    ]
+}
+
+def test_restore_boundaries [
+    test_base: string
+    source_dir: string
+    backup_dir: string
+    stow_script: string
+] {
+    let restore_seed = ($test_base | path join "target-restore-seed")
+    mkdir $restore_seed
+    let seed_file = ($restore_seed | path join ".restore")
+    "restore seed content" | save $seed_file
+    let add_restorepkg = (
+        run-stow-cmd $stow_script add "restorepkg" $seed_file
+            --target $restore_seed
+            --source-dir $source_dir
+    )
+
+    let target_restore_missing_pkg = ($test_base | path join "target-restore-missing-pkg")
+    mkdir $target_restore_missing_pkg
+    let restore_missing_pkg = (
+        run-stow-cmd $stow_script restore "ghost"
+            --target $target_restore_missing_pkg
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_restore_file = ($test_base | path join "target-restore-file")
+    mkdir $target_restore_file
+    let apply_restore_file = (
+        run-stow-cmd $stow_script apply "restorepkg"
+            --target $target_restore_file
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    let restore_file_path = ($target_restore_file | path join ".restore")
+    ^rm -f $restore_file_path
+    "manual edit" | save $restore_file_path
+    let restore_fail_file = (
+        run-stow-cmd $stow_script restore "restorepkg"
+            --target $target_restore_file
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_restore_symlink = ($test_base | path join "target-restore-symlink")
+    mkdir $target_restore_symlink
+    let apply_restore_symlink = (
+        run-stow-cmd $stow_script apply "restorepkg"
+            --target $target_restore_symlink
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    let restore_symlink = (
+        run-stow-cmd $stow_script restore "restorepkg"
+            --target $target_restore_symlink
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_restore_missing = ($test_base | path join "target-restore-missing")
+    mkdir $target_restore_missing
+    let apply_restore_missing = (
+        run-stow-cmd $stow_script apply "restorepkg"
+            --target $target_restore_missing
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    let missing_restore_path = ($target_restore_missing | path join ".restore")
+    ^rm -f $missing_restore_path
+    let restore_missing_target = (
+        run-stow-cmd $stow_script restore "restorepkg"
+            --target $target_restore_missing
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_restore_dir = ($test_base | path join "target-restore-dir")
+    mkdir $target_restore_dir
+    let dir_restore_path = ($target_restore_dir | path join ".restore")
+    "dir original" | save $dir_restore_path
+    let apply_restore_dir = (
+        run-stow-cmd $stow_script apply "restorepkg"
+            --target $target_restore_dir
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    ^rm -f $dir_restore_path
+    mkdir $dir_restore_path
+    let restore_dir_collision = (
+        run-stow-cmd $stow_script restore "restorepkg"
+            --target $target_restore_dir
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_restore_latest = ($test_base | path join "target-restore-latest")
+    mkdir $target_restore_latest
+    let restore_latest_path = ($target_restore_latest | path join ".restore")
+    if ($restore_latest_path | path exists) {
+        ^rm -rf $restore_latest_path
+    }
+    let latest_scope = (backup-scope $backup_dir "restorepkg" $target_restore_latest)
+    if not ($latest_scope | path exists) {
+        mkdir $latest_scope
+    }
+    let backup_old = ($latest_scope | path join ".restore-20260101_010101")
+    let backup_new = ($latest_scope | path join ".restore-20260101_010101-1")
+    "older" | save $backup_old
+    "newer" | save $backup_new
+    let restore_latest = (
+        run-stow-cmd $stow_script restore "restorepkg"
+            --target $target_restore_latest
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    [
+        (check
+            "restore package staging succeeds"
+            ($add_restorepkg.exit_code == 0)
+            $add_restorepkg.stderr)
+        (check
+            "restore missing package fails"
+            ($restore_missing_pkg.exit_code != 0)
+            $restore_missing_pkg.stderr)
+        (check
+            "restore rejects file without backup"
+            ($restore_fail_file.exit_code != 0)
+            $restore_fail_file.stderr)
+        (check
+            "restore warns but succeeds for unmanaged symlink"
+            (
+                ($apply_restore_symlink.exit_code == 0)
+                and ($restore_symlink.exit_code == 0)
+            )
+            ($apply_restore_symlink.stderr + $restore_symlink.stderr))
+        (check
+            "restore warns but succeeds for missing target"
+            (
+                ($apply_restore_missing.exit_code == 0)
+                and ($restore_missing_target.exit_code == 0)
+            )
+            ($restore_missing_target.stderr))
+        (check
+            "restore fails on directory collision"
+            ($restore_dir_collision.exit_code != 0)
+            $restore_dir_collision.stderr)
+        (check
+            "restore chooses newest backup content"
+            (
+                ($restore_latest.exit_code == 0)
+                and ((open $restore_latest_path) == "newer")
+            )
+            $restore_latest.stderr)
     ]
 }
 
@@ -647,6 +1173,15 @@ def main [] {
     )
     $checks ++= (
         test_edge_cases $test_base $source_dir $backup_dir $stow_script
+    )
+    $checks ++= (
+        test_remove_validations $test_base $source_dir $backup_dir $stow_script
+    )
+    $checks ++= (
+        test_status_and_doctor_states $test_base $source_dir $backup_dir $stow_script
+    )
+    $checks ++= (
+        test_restore_boundaries $test_base $source_dir $backup_dir $stow_script
     )
 
     let failed = ($checks | where { |item| not $item.passed })

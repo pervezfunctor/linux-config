@@ -643,5 +643,3 @@ def main [] {
     do -i { ^rm -rf $test_base }
     if (not ($failed | is-empty)) { exit 1 }
 }
-
-main

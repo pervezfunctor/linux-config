@@ -181,7 +181,7 @@ def "main fish config" [] {
   stow-package "fish"
 
   log+ "Change default shell to fish"
-  do -i { ^chsh -s (command -v fish) }
+  do -i { ^chsh -s (which fish) }
 }
 
 def "main fish" [] {

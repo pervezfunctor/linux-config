@@ -61,6 +61,41 @@ export def check-file [path: string] {
     $path
 }
 
+export def raise-error [msg: string, path: string = ""] {
+    error+ $msg
+    if ($path | is-empty) {
+        error make { msg: $msg }
+    } else {
+        error make {
+            msg: $msg
+            label: {
+                text: $path
+                span: (metadata $path).span
+            }
+        }
+    }
+}
+
+export def detect-path-kind [path: string] {
+    do -i { $path | path type } | default "none"
+}
+
+export def encode-dot-segment [name: string] {
+    if ($name | str starts-with ".") {
+        $"dot-($name | str substring 1..)"
+    } else {
+        $name
+    }
+}
+
+export def decode-dot-segment [name: string] {
+    if ($name | str starts-with "dot-") {
+        $".($name | str substring 4..)"
+    } else {
+        $name
+    }
+}
+
 export def has-cmd [cmd: string]: nothing -> bool {
   (which $cmd | is-not-empty)
 }

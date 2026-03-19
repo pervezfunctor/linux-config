@@ -2,21 +2,6 @@
 
 use ./lib.nu *
 
-def raise-error [msg: string, path: string = ""] {
-    error+ $msg
-    if ($path | is-empty) {
-        error make { msg: $msg }
-    } else {
-        error make {
-            msg: $msg
-            label: {
-                text: $path
-                span: (metadata $path).span
-            }
-        }
-    }
-}
-
 def resolve-runtime-paths [
     target: string = ""
     source_dir: string = ""
@@ -34,22 +19,6 @@ def resolve-runtime-paths [
             | or-else ($env.HOME | path join ".stow-backups")
             | path expand
         )
-    }
-}
-
-def encode-dot-segment [name: string] {
-    if ($name | str starts-with ".") {
-        $"dot-($name | str substring 1..)"
-    } else {
-        $name
-    }
-}
-
-def decode-dot-segment [name: string] {
-    if ($name | str starts-with "dot-") {
-        $".($name | str substring 4..)"
-    } else {
-        $name
     }
 }
 
@@ -77,10 +46,6 @@ def build-staged-file-path [
         | path split
         | each { |p| encode-dot-segment $p }
     )
-}
-
-def detect-path-kind [path: string] {
-    do -i { $path | path type } | default "none"
 }
 
 def build-backup-file-path [

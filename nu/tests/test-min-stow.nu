@@ -1,12 +1,12 @@
 #!/usr/bin/env nu
 
 use std/log
+use ../lib.nu [
+    detect-path-kind
+    encode-dot-segment
+]
 
 def log+ [msg: string] { log info $msg }
-
-def detect-path-kind [path: string] {
-    do -i { $path | path type } | default "none"
-}
 
 def read-symlink-target [path: string] {
     do -i { ^readlink $path } | default ""
@@ -15,14 +15,6 @@ def read-symlink-target [path: string] {
 def is-executable-file [path: string] {
     let result = (^bash -lc 'test -x "$1"' _ $path | complete)
     $result.exit_code == 0
-}
-
-def encode-dot-segment [name: string] {
-    if ($name | str starts-with ".") {
-        $"dot-($name | str substring 1..)"
-    } else {
-        $name
-    }
 }
 
 def build-expected-backup-path [
@@ -617,7 +609,7 @@ def main [] {
     let target_dir = ($test_base | path join "target")
     let backup_dir = ($test_base | path join "backups")
     let stow_script = (
-        $env.FILE_PWD | path join ".." "min-stow.nu" | path expand
+        $env.FILE_PWD | path join "min-stow.nu" | path expand
     )
 
     mkdir $test_base

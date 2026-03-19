@@ -1,26 +1,57 @@
 #!/usr/bin/env bash
 
-set -Eeuo pipefail
+set -euo pipefail
 
-readonly RAW_BASE_URL="https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/main"
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+die() {
+  echo "ERROR: $@" >&2
+  exit 1
+}
+
+check_commands() {
+  for cmd in "$@"; do
+    has_cmd "$cmd" || die "setup launcher requires $cmd"
+  done
+}
+
+readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
+readonly DOT_DIR="$HOME/.local/share/linux-config"
+
+dotfiles_clone() {
+  [ -d "$DOT_DIR" ] || {
+    echo "Directory $DOT_DIR does not exist. Cloning."
+    git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
+    return
+  }
+
+  [ -z "$(git -C "$DOT_DIR" status --porcelain)" ] && {
+    echo "Directory $DOT_DIR is clean. Rebasing."
+    git -C "$DOT_DIR" pull --rebase || {
+      echo "Rebase failed. Aborting."
+      git -C "$DOT_DIR" rebase --abort || die "Failed to abort rebase"
+    }
+  }
+
+  [ -d "$DOT_DIR" ] || die "Directory $DOT_DIR does not exist. Skipping setup."
+}
 
 main() {
-  command -v curl >/dev/null 2>&1 || {
-    echo "setup launcher requires curl for remote bootstrap" >&2
-    exit 1
+  export PATH="$HOME/.bun/bin:$PATH"
+
+  check_commands curl git bash
+
+  has_cmd bun || {
+    echo "Bun is not installed. Installing Bun."
+    curl -fsSL https://bun.sh/install | bash || die "Failed to install Bun"
+    check_commands "$HOME/.bun/bin/bun"
   }
 
-  command -v bun >/dev/null 2>&1 || {
-    curl -fsSL https://bun.sh/install | bash
-    export PATH="$HOME/.bun/bin:$PATH"
-  }
+  dotfiles_clone
 
-  command -v bun >/dev/null 2>&1 || {
-    echo "setup launcher requires bun" >&2
-    exit 1
-  }
-
-  exec bash -c 'curl -fsSL "$1" | bun run -' bash "${RAW_BASE_URL}/setup.ts" "$@"
+  ~/.bun/bin/bun run "$DOT_DIR/ts/src/setup.ts" "$@"
 }
 
 main "$@"

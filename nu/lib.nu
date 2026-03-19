@@ -169,7 +169,7 @@ export def add-shell [shell_path: string] {
 
 export def stow-package [package: string] {
   log+ $"Stowing ($package) dotfiles"
-  do -i { ^$env.DOT_DIR/nu/stow.nu apply $package }
+  do -i { ^$env.DOT_DIR/nu/min-stow.nu apply $package }
 }
 
 export def group-add [group: string] {

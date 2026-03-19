@@ -13,7 +13,7 @@ die() {
 
 check_commands() {
   for cmd in "$@"; do
-    has_cmd "$cmd" || die "setup launcher requires $cmd"
+    has_cmd "$cmd" || die "$cmd not available, quitting."
   done
 }
 
@@ -46,12 +46,12 @@ main() {
   has_cmd bun || {
     echo "Bun is not installed. Installing Bun."
     curl -fsSL https://bun.sh/install | bash || die "Failed to install Bun"
-    check_commands "$HOME/.bun/bin/bun"
+    check_commands bun
   }
 
   dotfiles_clone
 
-  ~/.bun/bin/bun run "$DOT_DIR/ts/src/setup.ts" "$@"
+  bun run "$DOT_DIR/ts/src/setup.ts" "$@"
 }
 
 main "$@"

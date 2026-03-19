@@ -107,7 +107,7 @@ Restores the newest available backups for paths owned by a package.
 1. Fails if the package does not exist.
 2. Enumerates the package's staged paths and corresponding target paths.
 3. Searches for backups only within that package's backup namespace.
-4. Restores the newest valid timestamped backup for each path, preferring the highest collision suffix when multiple backups share the same timestamp.
+4. Restores the newest valid timestamped backup for each path.
 5. If no backup exists and the current target is a regular file, fails with a non-zero error.
 6. If no backup exists and the current target is a symlink or missing, warns and skips that path.
 7. Fails on directory collisions during restore.
@@ -123,17 +123,16 @@ Restores the newest available backups for paths owned by a package.
 Regular files replaced by `stow apply` are backed up under:
 
 ```text
-<backup-dir>/<package>/<target-scope>/<relative-target-path>-YYYYMMDD_HHMMSS[-N]
+<backup-dir>/<package>/<target-scope>/<relative-target-path>-YYYYMMDD_HHMMSS
 ```
 
 Examples:
 - `~/.stow-backups/vim/_root_/home/alice/.vimrc-20260308_120000`
-- `~/.stow-backups/vim/_root_/home/alice/.vimrc-20260308_120000-1`
 - `~/.stow-backups/nvim/_root_/home/alice/.config/nvim/init.lua-20260308_120000`
 
 Existing destination symlinks are removed and replaced directly; they are not copied into the backup directory.
 The `target-scope` segment is derived from the absolute `--target` path so the same package can be applied to multiple target roots without sharing backups.
-If a backup path for the current second already exists, `stow` appends `-1`, `-2`, and so on to preserve every backup instead of overwriting an older one.
+If a backup path for the current second already exists, `stow` fails instead of overwriting the older backup.
 
 ## Notes
 

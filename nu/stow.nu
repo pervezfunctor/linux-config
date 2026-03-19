@@ -55,6 +55,29 @@ def fail [msg: string] {
     error make { msg: $msg }
 }
 
+# Creates a labeled Nushell error bound to a concrete filesystem path so
+# callers can reuse consistent diagnostics without losing span information.
+def fail-path [msg: string, path: string, label_text: string = ""] {
+    error make {
+        msg: $msg
+        label: {
+            text: ($label_text | or-else $path)
+            span: (metadata $path).span
+        }
+    }
+}
+
+def relative-to-target [path: string, target: string] {
+    try {
+        $path | path relative-to $target
+    } catch {
+        fail-path (
+            $"Path ($path) is outside the target "
+            + $"directory ($target)"
+        ) $path
+    }
+}
+
 # Computes the destination path inside the stow staging package for a given
 # file. Validates that the file being added is safely inside the target
 # boundary. Replaces hidden dot-directories with 'dot-' prefixed folders to
@@ -76,20 +99,13 @@ def compute-stow-path [
         package: string
     >
 ] {
-    $ctx.source_dir | path join $ctx.package | path join ...(try {
-        $ctx.path | path relative-to $ctx.target
-    } catch {
-        error make {
-            msg: (
-                $"Path ($ctx.path) is outside the target "
-                + $"directory ($ctx.target)"
-            )
-            label: {
-                text: ($ctx.path)
-                span: (metadata $ctx.path).span
-            }
-        }
-    } | path split | each { |p| to-stow-name $p })
+    $ctx.source_dir
+    | path join $ctx.package
+    | path join ...(
+        relative-to-target $ctx.path $ctx.target
+        | path split
+        | each { |p| to-stow-name $p }
+    )
 }
 
 # Calculates the final symlink exact destination inside the target
@@ -99,20 +115,7 @@ def compute-stow-path [
 #   compute-target-link "/home/user" "/home/user/.config/nvim/init.lua"
 #   # => "/home/user/.config/nvim/init.lua"
 def compute-target-link [expanded_target: string, expanded_path: string] {
-    $expanded_target | path join (try {
-        $expanded_path | path relative-to $expanded_target
-    } catch {
-        error make {
-            msg: (
-                $"Path ($expanded_path) is outside the target "
-                + $"directory ($expanded_target)"
-            )
-            label: {
-                text: $expanded_path
-                span: (metadata $expanded_path).span
-            }
-        }
-    })
+    $expanded_target | path join (relative-to-target $expanded_path $expanded_target)
 }
 
 # Crawls a staged stow package directory and computes the source and
@@ -174,20 +177,8 @@ def backup-scope-dir [backup_dir: string, package: string, abs_target: string] {
     $backup_dir | path join $package | path join ...$target_segments
 }
 
-def unique-backup-path [package_backup_dir: string, rel_path: string, timestamp: string] {
-    let base_path = ($package_backup_dir | path join $"($rel_path)-($timestamp)")
-    if not ($base_path | path exists) {
-        return $base_path
-    }
-
-    mut sequence = 1
-    loop {
-        let candidate = ($package_backup_dir | path join $"($rel_path)-($timestamp)-($sequence)")
-        if not ($candidate | path exists) {
-            return $candidate
-        }
-        $sequence += 1
-    }
+def backup-path [package_backup_dir: string, rel_path: string, timestamp: string] {
+    $package_backup_dir | path join $"($rel_path)-($timestamp)"
 }
 
 def backup-file [file: string, abs_target: string, backup_dir: string, package: string] {
@@ -196,28 +187,26 @@ def backup-file [file: string, abs_target: string, backup_dir: string, package: 
 
     if $file_type == 'symlink' {
         ^rm -f $file
-        true
     } else if $file_type == 'file' {
         if not ($package_backup_dir | path exists) {
             mkdir $package_backup_dir
         }
         let timestamp = (date now | format date '%Y%m%d_%H%M%S')
-        let rel_path = (($file | path expand) | path relative-to $abs_target)
-        let backup_path = (unique-backup-path $package_backup_dir $rel_path $timestamp)
-        ensure-parent-dir $backup_path
-        ^cp $file $backup_path
-        ^rm -f $file
-        true
-    } else if $file_type == 'dir' {
-        error make {
-            msg: (
-                $"Destination is a directory, cannot "
-                + $"replace with symlink: ($file)"
-            )
-            label: { text: $file, span: (metadata $file).span }
+        let rel_path = (relative-to-target ($file | path expand) $abs_target)
+        let backup_path = (backup-path $package_backup_dir $rel_path $timestamp)
+        if ($backup_path | path exists) {
+            fail-path (
+                $"Backup path already exists for timestamp collision: ($backup_path)"
+            ) $backup_path "Backup Timestamp Collision"
         }
-    } else {
-        true
+        ensure-parent-dir $backup_path
+        ^cp -p $file $backup_path
+        ^rm -f $file
+    } else if $file_type == 'dir' {
+        fail-path (
+            $"Destination is a directory, cannot "
+            + $"replace with symlink: ($file)"
+        ) $file
     }
 }
 
@@ -225,6 +214,23 @@ def link-files [items: list<record<stow: string, target: string>>] {
     for item in $items {
         ensure-parent-dir $item.target
         ^ln -sf $item.stow $item.target
+    }
+}
+
+# Preflight guard used by apply/restore planning so a package fails before any
+# mutation if one of its targets is blocked by a real directory.
+def ensure-target-not-directory [target_path: string, operation: string] {
+    if (target-path-type $target_path) == 'dir' {
+        fail-path $"Destination is a directory, cannot ($operation): ($target_path)" $target_path
+    }
+}
+
+# Validates every apply destination before backup-file or link-files mutate the
+# target tree. Returning the original items keeps execution logic simple.
+def plan-apply-ops [items: list<record<stow: string, target: string>>] {
+    $items | each { |item|
+        ensure-target-not-directory $item.target "replace with symlink"
+        $item
     }
 }
 
@@ -285,15 +291,13 @@ export def "main apply" [
     let abs_backup = ($dirs.backup | path expand)
 
     let files_to_link = collect-stow-files $abs_stow_pkg $abs_target
+    let apply_plan = (plan-apply-ops $files_to_link)
 
-    for item in $files_to_link {
-        let result = backup-file $item.target $abs_target $abs_backup $package
-        if not $result {
-            fail $"Failed to backup: ($item.target)"
-        }
+    for item in $apply_plan {
+        backup-file $item.target $abs_target $abs_backup $package
     }
 
-    link-files $files_to_link
+    link-files $apply_plan
 
     log+ $"Applied: ($package)"
 }
@@ -306,81 +310,13 @@ def readlink-target [path: string] {
     do -i { ^readlink $path } | default ""
 }
 
-def backup-search-context [
-    target_path: string,
-    abs_target: string,
-    abs_backup: string,
-    package: string
-] {
-    let rel_target = ($target_path | path relative-to $abs_target)
-    let package_backup_dir = (backup-scope-dir $abs_backup $package $abs_target)
-    {
-        rel_target: $rel_target
-        backup_parent: ($package_backup_dir | path join ($rel_target | path dirname))
-        prefix: $"(($rel_target | path basename))-"
-    }
-}
-
-def list-backup-candidates [backup_parent: string, prefix: string] {
-    do -i { ls -a $backup_parent | get name }
-    | default []
-    | where { |b| (($b | path type) == 'file') and ((($b | path basename) | str starts-with $prefix)) }
-}
-
 def parse-backup-candidate [backup_path: string, prefix: string] {
     let basename = ($backup_path | path basename)
     let suffix = ($basename | str substring ($prefix | str length)..)
-    let parts = ($suffix | split row '-')
-
-    if ($parts | length) == 1 {
-        let timestamp = ($parts | first)
-        return {
-            path: $backup_path,
-            timestamp: (if $timestamp =~ '^[0-9]{8}_[0-9]{6}$' { $timestamp } else { "" })
-            sequence: 0
-        }
-    }
-
-    if ($parts | length) == 2 {
-        let timestamp = ($parts | first)
-        let sequence = ($parts | last)
-        return {
-            path: $backup_path,
-            timestamp: (
-                if ($timestamp =~ '^[0-9]{8}_[0-9]{6}$') and ($sequence =~ '^[0-9]+$') {
-                    $timestamp
-                } else {
-                    ""
-                }
-            )
-            sequence: (
-                if ($timestamp =~ '^[0-9]{8}_[0-9]{6}$') and ($sequence =~ '^[0-9]+$') {
-                    $sequence | into int
-                } else {
-                    0
-                }
-            )
-        }
-    }
-
     {
         path: $backup_path,
-        timestamp: ""
-        sequence: 0
+        timestamp: (if $suffix =~ '^[0-9]{8}_[0-9]{6}$' { $suffix } else { "" })
     }
-}
-
-def latest-valid-backup [backups: list<string>, prefix: string] {
-    let candidates = (
-        $backups
-        | each { |b| parse-backup-candidate $b $prefix }
-        | where { |x| $x.timestamp != "" }
-        | sort-by timestamp sequence
-    )
-    if ($candidates | is-empty) {
-        return null
-    }
-    $candidates | last
 }
 
 def backup-lookup [
@@ -389,17 +325,32 @@ def backup-lookup [
     abs_backup: string,
     package: string
 ] {
-    let ctx = (backup-search-context $target_path $abs_target $abs_backup $package)
-    let backups = (list-backup-candidates $ctx.backup_parent $ctx.prefix)
+    let rel_target = (relative-to-target $target_path $abs_target)
+    let backup_parent = (
+        backup-scope-dir $abs_backup $package $abs_target
+        | path join ($rel_target | path dirname)
+    )
+    let prefix = $"(($rel_target | path basename))-"
+    let candidates = (
+        do -i { ls -a $backup_parent | get name }
+        | default []
+        | where { |b| (($b | path type) == 'file') and ((($b | path basename) | str starts-with $prefix)) }
+        | each { |b| parse-backup-candidate $b $prefix }
+    )
 
-    if ($backups | is-empty) {
+    if ($candidates | is-empty) {
         return {
             status: 'missing'
             path: null
         }
     }
 
-    let latest_backup = (latest-valid-backup $backups $ctx.prefix)
+    let latest_backup = (
+        $candidates
+        | where { |x| $x.timestamp != "" }
+        | sort-by timestamp
+        | last
+    )
     if $latest_backup == null {
         return {
             status: 'invalid'
@@ -413,90 +364,7 @@ def backup-lookup [
     }
 }
 
-def fail-or-warn-missing-backup [
-    target_path: string,
-    failure_msg: string,
-    warning_msg: string,
-    label_text: string
-] {
-    if (target-path-type $target_path) == 'file' {
-        error make {
-            msg: $failure_msg
-            label: {
-                text: $label_text
-                span: (metadata $target_path).span
-            }
-        }
-    }
-
-    log+ $warning_msg
-    null
-}
-
-def find-latest-backup [
-    target_path: string,
-    abs_target: string,
-    abs_backup: string,
-    package: string
-] {
-    let lookup = (backup-lookup $target_path $abs_target $abs_backup $package)
-
-    if $lookup.status == 'missing' {
-        return (fail-or-warn-missing-backup
-            $target_path
-            $"Cannot restore package: Target is a file but no backup found for ($target_path)"
-            $"Warning: No backup found for ($target_path)"
-            "Missing Backup"
-        )
-    }
-
-    if $lookup.status == 'invalid' {
-        return (fail-or-warn-missing-backup
-            $target_path
-            (
-                $"Cannot restore package: Target is a file but no valid "
-                + $"timestamp backup found for ($target_path)"
-            )
-            $"Warning: No valid timestamp backup found for ($target_path)"
-            "Invalid Backup Data"
-        )
-    }
-
-    $lookup.path
-}
-
-def removable-target-state [target_path: string, stow_path: string] {
-    let type = (target-path-type $target_path)
-
-    if $type == 'none' {
-        return 'missing'
-    }
-
-    if $type == 'dir' {
-        error make {
-            msg: $"Destination is a directory, cannot remove package target: ($target_path)"
-            label: { text: $target_path, span: (metadata $target_path).span }
-        }
-    }
-
-    if $type != 'symlink' {
-        error make {
-            msg: $"Target is not the managed symlink for package: ($target_path)"
-            label: { text: $target_path, span: (metadata $target_path).span }
-        }
-    }
-
-    if (readlink-target $target_path) != $stow_path {
-        error make {
-            msg: $"Target is not the managed symlink for package: ($target_path)"
-            label: { text: $target_path, span: (metadata $target_path).span }
-        }
-    }
-
-    'managed'
-}
-
-def current-target-status [target_path: string, stow_path: string] {
+def classify-target [target_path: string, stow_path: string = ""] {
     let type = (target-path-type $target_path)
 
     if $type == 'none' {
@@ -521,17 +389,119 @@ def current-target-status [target_path: string, stow_path: string] {
     }
 
     let link_target = (readlink-target $target_path)
-    if $link_target == $stow_path {
-        return {
-            state: 'managed'
-            link_target: $link_target
-        }
-    }
-
     {
-        state: 'foreign-symlink'
+        state: (
+            if ($stow_path != "") and ($link_target == $stow_path) {
+                'managed'
+            } else {
+                'foreign-symlink'
+            }
+        )
         link_target: $link_target
     }
+}
+
+# Builds the full remove action list up front so remove either validates the
+# whole package or leaves the target tree untouched. The returned records carry
+# both target ownership state and any restorable backup chosen for that path.
+def plan-remove-ops [
+    items: list<record<stow: string, target: string>>
+    abs_target: string
+    abs_backup: string
+    package: string
+] {
+    $items | each { |item|
+        let target_state = (removable-target-state $item.target $item.stow)
+        let lookup = (backup-lookup $item.target $abs_target $abs_backup $package)
+
+        if $lookup.status == 'invalid' {
+            fail-path (
+                $"Cannot remove package: Invalid timestamp backup found for ($item.target)"
+            ) $item.target "Invalid Backup Data"
+        }
+
+        {
+            target: $item.target
+            target_state: $target_state
+            backup_status: $lookup.status
+            backup_path: $lookup.path
+        }
+    }
+}
+
+# Precomputes every restore decision before restore-file runs so a later
+# directory collision or file-without-backup error cannot partially restore an
+# earlier target.
+def plan-restore-ops [
+    items: list<record<stow: string, target: string>>
+    abs_target: string
+    abs_backup: string
+    package: string
+] {
+    $items | each { |item|
+        ensure-target-not-directory $item.target "restore file"
+        let lookup = (backup-lookup $item.target $abs_target $abs_backup $package)
+        let target_state = (classify-target $item.target)
+
+        if $lookup.status == 'missing' {
+            if $target_state.state == 'file' {
+                fail-path (
+                    $"Cannot restore package: Target is a file but no backup found for ($item.target)"
+                ) $item.target "Missing Backup"
+            }
+
+            return {
+                target: $item.target
+                backup_path: null
+                warning: $"Warning: No backup found for ($item.target)"
+            }
+        }
+
+        if $lookup.status == 'invalid' {
+            if $target_state.state == 'file' {
+                fail-path (
+                    $"Cannot restore package: Target is a file but no valid "
+                    + $"timestamp backup found for ($item.target)"
+                ) $item.target "Invalid Backup Data"
+            }
+
+            return {
+                target: $item.target
+                backup_path: null
+                warning: $"Warning: No valid timestamp backup found for ($item.target)"
+            }
+        }
+
+        {
+            target: $item.target
+            backup_path: $lookup.path
+            warning: ""
+        }
+    }
+}
+
+def removable-target-state [target_path: string, stow_path: string] {
+    let target = (classify-target $target_path $stow_path)
+
+    if $target.state == 'missing' {
+        return 'missing'
+    }
+
+    if $target.state == 'directory' {
+        fail-path (
+            $"Destination is a directory, cannot remove package target: ($target_path)"
+        ) $target_path
+    }
+
+    if $target.state != 'managed' {
+        fail-path $"Target is not the managed symlink for package: ($target_path)" $target_path
+    }
+
+    'managed'
+}
+
+def current-target-status [target_path: string, stow_path: string] {
+    classify-target $target_path $stow_path
 }
 
 def package-status-records [
@@ -562,18 +532,14 @@ def restore-file [target_path: string, backup_path: string] {
     if $type in ['symlink', 'file'] {
         ^rm -f $target_path
     } else if $type == 'dir' {
-        error make {
-            msg: $"Destination is a directory, cannot restore file: ($target_path)"
-            label: { text: $target_path, span: (metadata $target_path).span }
-        }
+        fail-path $"Destination is a directory, cannot restore file: ($target_path)" $target_path
     }
 
     # Restore from backup
     ensure-parent-dir $target_path
-    ^cp $backup_path $target_path
+    ^cp -p $backup_path $target_path
 
     log+ $"Restored: ($target_path) <- ($backup_path)"
-    true
 }
 
 export def "main remove" [
@@ -597,33 +563,19 @@ export def "main remove" [
     let abs_target = ($dirs.target | path expand)
     let abs_backup = ($dirs.backup | path expand)
     let files_to_link = collect-stow-files ($stow_pkg_dir | path expand) $abs_target
+    let remove_plan = (plan-remove-ops $files_to_link $abs_target $abs_backup $package)
 
     mut removed_count = 0
     mut restored_count = 0
-    for item in $files_to_link {
-        let target_state = (removable-target-state $item.target $item.stow)
-        let lookup = (backup-lookup $item.target $abs_target $abs_backup $package)
-
-        if $lookup.status == 'invalid' {
-            error make {
-                msg: $"Cannot remove package: Invalid timestamp backup found for ($item.target)"
-                label: {
-                    text: "Invalid Backup Data"
-                    span: (metadata $item.target).span
-                }
-            }
-        }
-
-        if $target_state == 'managed' {
+    for item in $remove_plan {
+        if $item.target_state == 'managed' {
             ^rm -f $item.target
             $removed_count += 1
         }
 
-        if $lookup.status == 'found' {
-            let success = (restore-file $item.target $lookup.path)
-            if $success {
-                $restored_count += 1
-            }
+        if $item.backup_status == 'found' {
+            restore-file $item.target $item.backup_path
+            $restored_count += 1
         }
     }
 
@@ -719,14 +671,19 @@ export def "main restore" [
     let abs_backup = ($dirs.backup | path expand)
 
     let files_to_link = collect-stow-files ($stow_pkg_dir | path expand) $abs_target
+    let restore_plan = (plan-restore-ops $files_to_link $abs_target $abs_backup $package)
+
+    for item in $restore_plan {
+        if not ($item.warning | is-empty) {
+            log+ $item.warning
+        }
+    }
+
     mut restored_count = 0
-    for item in $files_to_link {
-        let latest_backup = (find-latest-backup $item.target $abs_target $abs_backup $package)
-        if $latest_backup != null {
-            let success = (restore-file $item.target $latest_backup)
-            if $success {
-                $restored_count += 1
-            }
+    for item in $restore_plan {
+        if $item.backup_path != null {
+            restore-file $item.target $item.backup_path
+            $restored_count += 1
         }
     }
 

@@ -511,14 +511,10 @@ def test_edge_cases [
     let collision_base = (
         $collision_root | path join ".vimrc-20260101_010101"
     )
-    let collision_one = (
-        $collision_root | path join ".vimrc-20260101_010101-1"
-    )
     "first" | save $collision_base
-    "second" | save $collision_one
     let next_collision = (run-inline (
         "source '" + $stow_script + "'; "
-        + "unique-backup-path '" + $collision_root + "' "
+        + "backup-path '" + $collision_root + "' "
         + "'.vimrc' '20260101_010101'"
     ))
     let next_collision_out = ($next_collision.stdout | lines | last | str trim)
@@ -566,11 +562,11 @@ def test_edge_cases [
     )
 
     let collision_expected = (
-        $collision_root | path join ".vimrc-20260101_010101-2"
+        $collision_root | path join ".vimrc-20260101_010101"
     )
     [
         (check
-            "unique-backup-path adds collision suffix"
+            "backup-path uses timestamp-only name"
             (
                 ($next_collision.exit_code == 0)
                 and ($next_collision_out == $collision_expected)
@@ -1083,7 +1079,7 @@ def test_restore_boundaries [
         mkdir $latest_scope
     }
     let backup_old = ($latest_scope | path join ".restore-20260101_010101")
-    let backup_new = ($latest_scope | path join ".restore-20260101_010101-1")
+    let backup_new = ($latest_scope | path join ".restore-20260101_020202")
     "older" | save $backup_old
     "newer" | save $backup_new
     let restore_latest = (
@@ -1131,6 +1127,129 @@ def test_restore_boundaries [
                 and ((open $restore_latest_path) == "newer")
             )
             $restore_latest.stderr)
+    ]
+}
+
+def test_preflight_atomicity [
+    test_base: string
+    source_dir: string
+    backup_dir: string
+    stow_script: string
+] {
+    mkdir ($source_dir | path join "atomic")
+    "atomic a" | save ($source_dir | path join "atomic/dot-a")
+    "atomic z" | save ($source_dir | path join "atomic/dot-z")
+
+    let target_apply = ($test_base | path join "target-atomic-apply")
+    mkdir $target_apply
+    let apply_a = ($target_apply | path join ".a")
+    let apply_z = ($target_apply | path join ".z")
+    "apply original a" | save $apply_a
+    mkdir $apply_z
+    let apply_atomic = (
+        run-stow-cmd $stow_script apply "atomic"
+            --target $target_apply
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    let apply_scope = (backup-scope $backup_dir "atomic" $target_apply)
+    let apply_a_backup = (
+        find-files $apply_scope
+        | where { |p| (($p | path basename) | str starts-with ".a-") }
+    )
+
+    let target_remove = ($test_base | path join "target-atomic-remove")
+    mkdir $target_remove
+    let remove_a = ($target_remove | path join ".a")
+    let remove_z = ($target_remove | path join ".z")
+    "remove original a" | save $remove_a
+    "remove original z" | save $remove_z
+    let apply_remove_setup = (
+        run-stow-cmd $stow_script apply "atomic"
+            --target $target_remove
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    if ($remove_z | path exists) {
+        ^rm -f $remove_z
+    }
+    mkdir $remove_z
+    let remove_atomic = (
+        run-stow-cmd $stow_script remove "atomic"
+            --target $target_remove
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    let target_restore = ($test_base | path join "target-atomic-restore")
+    mkdir $target_restore
+    let restore_a = ($target_restore | path join ".a")
+    let restore_z = ($target_restore | path join ".z")
+    "restore original a" | save $restore_a
+    "restore original z" | save $restore_z
+    let apply_restore_setup = (
+        run-stow-cmd $stow_script apply "atomic"
+            --target $target_restore
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+    if ($restore_z | path exists) {
+        ^rm -f $restore_z
+    }
+    mkdir $restore_z
+    let restore_atomic = (
+        run-stow-cmd $stow_script restore "atomic"
+            --target $target_restore
+            --source-dir $source_dir
+            --backup-dir $backup_dir
+    )
+
+    [
+        (check
+            "apply preflight failure exits non-zero"
+            ($apply_atomic.exit_code != 0)
+            $apply_atomic.stderr)
+        (check
+            "apply preflight keeps earlier file untouched"
+            (
+                ((path-type $apply_a) == "file")
+                and ((open $apply_a) == "apply original a")
+            )
+            "apply mutated earlier target")
+        (check
+            "apply preflight skips backup creation"
+            ($apply_a_backup | is-empty)
+            "backup created before apply failed")
+        (check
+            "remove atomic setup succeeds"
+            ($apply_remove_setup.exit_code == 0)
+            $apply_remove_setup.stderr)
+        (check
+            "remove preflight failure exits non-zero"
+            ($remove_atomic.exit_code != 0)
+            $remove_atomic.stderr)
+        (check
+            "remove preflight keeps earlier symlink managed"
+            (
+                ((path-type $remove_a) == "symlink")
+                and ((readlink-path $remove_a) | str contains "/source/atomic/")
+            )
+            "remove mutated earlier target")
+        (check
+            "restore atomic setup succeeds"
+            ($apply_restore_setup.exit_code == 0)
+            $apply_restore_setup.stderr)
+        (check
+            "restore preflight failure exits non-zero"
+            ($restore_atomic.exit_code != 0)
+            $restore_atomic.stderr)
+        (check
+            "restore preflight keeps earlier symlink managed"
+            (
+                ((path-type $restore_a) == "symlink")
+                and ((readlink-path $restore_a) | str contains "/source/atomic/")
+            )
+            "restore mutated earlier target")
     ]
 }
 
@@ -1182,6 +1301,9 @@ def main [] {
     )
     $checks ++= (
         test_restore_boundaries $test_base $source_dir $backup_dir $stow_script
+    )
+    $checks ++= (
+        test_preflight_atomicity $test_base $source_dir $backup_dir $stow_script
     )
 
     let failed = ($checks | where { |item| not $item.passed })

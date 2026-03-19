@@ -842,7 +842,22 @@ type Task = {
 
 async function multiTask(items: Task[]): Promise<void> {
   const descriptions = items.map((t) => t.description).join("\n");
-  const result = await $`echo ${descriptions} | gum choose --no-limit`.nothrow().text();
+
+  if (!(await hasCmd("gum"))) {
+    log.warn("gum not found, executing all tasks...");
+    for (const item of items) {
+      log.info(`Executing: ${item.description}`);
+      await handle(item.handler);
+    }
+    return;
+  }
+
+  const proc = Bun.spawnSync(["gum", "choose", "--no-limit"], {
+    stdin: Buffer.from(descriptions + "\n"),
+    stderr: "inherit",
+  });
+
+  const result = proc.stdout ? proc.stdout.toString() : "";
 
   const selected = result
     .trim()
@@ -857,12 +872,9 @@ async function multiTask(items: Task[]): Promise<void> {
 
   for (const desc of selected) {
     const item = items.find((t) => t.description === desc);
-    if (!item) continue;
-    log.info(`Executing: ${item.description}`);
-    try {
-      await item.handler();
-    } catch (err) {
-      log.error(`${item.description} failed: ${(err as Error).message}`);
+    if (item) {
+      log.info(`Executing: ${item.description}`);
+      await handle(item.handler);
     }
   }
 }

@@ -47,12 +47,13 @@ main() {
     echo "Bun is not installed. Installing Bun."
     export BUN_INSTALL="$HOME/.bun"
     curl -fsSL https://bun.sh/install | bash
-    check_commands "$HOME/.bun/bin/bun"
+    check_commands "$HOME/.bun/bin/bun" bun
   }
 
   dotfiles_clone
 
-  ~/.bun/bin/bun run "$DOT_DIR/ts/src/setup.ts" "$@"
+  (cd "$DOT_DIR/ts" && bun install) || echo "Failed to install dependencies"
+  bun run "$DOT_DIR/ts/src/setup.ts" "$@"
 }
 
 main "$@"

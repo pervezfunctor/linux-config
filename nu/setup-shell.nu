@@ -39,8 +39,7 @@ def "main system" [] {
 
   if (is-tw) or (is-apt) {
       $pkgs ++= ["libatomic1"]
-  }
-  else if (is-fedora) or (is-arch) {
+  } else if ((is-fedora) or (is-arch)) {
       $pkgs ++= ["libatomic"]
   }
 

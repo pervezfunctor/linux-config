@@ -181,7 +181,7 @@ def "main fish config" [] {
   stow-package "fish"
 
   log+ "Change default shell to fish"
-  do -i { ^chsh -s (which fish) }
+  do -i { ^sudo chsh -s /usr/bin/fish $env.USER }
 }
 
 def "main fish" [] {
@@ -190,7 +190,7 @@ def "main fish" [] {
 }
 
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
-const DOT_DIR = ($nu.home-dir | path join ".local/share/linux-config")
+const DOT_DIR = ($nu.home-path | path join ".local/share/linux-config")
 
 def abort-rebase-if-needed [] {
   let rebase_merge = ($DOT_DIR | path join ".git" "rebase-merge")

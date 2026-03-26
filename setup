@@ -11,10 +11,10 @@ die() {
   exit 1
 }
 
-dotfiles_clone() {
-  readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
-  readonly DOT_DIR="$HOME/.local/share/linux-config"
+readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
+readonly DOT_DIR="$HOME/.local/share/linux-config"
 
+dotfiles_clone() {
   [ -d "$DOT_DIR" ] || {
     echo "Cloning dotfiles to $DOT_DIR."
     git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
@@ -34,13 +34,18 @@ si() {
   has_cmd fish && return 0
 
   if has_cmd dnf; then
+    sudo dnf update -y
     sudo dnf install -y "$@"
   elif has_cmd zypper; then
+    sudo zypper refresh
+    sudo zypper up -y
     sudo zypper install --non-interactive --auto-agree-with-licenses "$@"
   elif has_cmd pacman; then
+    sudo pacman -Syu --noconfirm
     sudo pacman -S --noconfirm "$@"
   elif has_cmd apt; then
     sudo apt update -y
+    sudo apt upgrade -y
     sudo apt install -y "$@"
   else
     die "Failed to install packages. No package manager found."
@@ -52,7 +57,7 @@ main() {
 
   has_cmd pixi || {
     echo "pixi is not installed. Installing pixi."
-    curl -fsSL https://get.pixi.run | bash
+    curl -fsSL https://pixi.sh/install.sh | sh
     has_cmd pixi || die "Failed to install pixi"
   }
   pixi global install nushell go-gum trash-cli starship gh

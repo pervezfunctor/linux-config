@@ -66,6 +66,8 @@ main() {
   dotfiles_clone
 
   has_cmd nu || die "Failed to install nushell"
+
+  mkdir -p "$HOME/.linux-config-logs"
   nu "$DOT_DIR/nu/setup-shell.nu" fish
 }
 

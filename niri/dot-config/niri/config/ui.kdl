@@ -15,6 +15,7 @@ layout {
         proportion 0.66667
     }
 
+    always-center-single-column
     default-column-width { proportion 0.5; }
 }
 

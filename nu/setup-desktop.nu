@@ -108,7 +108,7 @@ def "main niri install" [] {
 
   log+ "Installing niri"
   if (is-pikaos) {
-    ^pikman install pika-niri-desktop-minimal pika-niri-settings dms
+    ^pikman install pika-niri-desktop-minimal pika-niri-settings dms kimageformat-plugins cups-pk-helper
   } else if (is-fedora) {
     ^sudo dnf copr enable avengemedia/dms
     si ["niri" "dms" "cliphist"]

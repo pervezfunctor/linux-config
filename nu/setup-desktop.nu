@@ -205,7 +205,7 @@ def "main flatpaks" [] {
   log+ "Installing flatpaks..."
   for pkg in $flatpaks {
     log+ $"Installing ($pkg)"
-    do -i { ^flatpak --user install -y flathub $pkg }
+    ignore-error {|| ^flatpak --user install -y flathub $pkg }
   }
 }
 

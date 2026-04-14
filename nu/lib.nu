@@ -4,6 +4,7 @@ use std/log
 use std/util "path add"
 
 export-env {
+    $env.DOT_DIR = $"($env.HOME)/.local/share/linux-config"
     $env.LOG_FILE = $"($env.HOME)/.linux-config-logs/bootstrap-(date now | format date '%m-%d-%H%M%S').log"
 }
 
@@ -202,9 +203,22 @@ export def add-shell [shell_path: string] {
   }
 }
 
+def ignore-error [
+  action: closure
+  --quiet (-q)
+] {
+  try {
+    do $action
+  } catch { |err|
+    if not $quiet {
+      print $err
+    }
+  }
+}
+
 export def stow-package [package: string] {
   log+ $"Stowing ($package) dotfiles"
-  do -i { ^$env.DOT_DIR/nu/min-stow.nu apply $package }
+  ignore-error {|| nu ($env.DOT_DIR | path join "nu" "min-stow.nu") apply $package }
 }
 
 export def group-add [group: string] {

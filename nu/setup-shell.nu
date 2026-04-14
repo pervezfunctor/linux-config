@@ -181,7 +181,7 @@ def "main fish config" [] {
   stow-package "fish"
 
   log+ "Change default shell to fish"
-  do -i { ^sudo chsh -s /usr/bin/fish $env.USER }
+  ignore-error {|| ^sudo chsh -s /usr/bin/fish $env.USER }
 }
 
 def "main fish" [] {
@@ -197,7 +197,7 @@ def abort-rebase-if-needed [] {
   let rebase_apply = ($DOT_DIR | path join ".git" "rebase-apply")
   if ($rebase_merge | path exists) or ($rebase_apply | path exists) {
     warn+ "Aborting rebase"
-    do -i { ^git -C $DOT_DIR rebase --abort }
+    ignore-error {|| ^git -C $DOT_DIR rebase --abort }
   }
 }
 

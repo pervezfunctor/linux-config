@@ -15,6 +15,7 @@ path add [
     $"($env.HOME)/bin",
     $"($env.HOME)/.local/bin",
     $"($env.VOLTA_HOME)/bin",
+    $"($env.HOME)/.opencode/bin",
     $"($env.BUN_INSTALL)/bin"
 ]
 

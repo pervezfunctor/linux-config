@@ -362,6 +362,7 @@ export def --env bootstrap [] {
     $"($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))/nu"
     $"($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))/bin"
     ".pixi/bin"
+    ".opencode/bin"
     ".volta/bin"
   ] {
     path add ($env.HOME | path join $p | path expand)

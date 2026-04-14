@@ -20,8 +20,8 @@ fish_add_path --global --move \
     $HOME/bin \
     $HOME/.local/bin \
     $NPM_PACKAGES/bin \
-    $VOLTA_HOME/bin
-
+    $VOLTA_HOME/bin \
+    $HOME/.opencode/bin
 
 function has_cmd
     type -q $argv[1]

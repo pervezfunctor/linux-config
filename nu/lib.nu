@@ -203,7 +203,7 @@ export def add-shell [shell_path: string] {
   }
 }
 
-def ignore-error [
+export def ignore-error [
   action: closure
   --quiet (-q)
 ] {
@@ -211,7 +211,7 @@ def ignore-error [
     do $action
   } catch { |err|
     if not $quiet {
-      print $err
+      $err | print -e
     }
   }
 }

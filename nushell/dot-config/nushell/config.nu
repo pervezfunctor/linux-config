@@ -62,4 +62,3 @@ source ($nu.default-config-dir | path join aliases.nu)
 def reinit [] {
     ^$"($nu.default-config-dir | path join nushell-sources.nu)"
 }
-source "~/.cargo/env.nu"

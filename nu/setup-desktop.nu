@@ -160,7 +160,7 @@ def "main mangowc install" [] {
   if (is-pikaos) {
     ^pikman install mangowc
   } else if (is-arch) {
-    ^paru -S mangowc-git dms-shell-bin
+    ^paru -S mangowc-git dms-shell
   } else if (is-fedora) {
     if (prompt-yn "need terra repository for installing mango. This is NOT stable. Still enable it?") {
       ^sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release

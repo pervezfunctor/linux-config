@@ -122,7 +122,7 @@ def "main niri install" [] {
     ^sudo zypper refresh
     si ["niri" "dms"]
   } else if (is-arch) {
-    ^paru -S niri dms-shell-bin
+    si ["niri" "dms-shell"]
   } else {
     error+ "OS not supported. Not installing niri."
     return

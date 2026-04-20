@@ -148,32 +148,32 @@ def "main niri" [] {
   main niri config
 }
 
-def "main mangowc install" [] {
+def "main mangowm install" [] {
   wm-install
 
   if (has-cmd dms) and (has-cmd mango) {
-    log+ "mangowc and dms are already installed"
+    log+ "mangowm and dms are already installed"
     return
   }
 
-  log+ "Installing mangowc"
+  log+ "Installing mangowm"
   if (is-pikaos) {
-    ^pikman install mangowc
+    ^pikman install mangowm
   } else if (is-arch) {
-    ^paru -S mangowc-git dms-shell
+    ^paru -S mangowm dms-shell
   } else if (is-fedora) {
     if (prompt-yn "need terra repository for installing mango. This is NOT stable. Still enable it?") {
       ^sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release
       ^sudo dnf copr enable avengemedia/dms
-      si ["mangowc" "dms"]
+      si ["mangowm" "dms"]
     }
   } else {
-    error+ "Unsupported OS. Not installing mangowc."
+    error+ "Unsupported OS. Not installing mangowm."
     return
   }
 }
 
-def "main mangowc config" [] {
+def "main mangowm config" [] {
   stow-package "mango"
   stow-package "systemd"
 
@@ -181,9 +181,9 @@ def "main mangowc config" [] {
   touch-files $mango_dms ["alttab.conf" "colors.conf" "layout.conf" "wpblur.conf" "binds.conf" "cursor.conf" "outputs.conf"]
 }
 
-def "main mangowc" [] {
-  main mangowc install
-  main mangowc config
+def "main mangowm" [] {
+  main mangowm install
+  main mangowm config
 }
 
 def "main flatpaks" [] {
@@ -341,7 +341,7 @@ def "main setup-desktop" [] {
 
   if (is-fedora) or (is-pikaos) or (is-arch) {
     $items = $items ++ [
-      { description: "Install mangowc", handler: { main mangowc } }
+      { description: "Install mangowm", handler: { main mangowm } }
     ]
   }
 
@@ -374,9 +374,9 @@ def "main help" [] {
   print "  niri install     Install niri and dms"
   print "  niri config      Apply niri config"
   print ""
-  print "  mangowc          Install and configure mangowc WM"
-  print "  mangowc install  Install mangowc and dms"
-  print "  mangowc config   Apply mangowc config"
+  print "  mangowm          Install and configure mangowm WM"
+  print "  mangowm install  Install mangowm and dms"
+  print "  mangowm config   Apply mangowm config"
   print ""
   print "Supported Systems:"
   print "  - Fedora (standard and atomic)"

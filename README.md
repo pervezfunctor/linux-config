@@ -40,3 +40,17 @@ fpi io.gitlab.librewolf-community
 fpi app.zen_browser.zen
 fpi com.vivaldi.Vivaldi
 ```
+
+## Install additional shell packages
+
+Many shell applications are available `conda` and they can be easily installed with `pixi`. For example
+
+```bash
+p ansible lazydocker
+```
+
+If not available in `conda`, then you could try `brew`.
+
+```bash
+b opencode codex
+```

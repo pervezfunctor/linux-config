@@ -6,15 +6,62 @@ has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+log() {
+  printf "\033[36mINFO:\033[0m %s\n" "$*"
+  sleep 1
+}
+
 die() {
-  printf "ERROR: %s\n" "$*" >&2
+  printf "\033[31mERROR:\033[0m %s\n" "$*" >&2
+  sleep 1
   exit 1
 }
 
 readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
 readonly DOT_DIR="$HOME/.local/share/linux-config"
 
+system_update() {
+  log "Updating system packages"
+
+  if has_cmd dnf; then
+    sudo dnf update -y
+  elif has_cmd zypper; then
+    sudo zypper refresh
+    sudo zypper up -y
+  elif has_cmd pacman; then
+    sudo pacman -Syu --noconfirm
+  elif has_cmd apt; then
+    sudo apt update -y
+    sudo apt upgrade -y
+  elif has_cmd brew; thenb
+    brew update
+    brew upgrade
+  else
+    die "Failed to install packages. No package manager found."
+  fi
+}
+
+si() {
+  log "Installing packages: $@"
+
+  if has_cmd dnf; then
+    sudo dnf install -y "$@"
+  elif has_cmd zypper; then
+    sudo zypper install --non-interactive --auto-agree-with-licenses "$@"
+  elif has_cmd pacman; then
+    sudo pacman -S --noconfirm "$@"
+  elif has_cmd apt; then
+    sudo apt install -y "$@"
+  elif has_cmd brew; then
+    brew install "$@"
+  else
+    die "Failed to install packages. No package manager found."
+  fi
+}
+
 dotfiles_clone() {
+  has_cmd git || si git || die "Failed to install git"
+
   [ -d "$DOT_DIR" ] || {
     echo "Cloning dotfiles to $DOT_DIR."
     git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
@@ -30,42 +77,29 @@ dotfiles_clone() {
   }
 }
 
-si() {
-  has_cmd fish && return 0
+pixi_install() {
+  has_cmd pixi && return 0
 
-  if has_cmd dnf; then
-    sudo dnf update -y
-    sudo dnf install -y "$@"
-  elif has_cmd zypper; then
-    sudo zypper refresh
-    sudo zypper up -y
-    sudo zypper install --non-interactive --auto-agree-with-licenses "$@"
-  elif has_cmd pacman; then
-    sudo pacman -Syu --noconfirm
-    sudo pacman -S --noconfirm "$@"
-  elif has_cmd apt; then
-    sudo apt update -y
-    sudo apt upgrade -y
-    sudo apt install -y "$@"
-  else
-    die "Failed to install packages. No package manager found."
-  fi
+  echo "Installing pixi..."
+  curl -fsSL https://pixi.sh/install.sh | sh
+  has_cmd pixi || die "Failed to install pixi"
+}
+
+pixi_packages_install() {
+  pixi_install
+
+  echo "Installing pixi packages..."
+  pixi global install nushell go-gum trash-cli starship gh
+  has_cmd nu || die "Failed to install nushell"
 }
 
 main() {
   export PATH="$HOME/.pixi/bin:$PATH"
 
-  has_cmd pixi || {
-    echo "pixi is not installed. Installing pixi."
-    curl -fsSL https://pixi.sh/install.sh | sh
-    has_cmd pixi || die "Failed to install pixi"
-  }
-  pixi global install nushell go-gum trash-cli starship gh
-
-  has_cmd git || si git || die "Failed to install git"
+  system_update()
   dotfiles_clone
 
-  has_cmd nu || die "Failed to install nushell"
+  pixi_packages_install
 
   mkdir -p "$HOME/.linux-config-logs"
   nu "$DOT_DIR/nu/setup-shell.nu" fish

@@ -78,7 +78,7 @@ alias dms-logs = journalctl --user -u dms -f
 # alias hw = hwinfo --short
 # alias big = expac -H M '%m\t%n' | sort -h | nl
 # alias gitpkg = pacman -Q | rg -i "\-git" | wc -l
-# alias update = sudo pacman -Syu
+# alias update = sudo pacman -Syyu
 
 # # Get fastest mirrors
 # alias mirror = sudo cachyos-rate-mirrors

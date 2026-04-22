@@ -29,7 +29,7 @@ system_update() {
     sudo zypper refresh
     sudo zypper up -y
   elif has_cmd pacman; then
-    sudo pacman -Syu --noconfirm
+    sudo pacman -Syyu --noconfirm
   elif has_cmd apt; then
     sudo apt update -y
     sudo apt upgrade -y

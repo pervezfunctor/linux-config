@@ -140,12 +140,12 @@ else if has_cmd paru
     alias i 'paru -S'
     alias r 'paru -R'
     alias s 'paru -Ss'
-    alias u 'paru -Syu'
+    alias u 'paru -Syyu'
 else if has_cmd pacman
     alias i 'sudo pacman -S'
     alias r 'sudo pacman -R'
     alias s 'pacman -Ss'
-    alias u 'sudo pacman -Syu'
+    alias u 'sudo pacman -Syyu'
 else if has_cmd rpm-ostree
     alias u 'sudo rpm-ostree update'
 end

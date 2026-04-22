@@ -276,7 +276,7 @@ export def update-packages []: nothing -> nothing {
     ^sudo zypper refresh
     ^sudo zypper update
   } else if (is-arch) {
-    ^sudo pacman -Syu
+    ^sudo pacman -Syyu
     ^sudo pacman -Fy
   } else {
     die "OS not supported for package updates."

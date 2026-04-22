@@ -35,7 +35,7 @@ if (is-apt) {
     alias i = sudo pacman -S
     alias r = sudo pacman -R
     alias s = pacman -Ss
-    alias u = sudo pacman -Syu
+    alias u = sudo pacman -Syyu
 } else if (is-tw) {
     alias i = sudo zypper install
     alias r = sudo zypper remove

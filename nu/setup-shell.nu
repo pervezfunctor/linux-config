@@ -406,7 +406,7 @@ def "main setup-shell" [] {
 
   if not (is-fedora-atomic) {
     $items = $items ++ [
-      { description: "Install nix", handler: { main nix } }
+      { description: "Install home-manager", handler: { main home-manager } }
     ]
   }
 

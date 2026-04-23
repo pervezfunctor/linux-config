@@ -33,7 +33,7 @@ system_update() {
   elif has_cmd apt; then
     sudo apt update -y
     sudo apt upgrade -y
-  elif has_cmd brew; thenb
+  elif has_cmd brew; then
     brew update
     brew upgrade
   else
@@ -42,7 +42,7 @@ system_update() {
 }
 
 si() {
-  log "Installing packages: $@"
+  log "Installing packages..."
 
   if has_cmd dnf; then
     sudo dnf install -y "$@"
@@ -96,7 +96,7 @@ pixi_packages_install() {
 main() {
   export PATH="$HOME/.pixi/bin:$PATH"
 
-  system_update()
+  system_update
   dotfiles_clone
 
   pixi_packages_install

@@ -112,7 +112,7 @@ def "main niri install" [] {
   } else if (is-fedora) {
     ^sudo dnf copr enable avengemedia/dms
     si ["niri" "dms" "cliphist"]
-  } else if (is-questing) {
+  } else if (is-resolute) {
     ^sudo add-apt-repository ppa:avengemedia/danklinux
     ^sudo add-apt-repository ppa:avengemedia/dms
     ^sudo apt update
@@ -333,7 +333,7 @@ def "main setup-desktop" [] {
     { description: "Install zed", handler: { main zed } }
   ]
 
-  if (is-fedora) or (is-questing) or (is-pikaos) or (is-tw) or (is-arch) {
+  if (is-fedora) or (is-resolute) or (is-pikaos) or (is-tw) or (is-arch) {
     $items = $items ++ [
       { description: "Install niri", handler: { main niri } }
     ]
@@ -381,7 +381,7 @@ def "main help" [] {
   print "Supported Systems:"
   print "  - Fedora (standard and atomic)"
   print "  - Debian Trixie"
-  print "  - Ubuntu Questing"
+  print "  - Ubuntu resolute"
   print "  - openSUSE Tumbleweed"
   print "  - Arch Linux"
   print "  - CachyOS"

@@ -381,8 +381,8 @@ def "main devtools" [] {
 }
 
 def "main setup-shell" [] {
-  if not ((is-fedora) or (is-trixie) or (is-questing) or (is-tw) or (is-arch) or (is-pikaos) or (is-fedora-atomic)) {
-    die "Only Fedora, Questing, Tumbleweed, Arch, PikaOS, and Fedora Atomic supported. Quitting."
+  if not ((is-fedora) or (is-trixie) or (is-resolute) or (is-tw) or (is-arch) or (is-pikaos) or (is-fedora-atomic)) {
+    die "Only Fedora, Ubuntu(resolute), Tumbleweed, Arch, PikaOS, and Fedora Atomic supported. Quitting."
   }
 
   init-log-file
@@ -459,7 +459,7 @@ def "main help" [] {
   print "Supported Systems:"
   print "  - Fedora (standard and atomic)"
   print "  - Debian Trixie"
-  print "  - Ubuntu Questing"
+  print "  - Ubuntu resolute"
   print "  - openSUSE Tumbleweed"
   print "  - Arch Linux"
   print "  - PikaOS"

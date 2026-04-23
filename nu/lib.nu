@@ -132,8 +132,8 @@ export def is-trixie []: nothing -> bool {
     (os-release | str downcase) =~ "trixie"
 }
 
-export def is-questing []: nothing -> bool {
-    (os-release | str downcase) =~ "questing"
+export def is-resolute []: nothing -> bool {
+    (os-release | str downcase) =~ "resolute"
 }
 
 export def is-tw []: nothing -> bool {
@@ -161,7 +161,7 @@ export def is-pikaos []: nothing -> bool {
 }
 
 export def is-apt []: nothing -> bool {
-    (is-questing) or (is-trixie) or (is-pikaos)
+    (is-resolute) or (is-trixie) or (is-pikaos)
 }
 
 export def os-release []: nothing -> string {

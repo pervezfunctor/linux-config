@@ -29,6 +29,7 @@ def "main system" [] {
     "fish"
     "gcc"
     "git"
+    "less"
     "make"
     "tar"
     "tmux"

@@ -1,0 +1,98 @@
+{
+  "cli_default_open_behavior": "existing_window",
+  "icon_theme": {
+    "mode": "light",
+    "light": "Zed (Default)",
+    "dark": "Zed (Default)",
+  },
+
+  "auto_install_extensions": {
+    "basher": true,
+    "catppuccin": true,
+    "cmake": true,
+    "docker-compose": true,
+    "dockerfile": true,
+    "fish": true,
+    "kdl": true,
+    "make": true,
+    "nix": true,
+    "nu": true,
+    "python": true,
+    "rust": true,
+  },
+
+  "buffer_font_family": "JetBrainsMono Nerd Font",
+  "buffer_font_size": 15,
+  "ui_font_size": 16,
+  "theme": {
+    "mode": "dark",
+    "light": "One Light",
+    "dark": "Gruvbox Dark Hard",
+  },
+
+  "autosave": "on_focus_change",
+  "base_keymap": "VSCode",
+  "ensure_final_newline_on_save": true,
+  "format_on_save": "on",
+  "load_direnv": "direct",
+  "preferred_line_length": 100,
+  "relative_line_numbers": "enabled",
+  "remove_trailing_whitespace_on_save": true,
+  "show_whitespaces": "trailing",
+  "tab_size": 2,
+
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/.svn",
+    "**/.hg",
+    "**/.jj",
+    "**/CVS",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "**/.classpath",
+    "**/.settings",
+    "**/node_modules",
+  ],
+
+  "file_types": {
+    "C++": ["c", "cppm", "hpp"],
+    "Dockerfile": ["Dockerfile*"],
+  },
+
+  "lsp": {
+    "clangd": {
+      "fetch": {
+        "pre_release": true,
+      },
+    },
+  },
+
+  "languages": {
+    "Python": {
+      "indent_guides": {
+        "enabled": true,
+      },
+    },
+    "C++": {
+      "colorize_brackets": true,
+    },
+    "Rust": {
+      "tab_size": 4,
+    },
+    "Shell Script": {
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "shfmt",
+          // Change `--indent 2` to match your preferred tab_size
+          "arguments": ["--filename", "{buffer_path}", "--indent", "2"],
+        },
+      },
+    },
+  },
+
+  "terminal": {
+    "copy_on_select": true,
+    "keep_selection_on_copy": false,
+  },
+}

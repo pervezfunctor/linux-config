@@ -126,50 +126,35 @@ def "main nvim install" [] {
     return
   }
 
-  if (has-cmd pixi) {
-    log+ "Installing neovim with pixi..."
-    ^pixi global install nvim
-  } else if (has-cmd brew) {
-    log+ "Installing neovim with brew..."
-    ^brew install neovim
-  } else {
-    error+ "Cannot install neovim"
-  }
+  log+ "Installing neovim with pixi..."
+  ^pixi global install nvim
 }
 
-def "main nvim config" [] {
-  let nvim_config = ($env.HOME | path join ".config/nvim")
+def "main nvim astro" [] {
+  let nvim = $env.HOME | path join ".config/nvim"
+  let nvim_share = $env.HOME | path join ".local/share/nvim"
+  let nvim_state = $env.HOME | path join ".local/state/nvim"
+  let nvim_cache = $env.HOME | path join ".cache/nvim"
 
-  if (dir-exists $nvim_config) {
-    if not (prompt-yn "Found existing nvim config. Do you want to backup and replace with AstroNvim?") {
-      return
-    }
+  if ($nvim | path exists) and not (prompt-yn "Found existing nvim config. Replace with AstroNvim?") {
+    return
   }
 
-  log+ "Setting up AstroNvim..."
+  log+ "Configuring AstroNvim..."
+  for dir in [$nvim, $nvim_share, $nvim_state, $nvim_cache] {
+    if not ($dir | path exists) { continue }
+    let bak = $"($dir).bak"
+    ignore-error {|| ^trash $bak }
+    ignore-error {|| ^mv $dir $bak }
+  }
 
-  let nvim_config_bak = ($env.HOME | path join ".config/nvim.bak")
-  let nvim_share = ($env.HOME | path join ".local/share/nvim")
-  let nvim_share_bak = ($env.HOME | path join ".local/share/nvim.bak")
-  let nvim_state = ($env.HOME | path join ".local/state/nvim")
-  let nvim_state_bak = ($env.HOME | path join ".local/state/nvim.bak")
-  let nvim_cache = ($env.HOME | path join ".cache/nvim")
-  let nvim_cache_bak = ($env.HOME | path join ".cache/nvim.bak")
-
-  do -i { ^trash $nvim_config_bak $nvim_share_bak $nvim_state_bak $nvim_cache_bak }
-  do -i { ^mv $nvim_config $nvim_config_bak }
-  do -i { ^mv $nvim_share $nvim_share_bak }
-  do -i { ^mv $nvim_state $nvim_state_bak }
-  do -i { ^mv $nvim_cache $nvim_cache_bak }
-
-  mkdir $nvim_config
-  ^git clone --depth 1 https://github.com/AstroNvim/template $nvim_config
-  ^rm -rf $"($nvim_config)/.git"
+  ^git clone --depth 1 https://github.com/AstroNvim/template $nvim
+  ^rm -rf $"($nvim)/.git"
 }
 
 def "main nvim" [] {
   main nvim install
-  main nvim config
+  main nvim astro
 }
 
 def "main fish config" [] {
@@ -205,6 +190,43 @@ def abort-rebase-if-needed [] {
 def dotfiles-clone [] {
   log+ "Cloning dotfiles"
   ^git clone $DOTFILES_URL $DOT_DIR
+}
+
+def "main shell default" [shell: string] {
+  log+ $"Setting ($shell) as default shell"
+  let shell_path = (which $shell | get 0.path)
+  if not (open /etc/shells | lines | any {|l| $l == $shell_path }) {
+    $shell_path | sudo tee -a /etc/shells
+  }
+  if not (is-shell-default $shell_path) {
+    do -i { chsh -s $shell_path $env.USER }
+  }
+}
+
+def "main shell autostart" [shell: string, rc: string] {
+  let rc_path = ($env.HOME | path join $rc)
+  let marker = $"exec ($shell)"
+  let launched_var = $"(($shell | str upcase))_LAUNCHED"
+
+  let snippet = $"
+# Auto-start ($shell) for interactive shells
+if [[ \$- == *i* ]] && [[ -z \"\$($launched_var)\" ]]; then
+  if command -v ($shell) >/dev/null 2>&1; then
+    export ($launched_var)=1
+    exec ($shell) || echo \"Failed to start ($shell)\"
+  fi
+fi
+"
+
+  if not ($rc_path | path exists) {
+    error make {msg: $"($rc) not found"}
+  }
+  if not (open $rc_path | str contains $marker) {
+    $snippet | save --append $rc_path
+    log+ $"Added ($shell) auto-start to ($rc)"
+  } else {
+    log+ $"($shell) auto-start already in ($rc), skipping"
+  }
 }
 
 def dotfiles-validate [] {
@@ -454,7 +476,7 @@ def "main help" [] {
   print ""
   print "  nvim             Install and configure AstroNvim"
   print "  nvim install     Install Neovim only"
-  print "  nvim config      Configure AstroNvim only"
+  print "  nvim astro       Configure AstroNvim only"
   print "  rust             Install rustup"
   print ""
   print "Supported Systems:"

@@ -2,7 +2,7 @@ $env.config = {
     show_banner: false
 }
 
-use ~/.local/share/linux-config/nu/lib.nu *
+use ~/.linux-config/nu/lib.nu *
 
 def has-cmd [app: string] {
     (which $app | is-not-empty)

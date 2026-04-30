@@ -4,7 +4,7 @@ use std/log
 use std/util "path add"
 
 export-env {
-    $env.DOT_DIR = $"($env.HOME)/.local/share/linux-config"
+    $env.DOT_DIR = $"($env.HOME)/.linux-config"
     $env.LOG_FILE = $"($env.HOME)/.linux-config-logs/bootstrap-(date now | format date '%m-%d-%H%M%S').log"
 }
 
@@ -359,8 +359,8 @@ export def --env bootstrap [] {
     ".local/bin"
     ".cargo/bin"
     ".local/share/mise/shims"
-    $"($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))/nu"
-    $"($env.DOT_DIR? | default ($env.HOME | path join ".local/share/linux-config"))/bin"
+    $"($env.DOT_DIR? | default ($env.HOME | path join ".linux-config"))/nu"
+    $"($env.DOT_DIR? | default ($env.HOME | path join ".linux-config"))/bin"
     ".pixi/bin"
     ".opencode/bin"
     ".volta/bin"

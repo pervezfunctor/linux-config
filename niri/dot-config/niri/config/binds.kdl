@@ -137,4 +137,11 @@ binds {
     Mod+Shift+E { spawn "code"; }
     Mod+Shift+T { spawn-sh "flatpak run org.telegram.desktop"; }
     Mod+Shift+S { spawn-sh "flatpak run com.spotify.Client"; }
+
+    Mod+Shift+Return {
+        spawn-sh "FISH_SIMPLE=1 kitty --class scratch-terminal";
+    }
+    Mod+Ctrl+Shift+Space {
+        spawn-sh "niri msg action focus-workspace 2 && ~/.linux-config/scripts/kitty-ai.nu";
+    }
 }

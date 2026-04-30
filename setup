@@ -18,7 +18,7 @@ die() {
 }
 
 readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
-readonly DOT_DIR="$HOME/.local/share/linux-config"
+readonly DOT_DIR="$HOME/.linux-config"
 
 system_update() {
   log "Updating system packages"

@@ -10,7 +10,7 @@ use ./lib.nu *
 #   resolve-dirs --target "/opt"
 #   # => {
 #   #   target: "/opt",
-#   #   source: "/home/user/.local/share/linux-config",
+#   #   source: "/home/user/.linux-config",
 #   #   backup: "/home/user/.stow-backups"
 #   # }
 def resolve-dirs [
@@ -707,7 +707,7 @@ USAGE:
 
 OPTIONS:
     --target      Target directory (default: ~)
-    --source-dir  Source directory (default: ~/.local/share/linux-config)
+    --source-dir  Source directory (default: ~/.linux-config)
     --backup-dir  Backup directory for apply/remove/status/doctor/restore (default: ~/.stow-backups)
 
 EXAMPLES:

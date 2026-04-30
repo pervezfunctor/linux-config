@@ -29,19 +29,23 @@ stow restore <package> [--target <dir>] [--source-dir <dir>] [--backup-dir <dir>
 Adds a target-path file into a package and replaces the original path with a symlink to the staged copy.
 
 **Parameters**
+
 - `package`: package name; required and must be non-empty
 - `path`: path to add; must resolve under `--target`
 
 **Accepted inputs**
+
 - regular files
 
 **Rejected inputs**
+
 - directories
 - symlinks to files
 - symlinks to directories
 - broken symlinks
 
 **Behavior**
+
 1. Validates the requested path.
 2. Computes the staged path under `<source-dir>/<package>/...` using `dot-` conversion.
 3. Copies regular-file inputs into the staging area using metadata-preserving filesystem copy semantics (`cp -p`), preserving mode bits such as executability.
@@ -53,6 +57,7 @@ Adds a target-path file into a package and replaces the original path with a sym
 Applies every staged item from a package into the target directory.
 
 **Behavior**
+
 1. Fails if the package does not exist.
 2. Enumerates staged package items recursively.
 3. Removes pre-existing symlinks at destination paths.
@@ -65,6 +70,7 @@ Applies every staged item from a package into the target directory.
 Removes deployed symlinks for a package from the target directory and restores backups when available.
 
 **Behavior**
+
 1. Fails if the package does not exist.
 2. Enumerates the package's staged paths and corresponding target paths.
 3. Refuses to delete a target unless it is the exact symlink currently managed by that package.
@@ -79,6 +85,7 @@ Removes deployed symlinks for a package from the target directory and restores b
 Reports the current per-target state for every staged path in a package.
 
 **Behavior**
+
 1. Fails if the package does not exist.
 2. Enumerates the package's staged paths and corresponding target paths.
 3. Returns one record per path with:
@@ -94,6 +101,7 @@ Reports the current per-target state for every staged path in a package.
 Checks whether a package is deployed cleanly to the target directory.
 
 **Behavior**
+
 1. Uses the same per-target inspection data as `stow status`.
 2. Succeeds when every target is in `managed` state and no path has `backup_status = invalid`.
 3. Prints the unhealthy path records before failing.
@@ -104,6 +112,7 @@ Checks whether a package is deployed cleanly to the target directory.
 Restores the newest available backups for paths owned by a package.
 
 **Behavior**
+
 1. Fails if the package does not exist.
 2. Enumerates the package's staged paths and corresponding target paths.
 3. Searches for backups only within that package's backup namespace.
@@ -115,7 +124,7 @@ Restores the newest available backups for paths owned by a package.
 ## Options
 
 - `--target`: target directory, default `~`
-- `--source-dir`: source directory, default `~/.local/share/linux-config`
+- `--source-dir`: source directory, default `~/.linux-config`
 - `--backup-dir`: backup directory for `apply`, `remove`, `status`, `doctor`, and `restore`, default `~/.stow-backups`
 
 ## Backup layout
@@ -127,6 +136,7 @@ Regular files replaced by `stow apply` are backed up under:
 ```
 
 Examples:
+
 - `~/.stow-backups/vim/_root_/home/alice/.vimrc-20260308_120000`
 - `~/.stow-backups/nvim/_root_/home/alice/.config/nvim/init.lua-20260308_120000`
 

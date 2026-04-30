@@ -10,19 +10,19 @@ In Nushell, pass flags after the subcommand they belong to. For example, use `vi
 
 ```bash
 # View the most recent log (shows all lines by default)
-~/.local/share/linux-config/nu/view-logs.nu show
+~/.linux-config/nu/view-logs.nu show
 
 # Show only errors/warnings/fatal messages
-~/.local/share/linux-config/nu/view-logs.nu show --pattern "(?i)error|fatal|warn"
+~/.linux-config/nu/view-logs.nu show --pattern "(?i)error|fatal|warn"
 
 # Interactively pick a log file (requires gum)
-~/.local/share/linux-config/nu/view-logs.nu show --pick-log
+~/.linux-config/nu/view-logs.nu show --pick-log
 
 # Text-based interactive selection
-~/.local/share/linux-config/nu/view-logs.nu show --select
+~/.linux-config/nu/view-logs.nu show --select
 
 # View a specific log by timestamp
-~/.local/share/linux-config/nu/view-logs.nu show --timestamp 03-03-012721
+~/.linux-config/nu/view-logs.nu show --timestamp 03-03-012721
 ```
 
 ## Filtering Options
@@ -33,10 +33,10 @@ Filter by log level. Valid levels: `all`, `info`, `error`, `warning`/`warn`, `de
 
 ```bash
 # Show only INFO lines
-~/.local/share/linux-config/nu/view-logs.nu show --level info
+~/.linux-config/nu/view-logs.nu show --level info
 
 # Combine with pattern
-~/.local/share/linux-config/nu/view-logs.nu show --level info --pattern "install"
+~/.linux-config/nu/view-logs.nu show --level info --pattern "install"
 ```
 
 ### Pattern Filter (`-p`, `--pattern`)
@@ -45,22 +45,22 @@ Filter lines by regex pattern. The default pattern is `.*` (show all lines).
 
 ```bash
 # Show only lines containing "install"
-~/.local/share/linux-config/nu/view-logs.nu show --pattern "install"
+~/.linux-config/nu/view-logs.nu show --pattern "install"
 
 # Show errors and warnings (case-insensitive)
-~/.local/share/linux-config/nu/view-logs.nu show --pattern "(?i)error|fatal|warn|unknown"
+~/.linux-config/nu/view-logs.nu show --pattern "(?i)error|fatal|warn|unknown"
 
 # Case-insensitive match
-~/.local/share/linux-config/nu/view-logs.nu show --pattern "(?i)ERROR|FAIL"
+~/.linux-config/nu/view-logs.nu show --pattern "(?i)ERROR|FAIL"
 ```
 
 ## Log Selection Options
 
-| Flag | Description |
-|------|-------------|
-| (none) | Show most recent log |
-| `-g`, `--pick-log` | Interactive picker using gum |
-| `-s`, `--select` | Text-based interactive selection |
+| Flag                        | Description                                |
+| --------------------------- | ------------------------------------------ |
+| (none)                      | Show most recent log                       |
+| `-g`, `--pick-log`          | Interactive picker using gum               |
+| `-s`, `--select`            | Text-based interactive selection           |
 | `-t`, `--timestamp <stamp>` | Select by timestamp (e.g., `03-03-012721`) |
 
 ## Cleaning Logs
@@ -68,7 +68,7 @@ Filter lines by regex pattern. The default pattern is `.*` (show all lines).
 Keep only the latest log and remove older ones:
 
 ```bash
-~/.local/share/linux-config/nu/view-logs.nu clean
+~/.linux-config/nu/view-logs.nu clean
 ```
 
 ## Environment Variables
@@ -79,23 +79,23 @@ Keep only the latest log and remove older ones:
 
 ```bash
 # View the most recent log (all lines)
-~/.local/share/linux-config/nu/view-logs.nu show
+~/.linux-config/nu/view-logs.nu show
 
 # View only errors/warnings
-~/.local/share/linux-config/nu/view-logs.nu show --pattern "(?i)error|warn|fatal"
+~/.linux-config/nu/view-logs.nu show --pattern "(?i)error|warn|fatal"
 
 # Pick a log interactively and show all lines
-~/.local/share/linux-config/nu/view-logs.nu show --pick-log
+~/.linux-config/nu/view-logs.nu show --pick-log
 
 # Show INFO lines matching "package" from a specific log
-~/.local/share/linux-config/nu/view-logs.nu show --timestamp 03-03-012721 --level info --pattern "package"
+~/.linux-config/nu/view-logs.nu show --timestamp 03-03-012721 --level info --pattern "package"
 
 # Use alternate log directory
-LINUX_CONFIG_LOG_DIR=/tmp/my-logs ~/.local/share/linux-config/nu/view-logs.nu show
+LINUX_CONFIG_LOG_DIR=/tmp/my-logs ~/.linux-config/nu/view-logs.nu show
 
 # Specify directory via flag
-~/.local/share/linux-config/nu/view-logs.nu show --dir /tmp/my-logs
+~/.linux-config/nu/view-logs.nu show --dir /tmp/my-logs
 
 # Clean logs in an alternate directory
-~/.local/share/linux-config/nu/view-logs.nu clean --dir /tmp/my-logs
+~/.linux-config/nu/view-logs.nu clean --dir /tmp/my-logs
 ```

@@ -4,14 +4,13 @@ Setup development workstation with [niri](https://mangowm.vercel.app) or [mangow
 
 Open terminal and execute the following command. This is an interactive script.
 
-
 ```bash
 bash -c "$(curl -sSL https://raw.githubusercontent.com/pervezfunctor/linux-config/refs/heads/main/setup)"
 ```
 
 ## Examples
 
-Once the repo has been bootstrapped to `~/.local/share/linux-config`, you can run the setup scripts directly.
+Once the repo has been bootstrapped to `~/.linux-config`, you can run the setup scripts directly.
 
 ```bash
 # Run the interactive shell setup
@@ -26,7 +25,7 @@ nu setup-desktop.nu
 If you don't like `Zed` editor, you could install either VS Code and/or Antigravity using brew. Use the following instructions.
 
 ```bash
-nu ~/.local/share/linux-config/nu/setup-shell.nu brew
+nu ~/.linux-config/nu/setup-shell.nu brew
 brew install --cask visual-studio-code-linux
 brew install --cask antigravity-linux
 ```

@@ -1,6 +1,6 @@
 use std/util 'path add'
 
-$env.DOT_DIR = $"($env.HOME)/.local/share/linux-config"
+$env.DOT_DIR = $"($env.HOME)/.linux-config"
 
 $env.EDITOR = ["code", "--wait"]
 $env.VISUAL = ["code", "--wait"]

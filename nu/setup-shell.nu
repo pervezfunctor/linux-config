@@ -18,7 +18,7 @@ def "main home-manager" [] {
   }
 
   log+ "Setting up home-manager"
-  let flake_path = ($env.HOME | path join ".local/share/linux-config/home-manager")
+  let flake_path = ($env.HOME | path join ".linux-config/home-manager")
   ^nix run home-manager -- switch --flake $"($flake_path)#($env.USER)" --impure -b backup
 }
 
@@ -176,7 +176,7 @@ def "main fish" [] {
 }
 
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
-const DOT_DIR = ($nu.home-dir | path join ".local/share/linux-config")
+const DOT_DIR = ($nu.home-dir | path join ".linux-config")
 
 def abort-rebase-if-needed [] {
   let rebase_merge = ($DOT_DIR | path join ".git" "rebase-merge")

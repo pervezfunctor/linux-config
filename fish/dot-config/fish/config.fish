@@ -5,9 +5,9 @@ if test -f ~/.fish_profile
   source ~/.fish_profile
 end
 
-set -gx DOT_DIR $HOME/.local/share/linux-config
+set -gx DOT_DIR $HOME/.linux-config
 set -gx VOLTA_HOME $HOME/.volta
-set -gx XDG_DATA_DIRS $HOME/.local/share/flatpak/exports/share $XDG_DATA_DIRS
+set -gx XDG_DATA_DIRS $HOME/.flatpak/exports/share $XDG_DATA_DIRS
 set -gx NPM_PACKAGES "$HOME/.npm-packages"
 set -gx MANPATH $NPM_PACKAGES/share/man $MANPATH
 

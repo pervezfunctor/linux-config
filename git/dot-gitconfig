@@ -1,0 +1,16 @@
+[init]
+	defaultBranch = main
+[core]
+	pager = less -R
+[diff]
+	tool = difftastic
+	colorMoved = default
+[difftool "difftastic"]
+	cmd = difft $LOCAL $REMOTE
+[difftool]
+	prompt = false
+	tool = difftastic
+[difftastic]
+	color = always
+	background = dark
+	display = side-by-side

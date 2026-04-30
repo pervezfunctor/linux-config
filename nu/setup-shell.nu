@@ -65,6 +65,7 @@ def "main pixi packages" [] {
     "bat"
     "bottom"
     "carapace"
+    "difftastic"
     "direnv"
     "difftastic"
     "duf"

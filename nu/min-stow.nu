@@ -11,7 +11,7 @@ def resolve-runtime-paths [
     target: ($target | or-else $env.HOME | path expand)
     source: (
         $source_dir
-        | or-else ($env.HOME | path join ".local" "share" "linux-config")
+        | or-else ($env.HOME | path join ".linux-config")
         | path expand
     )
     backup: (

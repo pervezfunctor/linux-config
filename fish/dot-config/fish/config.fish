@@ -21,7 +21,9 @@ fish_add_path --global --move \
     $HOME/.local/bin \
     $NPM_PACKAGES/bin \
     $VOLTA_HOME/bin \
-    $HOME/.opencode/bin
+    $HOME/.cargo/bin \
+    $HOME/.opencode/bin \
+    $HOME/.local/kitty.app/bin
 
 function has_cmd
     type -q $argv[1]
@@ -31,23 +33,8 @@ if has_cmd ~/.local/bin/mise
     ~/.local/bin/mise activate fish | source
 end
 
-if status is-interactive
-    if has_cmd zoxide
-        zoxide init fish | source
-    end
-
-    if has_cmd fzf
-        fzf --fish | source
-    end
-
-    if has_cmd starship
-        starship init fish | source
-    end
-
-    if has_cmd carapace
-        set -gx CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
-        carapace _carapace | source
-    end
+if ! status is-interactive
+  return
 end
 
 function kitty-theme
@@ -74,6 +61,7 @@ alias gfm 'git pull'
 alias gcm 'git commit -m'
 alias gia 'git add'
 alias gco 'git checkout'
+alias gh-refresh 'gh auth refresh -h github.com'
 function git-tree
     git status --short | awk '{print $2}' | tree --fromfile
 end
@@ -150,6 +138,42 @@ else if has_cmd rpm-ostree
     alias u 'sudo rpm-ostree update'
 end
 
+if has_cmd nix
+  alias hms 'nix run home-manager -- switch --flake ~/.fedora-config/home-manager#$USER --impure'
+  alias ngc 'nix-garbage-collect -d'
+  alias nr 'nix run nixpkgs#'
+  alias nds 'devenv shell'
+end
+
 # bun
 set --export BUN_INSTALL "$HOME/.bun"
 set --export PATH $BUN_INSTALL/bin $PATH
+
+if test -f ~/.fedora-config/fish/local.fish
+    source ~/.fedora-config/fish/local.fish
+end
+
+if test -f ~/.vite-plus/env.fish
+    source ~/.vite-plus/env.fish
+end
+
+if test -n "$FISH_SIMPLE"
+    return
+end
+
+if has_cmd zoxide
+    zoxide init fish | source
+end
+
+if has_cmd fzf
+    fzf --fish | source
+end
+
+if has_cmd starship
+    starship init fish | source
+end
+
+if has_cmd carapace
+    set -gx CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
+    carapace _carapace | source
+end

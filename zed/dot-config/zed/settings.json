@@ -9,7 +9,9 @@
   "auto_install_extensions": {
     "basher": true,
     "catppuccin": true,
-    "cmake": true,
+    "catppuccin-blur": true,
+    "catppuccin-icons": true,
+    "neocmake": true,
     "docker-compose": true,
     "dockerfile": true,
     "fish": true,

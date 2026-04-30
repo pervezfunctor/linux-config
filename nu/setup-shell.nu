@@ -76,7 +76,9 @@ def "main pixi packages" [] {
     "lazygit"
     "mask"
     "nushell"
+    "rclone"
     "ripgrep"
+    "rsync"
     "shellcheck"
     "tealdeer"
     "tectonic"
@@ -113,6 +115,12 @@ def "main rust" [] {
 
   log+ "Installing rustup..."
   (http get https://sh.rustup.rs) | ^sh
+}
+
+def "main vp" [] {
+  if (has-cmd vp) { return }
+  curl -fsSL https://vite.plus | bash
+  ~/.vite-plus/bin/vp install latest
 }
 
 def "main nushell config" [] {
@@ -467,17 +475,19 @@ def "main help" [] {
   print "  stow <package>   Stow a single package (example: nushell)"
   print ""
   print "  devtools         Install developer tools and global npm packages"
-  print "  mise             Install mise"
-  print "  uv               Install uv and pipx"
-  print "  node             Install Node.js with volta"
-  print "  bun              Install bun"
-  print "  npm pacakges     Install global npm packages"
   print "  claude           Install claude CLI"
   print ""
   print "  nvim             Install and configure AstroNvim"
   print "  nvim install     Install Neovim only"
   print "  nvim astro       Configure AstroNvim only"
   print "  rust             Install rustup"
+  print "  vp               Install Vite Plus"
+  print "  uv               Install uv and pipx"
+  print "  node             Install Node.js with volta"
+  print "  bun              Install bun"
+  print "  mise             Install mise"
+  print "  npm pacakges     Install global npm packages"
+
   print ""
   print "Supported Systems:"
   print "  - Fedora (standard and atomic)"

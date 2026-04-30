@@ -445,3 +445,27 @@ export def pixi-install [] {
   log+ "Installing pixi..."
   sh -c (http get https://pixi.sh/install.sh)
 }
+
+export def is-shell-default [shell_path: string] {
+  open /etc/passwd
+  | lines
+  | parse "{user}:{rest}"
+  | where user == $env.USER
+  | first
+  | get rest
+  | str ends-with $shell_path
+}
+
+def gum-select-install [options: list<string>, default_installs: list<string> = []] {
+  if not (has-cmd gum) {
+    die "gum is required for interactive selection"
+  }
+  let defaults = ($default_installs | str join ",")
+
+  options
+  | str join "\n"
+  | ^gum choose --no-limit --selected $defaults
+  | lines
+  | each {|cmd| run-command ($cmd | str trim) }
+  | ignore
+}

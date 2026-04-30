@@ -98,6 +98,71 @@ def wm-install [] {
   # xdg-mime default org.gnome.Loupe.desktop image/webp
 }
 
+def "main kitty latest" [] {
+  curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
+}
+
+def "main wallpapers" [] {
+  if not (has-cmd brew) {
+    brew-install
+  }
+  brew install --cask bazzite-wallpapers
+}
+
+def "main wallpapers ml4w" [] {
+  log info "Installing ML4W wallpapers"
+  mkdir ~/.local/share/backgrounds/ml4w
+  git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git ~/.local/share/backgrounds/ml4w
+}
+
+def "main greetd keyring fix" [] {
+  let pam_file = "/etc/pam.d/greetd"
+
+  if not ($pam_file | path exists) {
+      error make { msg: $"PAM file not found: ($pam_file)" }
+  }
+
+  let lines = (open $pam_file | lines)
+
+  let new_lines = ($lines | each {|l|
+      if ($l | str contains "pam_gnome_keyring.so") {
+          $l | str replace --regex '^\s*-' ''
+      } else {
+          $l
+      }
+  })
+
+  if $lines == $new_lines {
+      print "No changes needed."
+      exit
+  }
+
+  let backup = $"($pam_file).bak"
+
+  cp $pam_file $backup
+
+  $new_lines
+  | str join (char nl)
+  | save --force $pam_file
+
+  print $"Updated ($pam_file)"
+  print $"Backup written to ($backup)"
+}
+
+def "main greetd" [] {
+  if not (has-cmd dms) {
+      log error "dms is not installed. Cannot setup greetd."
+      return
+  }
+
+  log info "Installing greeter"
+  si ["dms-greeter"]
+  dms greeter enable
+  dms greeter sync
+
+  main greetd keyring fix
+}
+
 def "main niri install" [] {
   wm-install
 

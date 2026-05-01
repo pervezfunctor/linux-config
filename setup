@@ -2,18 +2,22 @@
 
 set -euo pipefail
 
+readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
+readonly DOT_DIR="$HOME/.local/share/linux-config"
+readonly LOG_FILE="${HOME}/.linux-config-setup.log"
+
 has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
 log() {
-  printf "\033[36mINFO:\033[0m %s\n" "$*"
-  sleep 1
+  printf "INFO: %s\n" "$*"
+  printf "INFO: %s\n" "$*" >>"${LOG_FILE}"
 }
 
 die() {
-  printf "\033[31mERROR:\033[0m %s\n" "$*" >&2
-  sleep 1
+  printf "ERROR: %s\n" "$*" >&2
+  printf "ERROR: %s\n" "$*" >>"${LOG_FILE}"
   exit 1
 }
 
@@ -60,8 +64,6 @@ si() {
 }
 
 dotfiles_clone() {
-  has_cmd git || si git || die "Failed to install git"
-
   [ -d "$DOT_DIR" ] || {
     echo "Cloning dotfiles to $DOT_DIR."
     git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
@@ -93,16 +95,22 @@ pixi_packages_install() {
   has_cmd nu || die "Failed to install nushell"
 }
 
+init_logs() {
+  rm -f "${LOG_FILE}"
+  touch "${LOG_FILE}"
+}
+
 main() {
   export PATH="$HOME/.pixi/bin:$PATH"
+  init_logs
 
   system_update
+  has_cmd git || si git || die "Failed to install git"
   dotfiles_clone
 
   pixi_packages_install
 
-  mkdir -p "$HOME/.linux-config-logs"
-  nu "$DOT_DIR/nu/setup-shell.nu" fish
+  "$DOT_DIR/nu/setup-shell.nu" fish 2>&1 | tee -a "${LOG_FILE}"
 }
 
 main "$@"

@@ -17,6 +17,10 @@ def "main home-manager" [] {
     main nix
   }
 
+  if not (has-cmd nix) {
+    error+ "Failed to install nix. Not installing home-manager"
+  }
+
   log+ "Setting up home-manager"
   let flake_path = ($env.HOME | path join ".linux-config/home-manager")
   ^nix run home-manager -- switch --flake $"($flake_path)#($env.USER)" --impure -b backup
@@ -62,6 +66,7 @@ def "main pixi packages" [] {
     "bottom"
     "carapace"
     "direnv"
+    "difftastic"
     "duf"
     "eza"
     "fd"
@@ -92,9 +97,18 @@ def "main pixi packages" [] {
 
   ^pixi global install ...$pixi_pkgs
 
-  if not (has-cmd tmux) { ^pixi global install tmux }
+  if not (has-cmd tmux) {
+    ^pixi global install tmux
+  }
 
   do -i { ^tldr --update }
+  ignore-error {||
+    if (^gh auth setup-git) {
+      log+ "Make sure to setup github authentication with: `gh auth login`"
+    else
+      log+ "Failed to setup github credentials: Use `gh auth login` followed by `gh auth setup-git` to fix this"
+    fi
+  }
 }
 
 def "main pixi" [] {
@@ -118,13 +132,17 @@ def "main rust" [] {
 }
 
 def "main vp" [] {
-  if (has-cmd vp) { return }
+  if (has-cmd vp) {
+    log+ "vp already installed"
+    return
+  }
+
+  log+ "Installing vite plus..."
   curl -fsSL https://vite.plus | bash
   ~/.vite-plus/bin/vp install latest
 }
 
 def "main nushell config" [] {
-  let nu_path = (which nu | get path.0? | default "/usr/bin/nu")
   stow-package "nushell"
 }
 
@@ -140,20 +158,19 @@ def "main nvim install" [] {
 
 def "main nvim astro" [] {
   let nvim = $env.HOME | path join ".config/nvim"
-  let nvim_share = $env.HOME | path join ".local/share/nvim"
-  let nvim_state = $env.HOME | path join ".local/state/nvim"
-  let nvim_cache = $env.HOME | path join ".cache/nvim"
+  let dirs = [
+    $nvim,
+    ...([".local/share/nvim", ".local/state/nvim", ".cache/nvim"] | each {|d| $env.HOME | path join $d })
+  ]
 
   if ($nvim | path exists) and not (prompt-yn "Found existing nvim config. Replace with AstroNvim?") {
     return
   }
 
   log+ "Configuring AstroNvim..."
-  for dir in [$nvim, $nvim_share, $nvim_state, $nvim_cache] {
+  for dir in $dirs {
     if not ($dir | path exists) { continue }
-    let bak = $"($dir).bak"
-    ignore-error {|| ^trash $bak }
-    ignore-error {|| ^mv $dir $bak }
+    ignore-error {|| ^trash $dir }
   }
 
   ^git clone --depth 1 https://github.com/AstroNvim/template $nvim
@@ -195,23 +212,25 @@ def abort-rebase-if-needed [] {
   }
 }
 
-def dotfiles-clone [] {
-  log+ "Cloning dotfiles"
-  ^git clone $DOTFILES_URL $DOT_DIR
-}
-
 def "main shell default" [shell: string] {
-  log+ $"Setting ($shell) as default shell"
   let shell_path = (which $shell | get 0.path)
+
   if not (open /etc/shells | lines | any {|l| $l == $shell_path }) {
+    log+ $"Adding ($shell) to /etc/shells"
     $shell_path | sudo tee -a /etc/shells
   }
+
   if not (is-shell-default $shell_path) {
-    do -i { chsh -s $shell_path $env.USER }
+    log+ $"Setting ($shell) as default shell"
+    ignore-error {|| chsh -s $shell_path $env.USER }
   }
 }
 
 def "main shell autostart" [shell: string, rc: string] {
+  log+ $"Setting ($shell) auto-start in ($rc)"
+
+  warn+ "This might break certain software, that don't correctly invoke shells as non-interactive."
+
   let rc_path = ($env.HOME | path join $rc)
   let marker = $"exec ($shell)"
   let launched_var = $"(($shell | str upcase))_LAUNCHED"
@@ -238,8 +257,7 @@ fi
 }
 
 def dotfiles-validate [] {
-  ^git -C $DOT_DIR rev-parse --is-inside-work-tree
-    | ignore
+  ^git -C $DOT_DIR rev-parse --is-inside-work-tree | ignore
   let remote_url = (
     ^git -C $DOT_DIR remote get-url origin | str trim
   )
@@ -306,7 +324,8 @@ def dotfiles-pull-dirty [] {
 def "main dotfiles clone" [] {
   let git_dir = ($DOT_DIR | path join ".git")
   if not ($git_dir | path exists) {
-    dotfiles-clone
+    log+ "Cloning dotfiles"
+    ^git clone $DOTFILES_URL $DOT_DIR
     return
   }
 
@@ -338,7 +357,7 @@ def "main bun" [] {
   curl -fsSL https://bun.com/install | bash
 }
 
-def "main node" [] {
+def "main volta" [] {
   if not (has-cmd volta) {
     log+ "Installing volta..."
     (http get https://get.volta.sh) | ^bash
@@ -392,8 +411,8 @@ def "main npm pacakges" [] {
     "@google/gemini-cli"
     "@mermaid-js/mermaid-cli"
     "opencode-ai"
-    @openai/codex
-    "typescript"
+    "@openai/codex"
+    "@augmentcode/auggie"
   ]
 
   log+ "Installing npm packages"
@@ -406,9 +425,37 @@ def "main devtools" [] {
   main mise
   main uv
   main claude
-  main node
+  main vp
   main bun
   main npm pacakges
+}
+
+def "main cpp" [] {
+  mut pkgs = [
+    "clang"
+    "cmake"
+    "entr"
+    "gcc"
+    "make"
+    "pkg-config"
+  ]
+
+  if (is-arch) or (is-tw) {
+    $pkgs ++= ["ninja"]
+  } else {
+    $pkgs ++= ["ninja-build"]
+  }
+
+  if (is-fedora) or (is-resolute) {
+    $pkgs ++= ["clang-tools-extra"]
+  } else {
+    $pkgs ++= ["clang-tools"]
+  }
+
+  log+ "Installing cpp packages"
+  for pkg in $pkgs {
+    ^sudo apt-get install -y $pkg
+  }
 }
 
 def "main setup-shell" [] {
@@ -438,6 +485,12 @@ def "main setup-shell" [] {
   if not (is-fedora-atomic) {
     $items = $items ++ [
       { description: "Install home-manager", handler: { main home-manager } }
+    ]
+  }
+
+  if (is-arch) or (is-tw) {
+    $items = $items ++ [
+      { description: "Install C++ toolchain", handler: { main cpp } }
     ]
   }
 

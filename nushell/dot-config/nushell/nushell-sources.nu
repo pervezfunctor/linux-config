@@ -5,6 +5,7 @@ def main [--verbose (-v)] {
         "~/.config/nushell/work.nu"
         "~/.config/nushell/personal.nu"
         "~/.config/nushell/secrets.nu"
+        "~/.vite-plus/env.nu"
     ]
 
     let tools = [

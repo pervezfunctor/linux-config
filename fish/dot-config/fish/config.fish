@@ -153,6 +153,17 @@ if test -f ~/.fedora-config/fish/local.fish
     source ~/.fedora-config/fish/local.fish
 end
 
+function docker-purge
+    docker system prune -a --volumes
+end
+
+function docker-fresh
+    docker stop (docker ps -aq) 2>/dev/null
+    docker rm (docker ps -aq) 2>/dev/null
+    docker rmi (docker images -q) 2>/dev/null
+    echo "All Docker containers and images removed."
+end
+
 if test -f ~/.vite-plus/env.fish
     source ~/.vite-plus/env.fish
 end

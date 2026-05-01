@@ -69,10 +69,7 @@ export def raise-error [msg: string, path: string = ""] {
     } else {
         error make {
             msg: $msg
-            label: {
-                text: $path
-                span: (metadata $path).span
-            }
+            label: { text: $path, span: (metadata $path).span }
         }
     }
 }
@@ -291,10 +288,9 @@ export def brew-install [] {
     path add "/opt/homebrew/bin"
   } else {
     path add "/home/linuxbrew/.linuxbrew/bin"
+    ^brew tap ublue-os/tap
+    ^brew install topgrade
   }
-
-  ^brew tap ublue-os/tap
-  ^brew install topgrade
 }
 
 export def paru-install [] {

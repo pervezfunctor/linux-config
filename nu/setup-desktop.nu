@@ -40,6 +40,8 @@ def wm-install [] {
       "gvfs-fuse"
       "gvfs-smb"
       "libsecret"
+      "kf6-kimageformats"
+      "tuned"
       # "power-profiles-daemon"
     ]
   }
@@ -301,7 +303,7 @@ def "main fonts" [] {
     return
   }
 
-  ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome
+  ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
 }
 
 def "main zed" [] {

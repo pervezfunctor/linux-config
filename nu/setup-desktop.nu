@@ -12,7 +12,6 @@ def wm-install [] {
     "mpv"
     "nautilus"
     "pipewire"
-    "pipewire-pulse"
     "qt5ct"
     "qt6ct"
     "slurp"
@@ -31,6 +30,7 @@ def wm-install [] {
       "gvfs-backends"
       "gvfs-fuse"
       "libsecret-tools"
+      "pipewire-pulse"
     ]
   }
   if (is-fedora) {
@@ -42,6 +42,7 @@ def wm-install [] {
       "libsecret"
       "kf6-kimageformats"
       "tuned"
+      "pipewire-pulseaudio"
       # "power-profiles-daemon"
     ]
   }

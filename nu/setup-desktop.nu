@@ -194,7 +194,7 @@ def "main niri install" [] {
     ^sudo apt update
     si ["niri" "dms"]
   } else if (is-tw) {
-    let repo_url = "https://download.opensuse.org/repositories/home:AvengeMedia:danklinux/openSUSE_Tumbleweed/home:AvengeMedia:danklinux.repo"
+    let repo_url = " https://download.opensuse.org/repositories/home:AvengeMedia:danklinux/openSUSE_Tumbleweed/home:AvengeMedia:danklinux.repo"
     let repo_alias = "home:AvengeMedia:danklinux"
     tw-add-repo $repo_url $repo_alias
 

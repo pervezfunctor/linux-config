@@ -15,6 +15,7 @@ set -gx MANPATH $NPM_PACKAGES/share/man $MANPATH
 fish_add_path --global --move \
     /home/linuxbrew/.linuxbrew/bin \
     $HOME/.local/share/flatpak/exports/bin \
+    $DOT_DIR \
     $DOT_DIR/nu \
     $HOME/.pixi/bin \
     $HOME/bin \

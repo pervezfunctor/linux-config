@@ -166,6 +166,13 @@ def "main greetd" [] {
   main greetd keyring fix
 }
 
+def tw-add-repo [repo_url: string, repo_alias: string] {
+  if not (zypper lr -a | lines | any {|l| $l | str contains $repo_alias }) {
+    ^sudo zypper addrepo $repo_url $repo_alias
+    ^sudo zypper refresh
+  }
+}
+
 def "main niri install" [] {
   wm-install
 
@@ -189,17 +196,11 @@ def "main niri install" [] {
   } else if (is-tw) {
     let repo_url = "https://download.opensuse.org/repositories/home:AvengeMedia:danklinux/openSUSE_Tumbleweed/home:AvengeMedia:danklinux.repo"
     let repo_alias = "home:AvengeMedia:danklinux"
-    if not (zypper lr -a | grep -q "$repo_alias") {
-      ^sudo zypper addrepo $repo_url $repo_alias
-      ^sudo zypper refresh
-    }
+    tw-add-repo $repo_url $repo_alias
 
     let repo_url = "https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo"
     let repo_alias = "home:AvengeMedia:dms"
-    if not (zypper lr -a | grep -q "$repo_alias") {
-      ^sudo zypper addrepo $repo_url $repo_alias
-      ^sudo zypper refresh
-    }
+    tw-add-repo $repo_url $repo_alias
 
     si ["niri" "dms"]
   } else if (is-arch) {

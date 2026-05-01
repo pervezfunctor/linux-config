@@ -1,6 +1,7 @@
 #!/usr/bin/env nu
 
 use ./lib.nu *
+use std/util "path add"
 
 def "main nix" [] {
   if (has-cmd nix) {
@@ -10,6 +11,8 @@ def "main nix" [] {
 
   log+ "Installing nix..."
   http get https://install.determinate.systems/nix | ^sh -s -- install --determinate --no-confirm
+
+  path add "/nix/var/nix/profiles/default/bin"
 }
 
 def "main home-manager" [] {

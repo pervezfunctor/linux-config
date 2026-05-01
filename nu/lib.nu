@@ -282,17 +282,27 @@ export def update-packages []: nothing -> nothing {
 }
 
 export def brew-install [] {
-  if (has-cmd brew) { return }
+  let brew_path = "/home/linuxbrew/.linuxbrew/bin"
+  let brew_bin = $"($brew_path)/brew"
+
+  # if (has-cmd $brew_bin) {
+  #     return
+  # }
   log+ "Installing brew"
-  ^sudo -v
-  http get "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" | ^bash
-  if (is-mac) {
-    path add "/opt/homebrew/bin"
-  } else {
-    path add "/home/linuxbrew/.linuxbrew/bin"
-    ^brew tap ublue-os/tap
-    ^brew install topgrade
+
+  ignore-error {||
+    ^sudo -v
+    ^bash -c (http get https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | into string)
+    path add $brew_path
   }
+
+  if not (has-cmd $brew_bin) {
+      error+ "brew could not be installed"
+      return
+  }
+
+  ^brew tap ublue-os/tap
+  ^brew install topgrade
 }
 
 export def paru-install [] {

@@ -111,8 +111,6 @@ fresh_install() {
   pixi_packages_install
 
   "$DOT_DIR/nu/setup-shell.nu" fish 2>&1 | tee -a "${LOG_FILE}"
-
-  brew_install
 }
 
 help() {

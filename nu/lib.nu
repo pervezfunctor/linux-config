@@ -283,6 +283,7 @@ export def update-packages []: nothing -> nothing {
 export def brew-install [] {
   if (has-cmd brew) { return }
   log+ "Installing brew"
+  ^sudo -v
   http get "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" | bash
   if (is-mac) {
     path add "/opt/homebrew/bin"

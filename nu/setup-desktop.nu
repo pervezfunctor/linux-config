@@ -167,10 +167,10 @@ def "main greetd" [] {
 }
 
 def tw-add-repo [repo_url: string, repo_alias: string] {
-  # if not (zypper lr -a | lines | any {|l| $l | str contains $repo_alias }) {
-  ^sudo zypper addrepo $repo_url $repo_alias
-  ^sudo zypper refresh
-  # }
+  if not (zypper lr -a | lines | any {|l| $l | str contains $repo_alias }) {
+    ^sudo zypper addrepo $repo_url
+    ^sudo zypper refresh
+  }
 }
 
 def "main niri install" [] {
@@ -194,13 +194,8 @@ def "main niri install" [] {
     ^sudo apt update
     si ["niri" "dms"]
   } else if (is-tw) {
-    let repo_url = " https://download.opensuse.org/repositories/home:AvengeMedia:danklinux/openSUSE_Tumbleweed/home:AvengeMedia:danklinux.repo"
-    let repo_alias = "home:AvengeMedia:danklinux"
-    tw-add-repo $repo_url $repo_alias
-
-    let repo_url = "https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo"
-    let repo_alias = "home:AvengeMedia:dms"
-    tw-add-repo $repo_url $repo_alias
+    tw-add-repo "https://download.opensuse.org/repositories/home:AvengeMedia:danklinux/openSUSE_Tumbleweed/home:AvengeMedia:danklinux.repo" "home:AvengeMedia:danklinux"
+    tw-add-repo "https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo" "home:AvengeMedia:dms"
 
     si ["niri" "dms"]
   } else if (is-arch) {

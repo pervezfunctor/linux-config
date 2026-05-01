@@ -158,7 +158,7 @@ def "main greetd" [] {
       return
   }
 
-  log info "Installing greeter"
+  log+ "Installing greeter"
   si ["dms-greeter"]
   dms greeter enable
   dms greeter sync

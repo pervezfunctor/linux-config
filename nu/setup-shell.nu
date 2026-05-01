@@ -102,12 +102,13 @@ def "main pixi packages" [] {
   }
 
   do -i { ^tldr --update }
+
   ignore-error {||
     if (^gh auth setup-git) {
       log+ "Make sure to setup github authentication with: `gh auth login`"
-    else
+    } else {
       log+ "Failed to setup github credentials: Use `gh auth login` followed by `gh auth setup-git` to fix this"
-    fi
+    }
   }
 }
 
@@ -553,7 +554,9 @@ def "main help" [] {
 
 def main [] {
   let job_id = keep-sudo-alive
+
   bootstrap
   main setup-shell
+
   stop-sudo-alive $job_id
 }

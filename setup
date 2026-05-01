@@ -3,7 +3,7 @@
 set -euo pipefail
 
 readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
-readonly DOT_DIR="$HOME/.local/share/linux-config"
+readonly DOT_DIR="$HOME/.linux-config"
 readonly LOG_FILE="${HOME}/.linux-config-setup.log"
 
 has_cmd() {
@@ -20,9 +20,6 @@ die() {
   printf "ERROR: %s\n" "$*" >>"${LOG_FILE}"
   exit 1
 }
-
-readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
-readonly DOT_DIR="$HOME/.linux-config"
 
 system_update() {
   log "Updating system packages"

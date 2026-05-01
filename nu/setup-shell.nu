@@ -455,9 +455,7 @@ def "main cpp" [] {
   }
 
   log+ "Installing cpp packages"
-  for pkg in $pkgs {
-    ^sudo apt-get install -y $pkg
-  }
+  si $pkgs
 }
 
 def "main setup-shell" [] {

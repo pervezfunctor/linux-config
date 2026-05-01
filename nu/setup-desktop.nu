@@ -187,8 +187,20 @@ def "main niri install" [] {
     ^sudo apt update
     si ["niri" "dms"]
   } else if (is-tw) {
-    ^sudo zypper addrepo https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo
-    ^sudo zypper refresh
+    let repo_url = "https://download.opensuse.org/repositories/home:AvengeMedia:danklinux/openSUSE_Tumbleweed/home:AvengeMedia:danklinux.repo"
+    let repo_alias = "home:AvengeMedia:danklinux"
+    if not (zypper lr -a | grep -q "$repo_alias") {
+      ^sudo zypper addrepo $repo_url $repo_alias
+      ^sudo zypper refresh
+    }
+
+    let repo_url = "https://download.opensuse.org/repositories/home:/AvengeMedia:/dms/openSUSE_Tumbleweed/home:AvengeMedia:dms.repo"
+    let repo_alias = "home:AvengeMedia:dms"
+    if not (zypper lr -a | grep -q "$repo_alias") {
+      ^sudo zypper addrepo $repo_url $repo_alias
+      ^sudo zypper refresh
+    }
+
     si ["niri" "dms"]
   } else if (is-arch) {
     si ["niri" "dms-shell"]

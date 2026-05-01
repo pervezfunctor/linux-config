@@ -119,8 +119,8 @@ def "main pixi" [] {
 }
 
 def "main shell" [] {
-  main pixi
   main brew
+  main pixi
 }
 
 def "main rust" [] {

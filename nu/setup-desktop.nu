@@ -178,6 +178,7 @@ def "main niri install" [] {
     ^pikman install pika-niri-desktop-minimal pika-niri-settings dms kimageformat-plugins cups-pk-helper
   } else if (is-fedora) {
     ^sudo dnf copr enable avengemedia/dms
+    # ^sudo dnf copr enable -y yalter/niri
     si ["niri" "dms" "cliphist"]
   } else if (is-resolute) {
     ^sudo add-apt-repository ppa:avengemedia/danklinux

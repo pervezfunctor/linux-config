@@ -10,6 +10,7 @@ export-env {
 
 export def init-log-file [] {
     mkdir ($env.LOG_FILE | path dirname)
+    touch $env.LOG_FILE
 }
 
 def log-to-file [level: string, msg: string] {
@@ -284,7 +285,7 @@ export def brew-install [] {
   if (has-cmd brew) { return }
   log+ "Installing brew"
   ^sudo -v
-  http get "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" | bash
+  http get "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" | ^bash
   if (is-mac) {
     path add "/opt/homebrew/bin"
   } else {

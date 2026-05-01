@@ -97,10 +97,7 @@ init_logs() {
   touch "${LOG_FILE}"
 }
 
-main() {
-  export PATH="$HOME/.pixi/bin:$PATH"
-  init_logs
-
+fresh_install() {
   system_update
   has_cmd git || si git || die "Failed to install git"
   dotfiles_clone
@@ -108,6 +105,26 @@ main() {
   pixi_packages_install
 
   "$DOT_DIR/nu/setup-shell.nu" fish 2>&1 | tee -a "${LOG_FILE}"
+}
+
+main() {
+  export PATH="$HOME/.pixi/bin:$PATH"
+  init_logs
+
+  if [ $# -eq 0 ] || [ "$1" = "fresh" ]; then
+    fresh_install
+    return 0
+  fi
+
+  local opt="$1"
+  shift
+  if [ "$opt" = "shell" ]; then
+    "$DOT_DIR/nu/setup-shell.nu" "$@" 2>&1 | tee -a "${LOG_FILE}"
+  elif [ "$opt" = "desktop" ]; then
+    "$DOT_DIR/nu/setup-desktop.nu" "$@" 2>&1 | tee -a "${LOG_FILE}"
+  else
+    die "Unknown option: $opt"
+  fi
 }
 
 main "$@"

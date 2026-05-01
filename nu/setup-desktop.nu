@@ -167,10 +167,10 @@ def "main greetd" [] {
 }
 
 def tw-add-repo [repo_url: string, repo_alias: string] {
-  if not (zypper lr -a | lines | any {|l| $l | str contains $repo_alias }) {
-    ^sudo zypper addrepo $repo_url $repo_alias
-    ^sudo zypper refresh
-  }
+  # if not (zypper lr -a | lines | any {|l| $l | str contains $repo_alias }) {
+  ^sudo zypper addrepo $repo_url $repo_alias
+  ^sudo zypper refresh
+  # }
 }
 
 def "main niri install" [] {

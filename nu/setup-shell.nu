@@ -3,6 +3,22 @@
 use ./lib.nu *
 use std/util "path add"
 
+
+def "main docker" [] {
+  if not (is-fedora) {
+    error+ "Docker install is currently only supported on Fedora"
+    return
+  }
+
+  if not (has-cmd docker) {
+    sudo dnf install -y docker docker-compose
+    sudo systemctl enable --now docker.socket
+  }
+
+  sudo usermod -aG docker $env.USER
+  pixi global install lazydocker
+}
+
 def "main nix" [] {
   if (has-cmd nix) {
     log+ "nix is already installed"

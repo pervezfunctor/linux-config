@@ -2,6 +2,25 @@
 
 use ./lib.nu *
 
+def "main wallpapers" [] {
+  if not (has-cmd brew) {
+    brew-install
+  }
+
+  brew install --cask bazzite-wallpapers aurora-wallpapers
+}
+
+def "main wallpapers ml4w" [] {
+  if (dir-exists ~/.local/share/backgrounds/ml4w) {
+    log info "ML4W wallpapers already installed"
+    return
+  }
+
+  log info "Installing ML4W wallpapers"
+  mkdir ~/.local/share/backgrounds/ml4w
+  git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git ~/.local/share/backgrounds/ml4w
+}
+
 def wm-install [] {
   mut pkgs = [
     "grim"

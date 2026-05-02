@@ -163,6 +163,7 @@ def "main vp" [] {
   log+ "Installing vite plus..."
   curl -fsSL https://vite.plus | bash
   ~/.vite-plus/bin/vp env install latest
+  ~/.vite-plus/bin/vp install -g pnpm
 }
 
 def "main nushell config" [] {
@@ -424,7 +425,7 @@ def "main claude" [] {
   (http get https://claude.ai/install.sh) | ^bash
 }
 
-def "main npm pacakges" [] {
+def "main ai cli" [] {
   if not (has-cmd npm) {
     error+ "npm not installed. Use 'setup-shell.nu vp' to install."
     return
@@ -450,7 +451,7 @@ def "main devtools" [] {
   main claude
   main vp
   main bun
-  main npm pacakges
+  main ai cli
 }
 
 def "main cpp" [] {
@@ -560,7 +561,7 @@ def "main help" [] {
   print "  node             Install Node.js with volta"
   print "  bun              Install bun"
   print "  mise             Install mise"
-  print "  npm pacakges     Install global npm packages"
+  print "  ai cli           Install global npm packages"
 
   print ""
   print "Supported Systems:"

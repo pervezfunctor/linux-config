@@ -122,7 +122,9 @@ def "main pixi packages" [] {
   }
 
   do -i { ^tldr --update }
+}
 
+def "main git credentials" [] {
   ignore-error {||
     if (^gh auth setup-git) {
       log+ "Make sure to setup github authentication with: `gh auth login`"

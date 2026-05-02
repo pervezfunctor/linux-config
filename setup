@@ -15,6 +15,11 @@ log() {
   printf "INFO: %s\n" "$*" >>"${LOG_FILE}"
 }
 
+warn() {
+  printf "WARN: %s\n" "$*" >&2
+  printf "WARN: %s\n" "$*" >>"${LOG_FILE}"
+}
+
 die() {
   printf "ERROR: %s\n" "$*" >&2
   printf "ERROR: %s\n" "$*" >>"${LOG_FILE}"
@@ -48,7 +53,7 @@ si() {
   if has_cmd dnf; then
     sudo dnf install -y "$@"
   elif has_cmd zypper; then
-    sudo zypper install --non-interactive --auto-agree-with-licenses "$@"
+    sudo zypper --non-interactive install --auto-agree-with-licenses "$@"
   elif has_cmd pacman; then
     sudo pacman -S --noconfirm "$@"
   elif has_cmd apt; then
@@ -61,25 +66,29 @@ si() {
 }
 
 dotfiles_clone() {
-  [ -d "$DOT_DIR" ] || {
-    echo "Cloning dotfiles to $DOT_DIR."
+  if [ ! -d "$DOT_DIR" ]; then
+    log "Cloning dotfiles to $DOT_DIR."
     git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
     return
-  }
+  else
+    log "$DOT_DIR already exists."
+  fi
 
-  [ -z "$(git -C "$DOT_DIR" status --porcelain)" ] && {
-    echo "Dotfiles repo clean. Pulling latest changes"
+  if [ -z "$(git -C "$DOT_DIR" status --porcelain)" ]; then
+    log "Dotfiles repo clean. Pulling latest changes"
     git -C "$DOT_DIR" pull --rebase || {
-      echo "Rebase failed. Aborting."
+      warn "Rebase failed. Aborting."
       git -C "$DOT_DIR" rebase --abort || die "Failed to abort rebase"
     }
-  }
+  else
+    warn "$DOT_DIR not clean. Not pulling in changes."
+  fi
 }
 
 pixi_install() {
   has_cmd pixi && return 0
 
-  echo "Installing pixi..."
+  log "Installing pixi..."
   curl -fsSL https://pixi.sh/install.sh | sh
   has_cmd pixi || die "Failed to install pixi"
 }
@@ -87,7 +96,7 @@ pixi_install() {
 pixi_packages_install() {
   pixi_install
 
-  echo "Installing pixi packages..."
+  log "Installing pixi packages..."
   pixi global install nushell go-gum trash-cli starship gh
   has_cmd nu || die "Failed to install nushell"
 }
@@ -110,6 +119,7 @@ fresh_install() {
 
   pixi_packages_install
 
+  mkdir -p ~/.linux-config-logs 2>/dev/null || true
   "$DOT_DIR/nu/setup-shell.nu" fish 2>&1 | tee -a "${LOG_FILE}"
 }
 

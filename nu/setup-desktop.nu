@@ -319,7 +319,9 @@ def "main fonts" [] {
     return
   }
 
-  ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
+  ignore-error {||
+    ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
+  }
 }
 
 def "main zed" [] {

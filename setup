@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -Eeuo pipefail
+trap 'echo "Error at line $LINENO: $BASH_COMMAND"' ERR
 
 readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
 readonly DOT_DIR="$HOME/.linux-config"

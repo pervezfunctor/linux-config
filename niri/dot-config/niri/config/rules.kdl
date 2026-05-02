@@ -1,16 +1,19 @@
-layer-rule {
-    match namespace="^quickshell$"
-    place-within-backdrop true
+window-rule {
+    geometry-corner-radius 20
+    clip-to-geometry true
+}
+
+// Open DMS windows as floating by default
+window-rule {
+    match app-id=r#"org.quickshell$"#
+    open-floating true
 }
 
 layer-rule {
-    match namespace="dms:blurwallpaper"
-    place-within-backdrop true
-}
-
-layer-rule {
-    match namespace="^swww-daemon$"
-    place-within-backdrop true
+  match namespace="^quickshell$"
+  match namespace="dms:blurwallpaper"
+  match namespace="^awww-daemon$"
+  place-within-backdrop true
 }
 
 window-rule {
@@ -21,6 +24,16 @@ window-rule {
 }
 
 window-rule {
+    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
+    default-floating-position x=10 y=10 relative-to="bottom-right"
+}
+
+window-rule {
+    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
+    default-floating-position x=10 y=10 relative-to="bottom-right"
+}
+
+window-rule {
     match is-active=false
     opacity 0.99
 }
@@ -28,14 +41,7 @@ window-rule {
 window-rule {
     match app-id="^kitty$"
 
-    background-effect {
-        blur true
-    }
-}
-
-window-rule {
-    match app-id="^kitty$"
-
+    default-column-width { proportion 0.333; }
     background-effect {
         blur true
     }
@@ -66,26 +72,31 @@ window-rule {
 }
 
 window-rule {
-    match app-id="^(kitty.*)$"
-    default-column-width { proportion 0.333; }
-}
-
-window-rule {
     match app-id="^(virt-manager.*)$"
     open-floating true
 }
 
 window-rule {
-    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
-    default-floating-position x=10 y=10 relative-to="bottom-right"
+    match app-id="^(app.zen_browser.zen)$"
+    background-effect {
+        blur true
+    }
 }
 
 window-rule {
-    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
-    default-floating-position x=10 y=10 relative-to="bottom-right"
+    match app-id="^(dev.zed.Zed)$"
+    default-column-width { proportion 0.6667; }
+    background-effect {
+        blur true
+    }
 }
 
 window-rule {
-    geometry-corner-radius 20
-    clip-to-geometry true
+  match app-id="scratch-terminal"
+  match app-id="quick-access-terminal"
+  open-floating true
+  open-maximized false
+  open-fullscreen false
+  default-column-width { proportion 0.35; }
+  default-window-height { proportion 0.20;}
 }

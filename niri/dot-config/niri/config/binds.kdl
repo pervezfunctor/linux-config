@@ -141,7 +141,7 @@ binds {
     Mod+Shift+Return {
         spawn-sh "FISH_SIMPLE=1 kitty --class scratch-terminal";
     }
-    Mod+Ctrl+Shift+Space {
-        spawn-sh "niri msg action focus-workspace 2 && ~/.linux-config/scripts/kitty-ai.nu";
+    Mod+Ctrl+Shift+Return {
+        spawn-sh "niri msg action focus-workspace 2 && ~/.linux-config/nu/kitty-ai.nu";
     }
 }

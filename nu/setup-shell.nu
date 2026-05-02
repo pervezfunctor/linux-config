@@ -42,7 +42,7 @@ def "main home-manager" [] {
 
   log+ "Setting up home-manager"
   let flake_path = ($env.HOME | path join ".linux-config/home-manager")
-  ^nix run home-manager -- switch --flake $"($flake_path)#($env.USER)" --impure -b backup
+  ^/nix/var/nix/profiles/default/bin/nix run home-manager -- switch --flake $"($flake_path)#($env.USER)" --impure -b backup
 }
 
 def "main system" [] {
@@ -162,7 +162,7 @@ def "main vp" [] {
 
   log+ "Installing vite plus..."
   curl -fsSL https://vite.plus | bash
-  ~/.vite-plus/bin/vp install latest
+  ~/.vite-plus/bin/vp env install latest
 }
 
 def "main nushell config" [] {
@@ -426,7 +426,7 @@ def "main claude" [] {
 
 def "main npm pacakges" [] {
   if not (has-cmd npm) {
-    error+ "npm not installed. Use 'setup-shell.nu node' to install."
+    error+ "npm not installed. Use 'setup-shell.nu vp' to install."
     return
   }
 

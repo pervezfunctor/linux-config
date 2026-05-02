@@ -124,19 +124,6 @@ def "main kitty latest" [] {
   curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
 }
 
-def "main wallpapers" [] {
-  if not (has-cmd brew) {
-    brew-install
-  }
-  brew install --cask bazzite-wallpapers
-}
-
-def "main wallpapers ml4w" [] {
-  log info "Installing ML4W wallpapers"
-  mkdir ~/.local/share/backgrounds/ml4w
-  git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git ~/.local/share/backgrounds/ml4w
-}
-
 def "main greetd keyring fix" [] {
   let pam_file = "/etc/pam.d/greetd"
 

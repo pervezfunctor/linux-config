@@ -99,7 +99,7 @@ pixi_packages_install() {
 
   log "Installing pixi packages..."
   pixi global install nushell go-gum trash-cli starship gh
-  has_cmd nu || die "Failed to install nushell"
+  has_cmd nu || warn "Failed to install nushell"
 }
 
 init_logs() {
@@ -113,15 +113,38 @@ brew_install() {
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 }
 
+fish_config() {
+  has_cmd fish || si fish
+  has_cmd fish || die "fish not installed. Quitting."
+
+  if [ -L ~/.config/fish/config.fish ] &&
+    [ "$(readlink ~/.config/fish/config.fish)" = "${DOT_DIR}/fish/config.fish" ]; then
+    return 0
+  fi
+
+  mkdir -p ~/.config/fish 2>/dev/null
+  if [ -f ~/.config/fish/config.fish ]; then
+    log "Trashing existing fish config..."
+    trash ~/.config/fish/config.fish
+  fi
+  ln -sf "${DOT_DIR}/fish/config.fish" ~/.config/fish/config.fish
+
+  if ! sudo chsh -s /usr/bin/fish "$USER"; then
+    warn "Use 'sudo chsh -s /usr/bin/fish $USER' to set fish as default shell"
+  fi
+}
+
 fresh_install() {
+  mkdir -p ~/.linux-config-logs 2>/dev/null || true
+
   system_update
+
   has_cmd git || si git || die "Failed to install git"
   dotfiles_clone
 
-  pixi_packages_install
+  fish_config
 
-  mkdir -p ~/.linux-config-logs 2>/dev/null || true
-  "$DOT_DIR/nu/setup-shell.nu" fish 2>&1 | tee -a "${LOG_FILE}"
+  pixi_packages_install
 }
 
 help() {

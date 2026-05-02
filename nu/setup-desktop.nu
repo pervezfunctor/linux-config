@@ -23,13 +23,16 @@ def "main wallpapers ml4w" [] {
 
 def wm-install [] {
   mut pkgs = [
+    "brightnessctl"
+    "cups-pk-helper"
+    "ddcutil"
+    "fprintd"
     "grim"
     "gvfs"
     "imv"
     "kitty"
     "mate-polkit"
     "mpv"
-    "nautilus"
     "pipewire"
     "qt5ct"
     "qt6ct"
@@ -51,6 +54,7 @@ def wm-install [] {
       "libsecret-tools"
       "pipewire-pulse"
     ]
+    # sudo apt install --no-install-recommends -y nautilus
   }
   if (is-fedora) {
     $pkgs = $pkgs ++ [
@@ -62,6 +66,7 @@ def wm-install [] {
       "kf6-kimageformats"
       "tuned"
       "pipewire-pulseaudio"
+      "nautilus"
       # "power-profiles-daemon"
     ]
   }
@@ -73,6 +78,7 @@ def wm-install [] {
       "gvfs-backend-samba"
       "gvfs-fuse"
       "libsecret-1-0"
+      "nautilus"
       "pipewire-pulseaudio"
     ]
   }
@@ -86,6 +92,7 @@ def wm-install [] {
       "kimageformats"
       "libsecret"
       "matugen"
+      "nautilus"
     ]
   }
   si $pkgs
@@ -160,14 +167,15 @@ def "main greetd keyring fix" [] {
 
 def "main greetd" [] {
   if not (has-cmd dms) {
-      log error "dms is not installed. Cannot setup greetd."
-      return
+    log error "dms is not installed. Cannot setup greetd."
+    return
   }
 
   log+ "Installing greeter"
   si ["dms-greeter"]
   dms greeter enable
-  dms greeter sync
+
+  log info "After logging in with greetd, run `dms greeter sync`"
 
   main greetd keyring fix
 }

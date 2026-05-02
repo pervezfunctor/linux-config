@@ -25,3 +25,8 @@ const auto_includes = $nu.default-config-dir | path join auto-includes.nu
 if not ($auto_includes | path exists) {
     ^$"($nu.default-config-dir | path join nushell-sources.nu)"
 }
+
+# pnpm
+$env.PNPM_HOME = "/home/pervez/.local/share/pnpm"
+$env.PATH = ($env.PATH | split row (char esep) | prepend $env.PNPM_HOME )
+# pnpm end

@@ -42,11 +42,11 @@ window-rule {
 }
 
 window-rule {
-    match app-id="^(Zed.)$"
+    match app-id="^(dev.zed.Zed)$"
+    default-column-width { proportion 0.6667; }
     background-effect {
         blur true
     }
-    default-column-width { proportion 0.6667; }
 }
 
 // Open DMS windows as floating by default

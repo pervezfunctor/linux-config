@@ -40,6 +40,9 @@ window-rule {
 
 window-rule {
     match app-id="^kitty$"
+    match app-id="^Ghostty$"
+    match app-id="^Alacritty$"
+    match app-id="^foot$"
 
     default-column-width { proportion 0.333; }
     background-effect {

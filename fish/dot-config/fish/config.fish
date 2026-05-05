@@ -190,4 +190,6 @@ if has_cmd carapace
     carapace _carapace | source
 end
 
-fastfetch
+if has_cmd fastfetch
+    fastfetch
+end

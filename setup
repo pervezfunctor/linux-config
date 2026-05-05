@@ -126,7 +126,7 @@ si() {
   fi
 }
 
-dotfiles_install() {
+dotfiles_clone() {
   has_cmd git || si git
   cmd_check git
 
@@ -187,23 +187,14 @@ brew_install() {
   cmd_check brew
 }
 
-is_link_to() {
-  [ -L "$1" ] && [ "$(readlink "$1")" = "$2" ] && return 0
-  return 1
-}
-
 link() {
   local source target dir
   source="$(realpath "$1")"
 
-  if [ ! -e "$source" ]; then
-    error "Skipping: $source does not exist"
-    return 1
-  fi
+  [ -e "$source" ] || die "Cannot link: $source does not exist"
 
   if [[ "$source" != "$DOT_DIR"/* ]]; then
-    error "Skipping: $source is outside $DOT_DIR"
-    return 1
+    die "Cannot link: $source is outside $DOT_DIR"
   fi
 
   target="$2"
@@ -211,8 +202,7 @@ link() {
   mkdir -p "$dir"
 
   if [ -d "$target" ] && [ ! -L "$target" ]; then
-    error "Skipping: $target is a directory"
-    return 1
+    die "Skipping: $target is a directory"
   fi
 
   if [ -L "$target" ] && [ "$(readlink -f "$target")" = "$source" ]; then
@@ -220,22 +210,19 @@ link() {
     return 0
   fi
 
-  if [ -e "$target" ] || [ -L "$target" ]; then
+  if [ -e "$target" ]; then
     warn "Trashing existing $target, restore with 'trash-restore'..."
     trash "$target"
   fi
 
   log "Linking $source → $target"
-  ln -s "$source" "$target"
-
-  is_link_to "$target" "$source" || die "Failed to link $target to $source"
+  ln -s "$source" "$target" || die "Failed to link $target to $source"
 }
 
 is_fish_default() {
   local current_shell
   current_shell="$(getent passwd "$(id -un)" | cut -d: -f7)"
-  [ "$current_shell" = "$(command -v fish)" ] && return 0
-  return 1
+  [ "$current_shell" = "$(command -v fish)" ]
 }
 
 set_fish_as_default_shell() {
@@ -246,10 +233,8 @@ set_fish_as_default_shell() {
 
   if ! grep -qxF "$fish_path" /etc/shells 2>/dev/null; then
     warn "Adding $fish_path to /etc/shells."
-    if ! echo "$fish_path" | sudo tee -a /etc/shells >/dev/null; then
-      error "Failed to add $fish_path to /etc/shells."
-      return
-    fi
+    echo "$fish_path" | sudo tee -a /etc/shells >/dev/null ||
+      die "Failed to add $fish_path to /etc/shells."
   else
     log "$fish_path is already in /etc/shells."
   fi
@@ -262,17 +247,15 @@ set_fish_as_default_shell() {
   if chsh -s "$fish_path"; then
     log "Default shell set to fish ($fish_path). Re-login to apply."
   else
-    error "Failed to set fish as default shell. Try running 'chsh -s $fish_path' manually."
+    die "Failed to set fish as default shell. Try running 'chsh -s $fish_path' manually."
   fi
-
-  is_fish_default || die "fish is not the default shell"
 }
 
 fish_config() {
   has_cmd fish || si fish
   cmd_check fish
 
-  if ! link "${DOT_DIR}/fish/config.fish" "${HOME}/.config/fish/config.fish"; then
+  if ! link "${DOT_DIR}/fish/dot-config/config.fish" "${HOME}/.config/fish/config.fish"; then
     die "Failed to link: ${DOT_DIR}/fish/config.fish -> ${HOME}/.config/fish/config.fish"
   fi
 

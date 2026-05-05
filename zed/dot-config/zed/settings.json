@@ -33,7 +33,7 @@
   "theme": {
     "mode": "dark",
     "light": "One Light",
-    "dark": "Catppuccin Mocha (Blur) [Light]",
+    "dark": "Catppuccin Mocha (Blur)",
   },
 
   "autosave": "on_focus_change",

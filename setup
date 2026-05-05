@@ -1,30 +1,90 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
-trap 'echo "Error at line $LINENO: $BASH_COMMAND"' ERR
 
-readonly REPO_URL="https://github.com/pervezfunctor/linux-config.git"
-readonly DOT_DIR="$HOME/.linux-config"
-readonly LOG_FILE="${HOME}/.linux-config-setup.log"
+error_handler() {
+  local rc=$?
+  local i
+  [ "$rc" -eq 0 ] && return 0
+
+  local src="${BASH_SOURCE[1]:-${BASH_SOURCE[0]}}"
+  local line
+  line=$(sed -n "${BASH_LINENO[0]}p" "$src" 2>/dev/null || true)
+
+  echo "Error ($rc) at line ${BASH_LINENO[0]} in $src: $BASH_COMMAND" >&2
+  [ -n "$line" ] && echo "  > $line" >&2
+
+  for ((i = 1; i < ${#FUNCNAME[@]}; i++)); do
+    echo "  at ${FUNCNAME[$i]} (${BASH_SOURCE[$i]:-?}:${BASH_LINENO[$i]})" >&2
+  done
+
+  exit "$rc"
+}
+
+trap error_handler ERR
+
+readonly REPO_NAME="linux-config"
+readonly REPO_URL="https://github.com/pervezfunctor/${REPO_NAME}.git"
+readonly DOT_DIR="${HOME}/.${REPO_NAME}"
+
+readonly LOG_DIR="${HOME}/${REPO_NAME}.logs"
+readonly LOG_FILE="${LOG_DIR}/.${REPO_NAME}.log"
+readonly STD_LOG_FILE="${LOG_DIR}/.${REPO_NAME}-std.log"
+readonly ERR_LOG_FILE="${LOG_DIR}/.${REPO_NAME}-err.log"
+readonly COMBINED_LOG_FILE="${LOG_DIR}/.${REPO_NAME}-combined.log"
+
+init_logs() {
+  echo "Initializing log..."
+
+  mkdir -p "${LOG_DIR}"
+
+  rm -f "${LOG_FILE}" 2>/dev/null || true
+  rm -f "${STD_LOG_FILE}" 2>/dev/null || true
+  rm -f "${ERR_LOG_FILE}" 2>/dev/null || true
+  rm -f "${COMBINED_LOG_FILE}" 2>/dev/null || true
+
+  touch "${LOG_FILE}"
+  touch "${STD_LOG_FILE}"
+  touch "${ERR_LOG_FILE}"
+  touch "${COMBINED_LOG_FILE}"
+}
+
+log() {
+  printf "\033[1;34mℹ\033[0m %s\n" "$*"
+  printf "INFO: %s\n" "$*" >>"${LOG_FILE}"
+}
+
+warn() {
+  printf "\033[1;33m⚠\033[0m %s\n" "$*"
+  printf "WARNING: %s\n" "$*" >>"${LOG_FILE}"
+}
+
+error() {
+  printf "\033[1;31m✖\033[0m %s\n" "$*" >&2
+  printf "ERROR: %s\n" "$*" >>"${LOG_FILE}"
+}
+
+die() {
+  error "$*"
+  exit 1
+}
 
 has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-log() {
-  printf "INFO: %s\n" "$*"
-  printf "INFO: %s\n" "$*" >>"${LOG_FILE}"
+cmd_check() {
+  has_cmd "$1" || die "Command $1 not found. Quitting."
 }
 
-warn() {
-  printf "WARN: %s\n" "$*" >&2
-  printf "WARN: %s\n" "$*" >>"${LOG_FILE}"
-}
-
-die() {
-  printf "ERROR: %s\n" "$*" >&2
-  printf "ERROR: %s\n" "$*" >>"${LOG_FILE}"
-  exit 1
+cmd_checks() {
+  local total="$#"
+  local i=0
+  for cmd in "$@"; do
+    has_cmd "$cmd" || warn "Command $cmd not found."
+    ((i++))
+  done
+  [[ ! $i -eq $total ]] && die "Some commands were not found."
 }
 
 system_update() {
@@ -66,84 +126,163 @@ si() {
   fi
 }
 
-dotfiles_clone() {
+dotfiles_install() {
+  has_cmd git || si git
+  cmd_check git
+
   if [ ! -d "$DOT_DIR" ]; then
     log "Cloning dotfiles to $DOT_DIR."
     git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
+    [ ! -d "$DOT_DIR" ] && die "Dotfiles repo not found. Quitting."
     return
-  else
-    log "$DOT_DIR already exists."
   fi
 
-  if [ -z "$(git -C "$DOT_DIR" status --porcelain)" ]; then
-    log "Dotfiles repo clean. Pulling latest changes"
-    git -C "$DOT_DIR" pull --rebase || {
-      warn "Rebase failed. Aborting."
-      git -C "$DOT_DIR" rebase --abort || die "Failed to abort rebase"
-    }
-  else
-    warn "$DOT_DIR not clean. Not pulling in changes."
+  if ! git -C "$DOT_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    die "$DOT_DIR exists but is not a git repo."
+  fi
+
+  if [ -d "$DOT_DIR/.git/rebase-merge" ] || [ -d "$DOT_DIR/.git/rebase-apply" ]; then
+    die "Dotfiles repo is mid-rebase. Aborting."
+  fi
+
+  if [ -n "$(git -C "$DOT_DIR" status --porcelain)" ]; then
+    warn "Dotfiles repo dirty. Skipping update."
+    return
+  fi
+
+  log "Dotfiles repo clean. Pulling latest changes."
+  if ! git -C "$DOT_DIR" pull --rebase; then
+    warn "Rebase failed. Aborting."
+
+    if ! git -C "$DOT_DIR" rebase --abort; then
+      die "Failed to abort rebase. Repo may be in a broken state."
+    fi
+
+    log "Rebase aborted cleanly."
   fi
 }
 
 pixi_install() {
   has_cmd pixi && return 0
+  cmd_check curl
 
   log "Installing pixi..."
   curl -fsSL https://pixi.sh/install.sh | sh
-  has_cmd pixi || die "Failed to install pixi"
+  cmd_check pixi
 }
 
 pixi_packages_install() {
-  pixi_install
+  cmd_check pixi
 
   log "Installing pixi packages..."
   pixi global install nushell go-gum trash-cli starship gh
-  has_cmd nu || warn "Failed to install nushell"
-}
-
-init_logs() {
-  rm -f "${LOG_FILE}"
-  touch "${LOG_FILE}"
+  cmd_checks nushell gum trash starship gh
 }
 
 brew_install() {
   has_cmd brew && return 0
 
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  cmd_check brew
+}
+
+is_link_to() {
+  [ -L "$1" ] && [ "$(readlink "$1")" = "$2" ] && return 0
+  return 1
+}
+
+link() {
+  local source target dir
+  source="$(realpath "$1")"
+
+  if [ ! -e "$source" ]; then
+    error "Skipping: $source does not exist"
+    return 1
+  fi
+
+  if [[ "$source" != "$DOT_DIR"/* ]]; then
+    error "Skipping: $source is outside $DOT_DIR"
+    return 1
+  fi
+
+  target="$2"
+  dir="$(dirname "$target")"
+  mkdir -p "$dir"
+
+  if [ -d "$target" ] && [ ! -L "$target" ]; then
+    error "Skipping: $target is a directory"
+    return 1
+  fi
+
+  if [ -L "$target" ] && [ "$(readlink -f "$target")" = "$source" ]; then
+    log "Skipping: $target already links to $source"
+    return 0
+  fi
+
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    warn "Trashing existing $target, restore with 'trash-restore'..."
+    trash "$target"
+  fi
+
+  log "Linking $source → $target"
+  ln -s "$source" "$target"
+
+  is_link_to "$target" "$source" || die "Failed to link $target to $source"
+}
+
+is_fish_default() {
+  local current_shell
+  current_shell="$(getent passwd "$(id -un)" | cut -d: -f7)"
+  [ "$current_shell" = "$(command -v fish)" ] && return 0
+  return 1
+}
+
+set_fish_as_default_shell() {
+  cmd_check fish
+
+  local fish_path
+  fish_path="$(command -v fish)"
+
+  if ! grep -qxF "$fish_path" /etc/shells 2>/dev/null; then
+    warn "Adding $fish_path to /etc/shells."
+    if ! echo "$fish_path" | sudo tee -a /etc/shells >/dev/null; then
+      error "Failed to add $fish_path to /etc/shells."
+      return
+    fi
+  else
+    log "$fish_path is already in /etc/shells."
+  fi
+
+  if is_fish_default; then
+    log "fish is already the default shell."
+    return
+  fi
+
+  if chsh -s "$fish_path"; then
+    log "Default shell set to fish ($fish_path). Re-login to apply."
+  else
+    error "Failed to set fish as default shell. Try running 'chsh -s $fish_path' manually."
+  fi
+
+  is_fish_default || die "fish is not the default shell"
 }
 
 fish_config() {
   has_cmd fish || si fish
-  has_cmd fish || die "fish not installed. Quitting."
+  cmd_check fish
 
-  if [ -L ~/.config/fish/config.fish ] &&
-    [ "$(readlink ~/.config/fish/config.fish)" = "${DOT_DIR}/fish/config.fish" ]; then
-    return 0
+  if ! link "${DOT_DIR}/fish/config.fish" "${HOME}/.config/fish/config.fish"; then
+    die "Failed to link: ${DOT_DIR}/fish/config.fish -> ${HOME}/.config/fish/config.fish"
   fi
 
-  mkdir -p ~/.config/fish 2>/dev/null
-  if [ -f ~/.config/fish/config.fish ]; then
-    log "Trashing existing fish config..."
-    trash ~/.config/fish/config.fish
-  fi
-  ln -sf "${DOT_DIR}/fish/config.fish" ~/.config/fish/config.fish
-
-  if ! sudo chsh -s /usr/bin/fish "$USER"; then
-    warn "Use 'sudo chsh -s /usr/bin/fish $USER' to set fish as default shell"
-  fi
+  set_fish_as_default_shell
 }
 
 fresh_install() {
-  mkdir -p ~/.linux-config-logs 2>/dev/null || true
-
-  system_update
-
-  has_cmd git || si git || die "Failed to install git"
   dotfiles_clone
-
   fish_config
-
+  pixi_install
   pixi_packages_install
 }
 
@@ -156,9 +295,6 @@ help() {
 }
 
 main() {
-  export PATH="$HOME/.pixi/bin:$PATH"
-  init_logs
-
   if [ $# -eq 0 ] || [ "$1" = "fresh" ]; then
     fresh_install
     return 0
@@ -169,13 +305,30 @@ main() {
 
   if [ "$opt" = "brew" ]; then
     brew_install
-  elif [ "$opt" = "shell" ]; then
-    "$DOT_DIR/nu/setup-shell.nu" "$@" 2>&1 | tee -a "${LOG_FILE}"
-  elif [ "$opt" = "desktop" ]; then
-    "$DOT_DIR/nu/setup-desktop.nu" "$@" 2>&1 | tee -a "${LOG_FILE}"
-  else
-    die "Unknown option: $opt"
+    return
   fi
+
+  cmd_check nu || die "nushell not installed. Quitting."
+
+  case "$opt" in
+  "shell")
+    "$DOT_DIR/nu/setup-shell.nu" "$@"
+    ;;
+  "desktop")
+    "$DOT_DIR/nu/setup-desktop.nu" "$@"
+    ;;
+  *)
+    die "Unknown option: $opt"
+    ;;
+  esac
 }
 
+export PATH="$HOME/.pixi/bin:$PATH"
+init_logs
+system_update
+has_cmd sed || si sed
+cmd_check sed
+
+exec > >(tee -a "$STD_LOG_FILE" | tee -a "$COMBINED_LOG_FILE") \
+2> >(tee -a "$ERR_LOG_FILE" | tee -a "$COMBINED_LOG_FILE" >&2)
 main "$@"

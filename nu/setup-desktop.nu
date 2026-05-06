@@ -3,22 +3,20 @@
 use ./lib.nu *
 
 def "main wallpapers" [] {
-  if not (has-cmd brew) {
-    brew-install
+  if (has-cmd brew) {
+    ^brew install --cask bazzite-wallpapers aurora-wallpapers
   }
 
-  brew install --cask bazzite-wallpapers aurora-wallpapers
-}
+  let ml4w_dir = ("~/.local/share/backgrounds/ml4w" | path expand)
 
-def "main wallpapers ml4w" [] {
-  if (dir-exists ~/.local/share/backgrounds/ml4w) {
+  if (dir-exists $ml4w_dir) {
     log info "ML4W wallpapers already installed"
     return
   }
 
   log info "Installing ML4W wallpapers"
-  mkdir ~/.local/share/backgrounds/ml4w
-  git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git ~/.local/share/backgrounds/ml4w
+  mkdir $ml4w_dir
+  git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git $ml4w_dir
 }
 
 def wm-install [] {
@@ -128,41 +126,7 @@ def wm-install [] {
 }
 
 def "main kitty latest" [] {
-  curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
-}
-
-def "main greetd keyring fix" [] {
-  let pam_file = "/etc/pam.d/greetd"
-
-  if not ($pam_file | path exists) {
-      error make { msg: $"PAM file not found: ($pam_file)" }
-  }
-
-  let lines = (open $pam_file | lines)
-
-  let new_lines = ($lines | each {|l|
-      if ($l | str contains "pam_gnome_keyring.so") {
-          $l | str replace --regex '^\s*-' ''
-      } else {
-          $l
-      }
-  })
-
-  if $lines == $new_lines {
-      print "No changes needed."
-      exit
-  }
-
-  let backup = $"($pam_file).bak"
-
-  cp $pam_file $backup
-
-  $new_lines
-  | str join (char nl)
-  | save --force $pam_file
-
-  print $"Updated ($pam_file)"
-  print $"Backup written to ($backup)"
+  ^curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
 }
 
 def "main greetd" [] {
@@ -176,8 +140,6 @@ def "main greetd" [] {
   dms greeter enable
 
   log info "After logging in with greetd, run `dms greeter sync`"
-
-  main greetd keyring fix
 }
 
 def tw-add-repo [repo_url: string, repo_alias: string] {
@@ -188,19 +150,18 @@ def tw-add-repo [repo_url: string, repo_alias: string] {
 }
 
 def "main niri install" [] {
-  wm-install
-
   if (has-cmd dms) and (has-cmd niri) {
     log+ "niri and dms are already installed"
     return
   }
 
+  wm-install
+
   log+ "Installing niri"
   if (is-pikaos) {
     ^pikman install pika-niri-desktop-minimal pika-niri-settings dms kimageformat-plugins cups-pk-helper
   } else if (is-fedora) {
-    ^sudo dnf copr enable avengemedia/dms
-    # ^sudo dnf copr enable -y yalter/niri
+    ^sudo dnf copr enable -y avengemedia/dms
     si ["niri" "dms" "cliphist"]
   } else if (is-resolute) {
     ^sudo add-apt-repository ppa:avengemedia/danklinux
@@ -240,12 +201,12 @@ def "main niri" [] {
 }
 
 def "main mangowm install" [] {
-  wm-install
-
   if (has-cmd dms) and (has-cmd mango) {
     log+ "mangowm and dms are already installed"
     return
   }
+
+  wm-install
 
   log+ "Installing mangowm"
   if (is-pikaos) {
@@ -335,7 +296,7 @@ def "main fonts" [] {
 def "main zed" [] {
   if not (has-cmd zed) {
     log+ "Installing zed"
-    ^sh -c (http get https://zed.dev/install.sh)
+    http get https://zed.dev/install.sh | ^sh
   }
 
   main fonts

@@ -3,20 +3,55 @@
 use ./lib.nu *
 use std/util "path add"
 
-
 def "main docker" [] {
-  if not (is-fedora) {
-    error+ "Docker install is currently only supported on Fedora"
+  if (has-cmd docker) {
+    log+ "docker is already installed"
     return
   }
 
-  if not (has-cmd docker) {
-    sudo dnf install -y docker docker-compose
-    sudo systemctl enable --now docker.socket
+  if (is-tw) or (is-arch) {
+    si ["docker" "docker-compose"]
+  } else {
+    ^curl -fsSL https://get.docker.com | sh
   }
 
   sudo usermod -aG docker $env.USER
   pixi global install lazydocker
+}
+
+def "main incus config" [] {
+  log info "Adding user to incus groups"
+  do -i {
+    sudo usermod -aG incus $env.USER
+    sudo usermod -aG incus-admin $env.USER
+  }
+
+  log info "Enabling incus socket"
+  do -i { sudo systemctl enable --now incus.socket }
+
+  log info "Configuring firewalld for incus"
+  do -i {
+    sudo firewall-cmd --zone=trusted --change-interface=incusbr0 --permanent
+    sudo firewall-cmd --reload
+  }
+
+  log info "Initializing incus admin"
+  do -i { sg incus-admin -- incus admin init --minimal }
+
+  log info "Incus configured. Reboot your system and use incus.nu script."
+}
+
+def "main incus" [] {
+  log info "Installing incus"
+  if (is-apt) {
+    si ["incus" "incus-extra"]
+  } else if (is-fedora) {
+    si ["incus" "incus-tools"]
+  } else if (is-tw ) {
+    si ["incus" "incus-tools" "incus-ui"]
+  }
+
+  main incus config
 }
 
 def "main nix" [] {
@@ -62,9 +97,9 @@ def "main system" [] {
   ]
 
   if (is-tw) or (is-apt) {
-      $pkgs ++= ["libatomic1"]
-  } else if ((is-fedora) or (is-arch)) {
-      $pkgs ++= ["libatomic"]
+    $pkgs ++= ["libatomic1"]
+  } else if (is-fedora) or (is-arch) {
+    $pkgs ++= ["libatomic"]
   }
 
   log+ "Installing system packages"
@@ -86,7 +121,6 @@ def "main pixi packages" [] {
     "carapace"
     "difftastic"
     "direnv"
-    "difftastic"
     "duf"
     "eza"
     "fd"
@@ -161,9 +195,10 @@ def "main vp" [] {
   }
 
   log+ "Installing vite plus..."
-  curl -fsSL https://vite.plus | bash
-  ~/.vite-plus/bin/vp env install latest
-  ~/.vite-plus/bin/vp install -g pnpm
+  ^curl -fsSL https://vite.plus | bash
+  let vp = ("~/.vite-plus/bin/vp" | path expand)
+  ^$vp env install latest
+  ^$vp install -g pnpm
 }
 
 def "main nushell config" [] {
@@ -182,10 +217,11 @@ def "main nvim install" [] {
 
 def "main nvim astro" [] {
   let nvim = $env.HOME | path join ".config/nvim"
-  let dirs = [
-    $nvim,
-    ...([".local/share/nvim", ".local/state/nvim", ".cache/nvim"] | each {|d| $env.HOME | path join $d })
-  ]
+  let dirs = [$nvim] ++ ([
+    ".local/share/nvim",
+    ".local/state/nvim",
+    ".cache/nvim"
+  ] | each {|d| $env.HOME | path join $d })
 
   if ($nvim | path exists) and not (prompt-yn "Found existing nvim config. Replace with AstroNvim?") {
     return
@@ -198,7 +234,8 @@ def "main nvim astro" [] {
   }
 
   ^git clone --depth 1 https://github.com/AstroNvim/template $nvim
-  ^rm -rf $"($nvim)/.git"
+  rm -rf ($nvim | path join ".git")
+  stow-package "nvim"
 }
 
 def "main nvim" [] {
@@ -224,18 +261,6 @@ def "main fish" [] {
   main fish config
 }
 
-const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
-const DOT_DIR = ($nu.home-dir | path join ".linux-config")
-
-def abort-rebase-if-needed [] {
-  let rebase_merge = ($DOT_DIR | path join ".git" "rebase-merge")
-  let rebase_apply = ($DOT_DIR | path join ".git" "rebase-apply")
-  if ($rebase_merge | path exists) or ($rebase_apply | path exists) {
-    warn+ "Aborting rebase"
-    ignore-error {|| ^git -C $DOT_DIR rebase --abort }
-  }
-}
-
 def "main shell default" [shell: string] {
   let shell_path = (which $shell | get 0.path)
 
@@ -250,124 +275,6 @@ def "main shell default" [shell: string] {
   }
 }
 
-def "main shell autostart" [shell: string, rc: string] {
-  log+ $"Setting ($shell) auto-start in ($rc)"
-
-  warn+ "This might break certain software, that don't correctly invoke shells as non-interactive."
-
-  let rc_path = ($env.HOME | path join $rc)
-  let marker = $"exec ($shell)"
-  let launched_var = $"(($shell | str upcase))_LAUNCHED"
-
-  let snippet = $"
-# Auto-start ($shell) for interactive shells
-if [[ \$- == *i* ]] && [[ -z \"\$($launched_var)\" ]]; then
-  if command -v ($shell) >/dev/null 2>&1; then
-    export ($launched_var)=1
-    exec ($shell) || echo \"Failed to start ($shell)\"
-  fi
-fi
-"
-
-  if not ($rc_path | path exists) {
-    error make {msg: $"($rc) not found"}
-  }
-  if not (open $rc_path | str contains $marker) {
-    $snippet | save --append $rc_path
-    log+ $"Added ($shell) auto-start to ($rc)"
-  } else {
-    log+ $"($shell) auto-start already in ($rc), skipping"
-  }
-}
-
-def dotfiles-validate [] {
-  ^git -C $DOT_DIR rev-parse --is-inside-work-tree | ignore
-  let remote_url = (
-    ^git -C $DOT_DIR remote get-url origin | str trim
-  )
-  if ($remote_url | is-empty) {
-    error make {
-      msg: "Remote URL is empty. Is 'origin' configured?"
-    }
-  }
-  if $remote_url != $DOTFILES_URL {
-    error make {
-      msg: $"Unexpected remote: expected '($DOTFILES_URL)', got '($remote_url)'"
-    }
-  }
-
-  ^git -C $DOT_DIR status --porcelain=v1
-}
-
-def dotfiles-pull-clean [] {
-  log+ "Pulling latest changes (clean repo)"
-  let result = (
-    do { ^git -C $DOT_DIR pull --rebase --stat } | complete
-  )
-  if $result.exit_code != 0 {
-    abort-rebase-if-needed
-    error make {
-      msg: "git pull --rebase failed on clean repo"
-    }
-  }
-  log+ "Dotfiles updated"
-}
-
-def dotfiles-pull-dirty [] {
-  log+ "Stashing local changes before pull"
-  let stash_label = (
-    $"setup-autostash-(date now | format date '%s')"
-  )
-  ^git -C $DOT_DIR stash push --include-untracked -m $stash_label
-
-  let pull = (
-    do { ^git -C $DOT_DIR pull --rebase --stat } | complete
-  )
-  if $pull.exit_code != 0 {
-    abort-rebase-if-needed
-  }
-
-  log+ "Restoring local changes from stash"
-  let pop = (
-    do { ^git -C $DOT_DIR stash pop } | complete
-  )
-  if $pop.exit_code != 0 {
-    error make {
-      msg: "Stash pop failed — working tree may have conflicts"
-    }
-  }
-
-  if $pull.exit_code != 0 {
-    error make {
-      msg: "git pull --rebase failed; local changes restored"
-    }
-  }
-  log+ "Dotfiles updated"
-}
-
-def "main dotfiles clone" [] {
-  let git_dir = ($DOT_DIR | path join ".git")
-  if not ($git_dir | path exists) {
-    log+ "Cloning dotfiles"
-    ^git clone $DOTFILES_URL $DOT_DIR
-    return
-  }
-
-  let status = (dotfiles-validate)
-  if ($status | is-empty) {
-    dotfiles-pull-clean
-  } else {
-    dotfiles-pull-dirty
-  }
-}
-
-def "main dotfiles" [] {
-  main dotfiles clone
-
-  main nushell config
-  main fish config
-}
-
 def "main brew" [] {
   brew-install
 }
@@ -375,10 +282,11 @@ def "main brew" [] {
 def "main bun" [] {
   if (has-cmd bun) {
     warn+ "bun already installed. Skipping."
+    return
   }
 
   log+ "Installing bun..."
-  curl -fsSL https://bun.com/install | bash
+  ^curl -fsSL https://bun.com/install | bash
 }
 
 def "main volta" [] {
@@ -441,7 +349,7 @@ def "main ai cli" [] {
 
   log+ "Installing npm packages"
   for pkg in $npm_pkgs {
-    ^npm install -g $pkg
+    ^vp install -g $pkg
   }
 }
 
@@ -498,7 +406,6 @@ def "main setup-shell" [] {
 
   $items = $items ++ [
     { description: "Install shell tools", handler: { main shell } }
-    { description: "Setup dotfiles with stow", handler: { main dotfiles } }
     { description: "Install devtools (mise/node/uv/claude)", handler: { main devtools } }
     { description: "Install Neovim", handler: { main nvim } }
     { description: "Install rustup", handler: { main rust } }
@@ -543,8 +450,6 @@ def "main help" [] {
   print "  nix              Install nix package manager"
   print "  home-manager     Setup home-manager with nix"
   print ""
-  print "  dotfiles         Clone/update dotfiles and apply shell config"
-  print "  dotfiles clone   Clone/update dotfiles only"
   print "  nushell config   Stow Nushell config"
   print "  fish config      Stow fish config and set fish as default shell"
   print "  stow <package>   Stow a single package (example: nushell)"
@@ -558,7 +463,7 @@ def "main help" [] {
   print "  rust             Install rustup"
   print "  vp               Install Vite Plus"
   print "  uv               Install uv and pipx"
-  print "  node             Install Node.js with volta"
+  print "  volta            Install Node.js with volta"
   print "  bun              Install bun"
   print "  mise             Install mise"
   print "  ai cli           Install global npm packages"

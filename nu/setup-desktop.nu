@@ -2,6 +2,20 @@
 
 use ./lib.nu *
 
+def "main wallpaper" [] {
+  let wallpaper_dir = ("~/.config/wallpaper" | path expand)
+  let wallpaper_path = ($wallpaper_dir | path join "green_sea.jpg")
+
+  if ($wallpaper_path | path exists) {
+    log+ "Main wallpaper already exists"
+    return
+  }
+
+  log+ "Downloading main wallpaper"
+  mkdir $wallpaper_dir
+  http get https://raw.githubusercontent.com/mylinuxforwork/wallpaper/refs/heads/main/green_sea.jpg | save -f $wallpaper_path
+}
+
 def "main wallpapers" [] {
   if (has-cmd brew) {
     ^brew install --cask bazzite-wallpapers aurora-wallpapers
@@ -10,11 +24,11 @@ def "main wallpapers" [] {
   let ml4w_dir = ("~/.local/share/backgrounds/ml4w" | path expand)
 
   if (dir-exists $ml4w_dir) {
-    log info "ML4W wallpapers already installed"
+    log+ "ML4W wallpapers already installed"
     return
   }
 
-  log info "Installing ML4W wallpapers"
+  log+ "Installing ML4W wallpapers"
   mkdir $ml4w_dir
   git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git $ml4w_dir
 }
@@ -115,6 +129,7 @@ def wm-install [] {
   stow-package "systemd"
   stow-package "kitty"
   stow-package "xdg"
+  ignore-error {|| main wallpaper }
 
   # xdg-mime default org.gnome.Nautilus.desktop inode/directory`
   # xdg-mime default firefox.desktop x-scheme-handler/http
@@ -131,7 +146,7 @@ def "main kitty latest" [] {
 
 def "main greetd" [] {
   if not (has-cmd dms) {
-    log error "dms is not installed. Cannot setup greetd."
+    error+ "dms is not installed. Cannot setup greetd."
     return
   }
 
@@ -139,7 +154,7 @@ def "main greetd" [] {
   si ["dms-greeter"]
   dms greeter enable
 
-  log info "After logging in with greetd, run `dms greeter sync`"
+  log+ "After logging in with greetd, run `dms greeter sync`"
 }
 
 def tw-add-repo [repo_url: string, repo_alias: string] {
@@ -419,6 +434,8 @@ def "main help" [] {
   print "  flatpaks         Install flatpak applications"
   print "  zed              Install zed editor and fonts"
   print "  fonts            Install desktop fonts with Homebrew"
+  print "  wallpaper        Download main wallpaper to ~/.config/wallpaper"
+  print "  wallpapers       Install wallpaper collections"
   print ""
   print "  virt             Install and configure virt-manager/libvirt"
   print "  virt install     Install virt-manager/libvirt packages"

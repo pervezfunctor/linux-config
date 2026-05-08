@@ -13,11 +13,6 @@ export def init-log-file [] {
     touch $env.LOG_FILE
 }
 
-def log-to-file [level: string, msg: string] {
-    $"(date now | format date '%m-%d %H:%M:%S') [($level)] ($msg)\n"
-    | save --append $env.LOG_FILE
-}
-
 export def log+ [msg: string] { log info $msg; log-to-file "INFO" $msg }
 export def warn+ [msg: string] { log warning $msg; log-to-file "WARNING" $msg }
 export def error+ [msg: string] { log error $msg; log-to-file "ERROR" $msg }
@@ -208,6 +203,7 @@ export def ignore-error [
   try {
     do $action
   } catch { |err|
+    error+ ($err | get msg | default ($err | describe))
     if not $quiet {
       $err | print -e
     }

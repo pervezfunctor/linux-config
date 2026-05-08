@@ -93,6 +93,7 @@ def "main system" [] {
     "tmux"
     "tree"
     "unzip"
+    "zip"
     "zstd"
   ]
 

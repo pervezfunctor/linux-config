@@ -47,9 +47,9 @@ main() {
   sudo zypper install -y less
 
   log "Installing packages..."
-  sudo zypper install -y nushell bat difftastic duf fd gdu gh git \
+  sudo zypper install -y nushell bat difftastic duf fd gdu gh git xh \
     htop jq less rclone ripgrep rsync ShellCheck shfmt tar tealdeer \
-    tmux trash-cli ugrep unzip yq zstd dysk bottom starship xh fish \
+    tmux trash-cli ugrep zip unzip yq zstd dysk bottom starship fish \
     coreutils grep sed sd python3-pipx python3-uv make cmake clang \
     clang-tools watchexec boost-devel Catch2-devel libc++-devel gcc16 \
     gcc16-c++ ninja gawk

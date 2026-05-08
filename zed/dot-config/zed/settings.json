@@ -33,7 +33,7 @@
   "theme": {
     "mode": "dark",
     "light": "One Light",
-    "dark": "Catppuccin Mocha (Blur)",
+    "dark": "Ayu Mirage",
   },
 
   "autosave": "on_focus_change",

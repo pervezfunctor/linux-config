@@ -350,7 +350,7 @@ export def base-install [] {
     ^xcode-select --install
     ^/usr/sbin/softwareupdate --install-rosetta --agree-to-license
     brew-install
-    ^brew install wget mas stow newt trash zstd unzip rclone tmux tar tree visual-studio-code
+    ^brew install wget mas stow newt trash zstd zip unzip rclone tmux tar tree visual-studio-code
   } else if (is-ublue) {
     ^brew install stow newt trash-cli
   } else {

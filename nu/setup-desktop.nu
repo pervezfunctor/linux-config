@@ -129,10 +129,7 @@ def wm-install [] {
   stow-package "systemd"
   stow-package "kitty"
   stow-package "xdg"
-  ignore-error {||
-    main wallpaper
-    stow-package "DankMaterialShell"
-  }
+  ignore-error {|| main wallpaper }
 
   # xdg-mime default org.gnome.Nautilus.desktop inode/directory`
   # xdg-mime default firefox.desktop x-scheme-handler/http

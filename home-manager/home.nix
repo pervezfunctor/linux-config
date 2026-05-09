@@ -6,7 +6,7 @@
   home = {
     username = vars.username;
     homeDirectory = vars.homeDirectory;
-    stateVersion = "25.11";
+    stateVersion = "26.05";
 
     packages = with pkgs; [
       devbox

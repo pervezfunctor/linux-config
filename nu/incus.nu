@@ -1,6 +1,9 @@
 #!/usr/bin/env nu
 
+use ./lib.nu *
+
 def main [] {
+  bootstrap
   main help
 }
 
@@ -31,27 +34,17 @@ Commands:
   ubuntu       Create an Ubuntu VM with cloud-init
   fedora       Create a Fedora VM with cloud-init
   tumbleweed   Create an openSUSE Tumbleweed VM with cloud-init
+  arch         Create an Arch Linux VM with cloud-init
 "
-
-}
-
-def get-pubkey [ssh_key: string] {
-  if ($ssh_key | is-empty) {
-    let pubkey_path = $"($env.HOME)/.ssh/id_ed25519.pub"
-    if not ($pubkey_path | path exists) {
-      ^ssh-keygen -t ed25519 -f $"($env.HOME)/.ssh/id_ed25519" -q -N ""
-    }
-    open $pubkey_path | str trim
-  } else {
-    $ssh_key
-  }
 }
 
 def launch-vm [
   --image: string
   --name: string
-  --ssh_key: string
-  --ssh_service: string
+  --ssh_key: string = ""
+  --ssh_service: string = "sshd"
+  --ssh_package: string = "openssh-server"
+  --secureboot = true
 ] {
   let pubkey = get-pubkey $ssh_key
   let cloud_init = $"#cloud-config
@@ -65,31 +58,56 @@ users:
 package_update: true
 packages:
   - qemu-guest-agent
-  - openssh-server
+  - ($ssh_package)
+  - wget
+  - curl
 runcmd:
   - systemctl enable --now ($ssh_service)
 "
 
-  incus launch $image $name --vm $"--config=cloud-init.user-data=($cloud_init)"
+  incus launch $image $name --vm $"--config=cloud-init.user-data=($cloud_init)" ...(if not $secureboot { ["--config" "security.secureboot=false"] } else { [] })
 
   print $"\n(ansi green)> VM '($name)' created. Wait a few seconds for cloud-init to finish.(ansi reset)"
   print $"Use: incus exec ($name) -- bash -c 'cloud-init status --wait'"
 }
 
 def "main debian" [name: string = "debian", ssh_key: string = ""] {
-  launch-vm --image "images:debian/13/cloud" --name $name --ssh_key $ssh_key --ssh_service "ssh"
+  (launch-vm
+    --image "images:debian/13/cloud"
+    --name $name
+    --ssh_key $ssh_key
+    --ssh_service "ssh")
 }
 
 def "main ubuntu" [name: string = "ubuntu", ssh_key: string = ""] {
-  launch-vm --image "images:ubuntu/26.04/cloud" --name $name --ssh_key $ssh_key --ssh_service "ssh"
+  (launch-vm
+    --image "images:ubuntu/26.04/cloud"
+    --name $name
+    --ssh_key $ssh_key
+    --ssh_service "ssh")
 }
 
 def "main fedora" [name: string = "fedora", ssh_key: string = ""] {
-  launch-vm --image "images:fedora/43/cloud" --name $name --ssh_key $ssh_key --ssh_service "sshd"
+  (launch-vm
+    --image "images:fedora/43/cloud"
+    --name $name
+    --ssh_key $ssh_key)
 }
 
 def "main tumbleweed" [name: string = "tumbleweed", ssh_key: string = ""] {
-  launch-vm --image "images:opensuse/tumbleweed/cloud" --name $name --ssh_key $ssh_key --ssh_service "sshd"
+  (launch-vm
+    --image "images:opensuse/tumbleweed/cloud"
+    --name $name
+    --ssh_key $ssh_key)
+}
+
+def "main arch" [name: string = "arch", ssh_key: string = ""] {
+  (launch-vm
+    --image "images:archlinux/cloud"
+    --name $name
+    --ssh_key $ssh_key
+    --ssh_package "openssh"
+    --secureboot false)
 }
 
 def "main ssh" [name: string] {
@@ -102,8 +120,8 @@ def "main ssh" [name: string] {
 }
 
 def "main destroy" [name: string] {
-  incus stop $name
-  incus delete $name
+  ignore-error {|| incus stop $name }
+  ignore-error {|| incus delete $name }
 }
 
 def "main post-setup" [] {

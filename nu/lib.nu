@@ -478,3 +478,15 @@ def gum-select-install [options: list<string>, default_installs: list<string> = 
   | each {|cmd| run-command ($cmd | str trim) }
   | ignore
 }
+
+export def get-pubkey [ssh_key: string] {
+  if ($ssh_key | is-empty) {
+    let pubkey_path = $"($env.HOME)/.ssh/id_ed25519.pub"
+    if not ($pubkey_path | path exists) {
+      ^ssh-keygen -t ed25519 -f $"($env.HOME)/.ssh/id_ed25519" -q -N ""
+    }
+    open $pubkey_path | str trim
+  } else {
+    $ssh_key
+  }
+}

@@ -2,10 +2,6 @@
 
 use ./lib.nu *
 
-def main [] {
-  bootstrap
-  main help
-}
 
 def "main list" [] {
   incus list
@@ -17,25 +13,6 @@ def "main list images" [] {
 
 def "main search" [query: string] {
   incus image list images: | find $query | find "/cloud"
-}
-
-def "main help" [] {
-  print $"Usage: incus.nu <command>
-Commands:
-  post-setup      Steps after installing incus and reboot
-  list            List running instances
-  list images     List available cloud images
-
-  ssh <name>      SSH into a VM instance
-  destroy <name>  Stop and delete a VM instance
-  search <query>  Search cloud images by keyword
-
-  debian       Create a Debian VM with cloud-init
-  ubuntu       Create an Ubuntu VM with cloud-init
-  fedora       Create a Fedora VM with cloud-init
-  tumbleweed   Create an openSUSE Tumbleweed VM with cloud-init
-  arch         Create an Arch Linux VM with cloud-init
-"
 }
 
 def launch-vm [
@@ -113,6 +90,7 @@ def "main arch" [name: string = "arch", ssh_key: string = ""] {
 def "main ssh" [name: string] {
   let ip = incus list $name -c 4 --format csv
     | lines
+    | str trim --char '"'
     | parse "{ip} ({iface})"
     | where iface =~ '^e(n|th)'
     | get 0.ip
@@ -124,9 +102,51 @@ def "main destroy" [name: string] {
   ignore-error {|| incus delete $name }
 }
 
-def "main post-setup" [] {
+def "main post-install" [] {
   sudo systemctl enable --now incus.socket
   incus admin init --minimal
   sudo firewall-cmd --zone=trusted --change-interface=incusbr0 --permanent
   sudo firewall-cmd --reload
+}
+
+def "main start" [name: string] {
+  incus start $name
+}
+
+def "main stop" [name: string] {
+  incus stop $name
+}
+
+def "main restart" [name: string] {
+  incus restart $name
+}
+
+
+def "main help" [] {
+  print $"Usage: incus.nu <command>
+Commands:
+  post-install    Steps after installing incus and reboot
+
+  list            List running instances
+  list images     List available cloud images
+  search <query>  Search cloud images by keyword
+
+  ssh <name>      SSH into a VM instance
+  destroy <name>  Stop and delete a VM instance
+
+  debian          Create a Debian VM with cloud-init
+  ubuntu          Create an Ubuntu VM with cloud-init
+  fedora          Create a Fedora VM with cloud-init
+  tumbleweed      Create an openSUSE Tumbleweed VM with cloud-init
+  arch            Create an Arch Linux VM with cloud-init
+
+  start <name>    Start a VM instance
+  stop <name>     Stop a VM instance
+  restart <name>  Restart a VM instance
+"
+}
+
+def main [] {
+  bootstrap
+  main help
 }

@@ -11,6 +11,9 @@ set -gx XDG_DATA_DIRS $HOME/.flatpak/exports/share $XDG_DATA_DIRS
 set -gx NPM_PACKAGES "$HOME/.npm-packages"
 set -gx MANPATH $NPM_PACKAGES/share/man $MANPATH
 
+# /var/lib/flatpak/exports/share \
+# $HOME/.local/share/flatpak/exports/share \
+# XDG_DATA_DIRS
 
 fish_add_path --global --move \
     /home/linuxbrew/.linuxbrew/bin \

@@ -135,7 +135,7 @@ dotfiles_clone() {
     log "Cloning dotfiles to $DOT_DIR."
     git clone "$REPO_URL" "$DOT_DIR" || die "Failed to clone $REPO_URL"
     [ ! -d "$DOT_DIR" ] && die "Dotfiles repo not found. Quitting."
-    return
+    return 0
   fi
 
   if ! git -C "$DOT_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
@@ -148,7 +148,7 @@ dotfiles_clone() {
 
   if [ -n "$(git -C "$DOT_DIR" status --porcelain)" ]; then
     warn "Dotfiles repo dirty. Skipping update."
-    return
+    return 0
   fi
 
   log "Dotfiles repo clean. Pulling latest changes."
@@ -242,7 +242,7 @@ set_fish_as_default_shell() {
 
   if is_fish_default; then
     log "fish is already the default shell."
-    return
+    return 0
   fi
 
   if chsh -s "$fish_path"; then
@@ -265,9 +265,9 @@ fish_config() {
 
 fresh_install() {
   dotfiles_clone
-  fish_config
   pixi_install
   pixi_packages_install
+  fish_config
 }
 
 help() {
@@ -289,7 +289,7 @@ main() {
 
   if [ "$opt" = "brew" ]; then
     brew_install
-    return
+    return 0
   fi
 
   cmd_check nu || die "nushell not installed. Quitting."

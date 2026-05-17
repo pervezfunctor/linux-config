@@ -1,6 +1,7 @@
 #! /usr/bin/env nu
 
 use std/log
+use ./lib.nu *
 
 export-env {
   $env.BOXES_DIR = ($nu.home-dir | path join ".boxes")
@@ -8,6 +9,16 @@ export-env {
 
 def ensure-name [name?: string] {
     if ($name | is-empty) { "default" } else { $name }
+}
+
+def "main install" [] {
+  log info "Installing podman and distrobox"
+
+  if (is-atomic) {
+    curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sh -s -- --prefix ~/.local
+  } else {
+    si ["podman" "distrobox"]
+  }
 }
 
 def "main create" [--image: string, container_name?: string] {
@@ -36,7 +47,7 @@ def "main arch" [container_name = "arch"] {
 }
 
 def "main ubuntu" [container_name = "ubuntu"] {
-  main create --image quay.io/toolbx/ubuntu-toolbox:25.04 $container_name
+  main create --image quay.io/toolbx/ubuntu-toolbox:26.04 $container_name
 }
 
 def "main debian" [container_name = "debian"] {
@@ -61,6 +72,28 @@ def "list" [] {
     distrobox list
 }
 
-def main [] {
+def "main help" [] {
+  print $"Usage: dt <command> [options]
 
+Commands:
+  install           Install podman and distrobox
+  create            Create a new distrobox container
+  enter             Enter a distrobox container
+  debian            Create a Debian 13 container
+  fedora            Create a Fedora 44 container
+  ubuntu            Create an Ubuntu 26.04 container
+  tumbleweed        Create an openSUSE Tumbleweed container
+  arch              Create an Arch container
+  delete            Delete a container and trash its home directory
+  list              List all distrobox containers
+
+Options:
+  --image <string>  Image to use for create \(required for create\)
+  --help, -h        Show this help message
+
+Run 'dt <command> --help' for more information on a command."
+}
+
+def main [...args] {
+  main help
 }

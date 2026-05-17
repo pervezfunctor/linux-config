@@ -6,11 +6,11 @@ readonly REPO_NAME="fedora-config"
 readonly DOT_DIR="$HOME/.${REPO_NAME}"
 
 log() {
-  printf "\033[1;34mℹ\033[0m %s\n" "$*"
+  printf "\033[1;34m🚀 %s\033[0m\n" "$*"
 }
 
 error() {
-  printf "\033[1;31m✖\033[0m %s\n" "$*" >&2
+  printf "\033[1;31m🔥 %s\033[0m\n" "$*" >&2
 }
 
 die() {
@@ -22,55 +22,161 @@ has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-main() {
-  has_cmd zypper || die "Only Tumbleweed is supported. Quitting."
-  log "Updating package manager cache..."
+system_install() {
+  log "Updating packages..."
   sudo zypper refresh
-
-  has_cmd git || {
-    log "Installing git..."
-    sudo zypper install -y git
-    has_cmd git || die "git installation failed"
-  }
-
-  if [ ! -d "$DOT_DIR" ]; then
-    log "Cloning dotfiles repository..."
-    git clone https://github.com/pervezfunctor/fedora-config "$DOT_DIR" ||
-      die "git clone failed"
-  fi
+  sudo zypper update
 
   log "Removing busybox..."
   sudo zypper remove -y busybox* || true
   sudo zypper remove -y busybox-less || true
 
-  log "Installing less..."
-  sudo zypper install -y less
-
   log "Installing packages..."
-  sudo zypper install -y nushell bat difftastic duf fd gdu gh git xh \
-    htop jq less rclone ripgrep rsync ShellCheck shfmt tar tealdeer \
-    tmux trash-cli ugrep zip unzip yq zstd dysk bottom starship fish \
-    coreutils grep sed sd python3-pipx python3-uv make cmake clang \
-    clang-tools watchexec boost-devel Catch2-devel libc++-devel gcc16 \
-    gcc16-c++ ninja gawk
+  local -a packages=(
+    Catch2-devel
+    ShellCheck
+    bat
+    boost-devel
+    bottom
+    clang
+    clang-tools
+    cmake
+    coreutils
+    curl
+    difftastic
+    duf
+    dysk
+    eza
+    fd
+    fish
+    fzf
+    gawk
+    gcc16
+    gcc16-c++
+    gdu
+    gh
+    git
+    grep
+    htop
+    jq
+    less
+    libc++-devel
+    make
+    ninja
+    nushell
+    python3-pipx
+    python3-uv
+    rclone
+    ripgrep
+    rsync
+    sd
+    sed
+    shfmt
+    starship
+    tar
+    tealdeer
+    tmux
+    trash-cli
+    ugrep
+    unzip
+    watchexec
+    wget
+    xh
+    yq
+    zip
+    zoxide
+    zstd
+  )
 
-  log "Setting up fish shell..."
-  mkdir -p ~/.config/fish
+  sudo zypper install "${packages[@]}" || true
+}
 
-  log "Trashing old fish config, restore with 'trash-restore'..."
-  if ! trash ~/.config/fish/config.fish; then
-    log "$HOME/.config/fish/config.fish does not exist. Skipping trash."
-  fi
+dotfiles_install() {
+  if [ ! -d "$DOT_DIR" ]; then
+    log "Cloning dotfiles repository..."
+    has_cmd git || die "git is required but not installed"
 
-  log "Linking new fish config..."
-  ln -sf "$DOT_DIR"/config.fish ~/.config/fish/config.fish
-
-  log "Setting fish as default shell..."
-  if ! sudo chsh -s "$(which fish)" "$USER"; then
-    log "Failed to set fish as default shell. You may need to run 'sudo chsh -s $(which fish) $USER' manually."
-  else
-    log "Fish set as default shell successfully."
+    git clone https://github.com/pervezfunctor/fedora-config "$DOT_DIR" ||
+      die "git clone failed"
   fi
 }
 
-main
+fish_install() {
+  log "Configuring fish shell..."
+
+  log "Setting fish as default shell..."
+  if sudo chsh -s "$(which fish)" "$USER"; then
+    log "Successfully set fish as default shell"
+  else
+    log "Failed to set fish as default shell"
+    log "Run 'sudo chsh -s $(which fish) $USER' to set it manually"
+  fi
+
+  log "Installing carapace..."
+  curl termux.carapace.sh | sh
+
+  log "Deploying fish config..."
+  "$DOT_DIR/scripts/setup" deploy fish
+}
+
+docker_install() {
+  sudo zypper install docker docker-docker-compose
+  sudo systemctl enable docker.socket
+  sudo systemctl start docker.socket
+  sudo usermod -aG docker "$USER"
+}
+
+help() {
+  cat <<EOF
+Usage: $(basename "$0") [OPTION]...
+
+Setup Fedora Tumbleweed with dotfiles and tools.
+
+Options:
+  -h, --help     Show this help message
+
+Commands:
+  (no args)      Run full setup (system packages, dotfiles, fish)
+  system         Install system packages only
+  dotfiles       Clone dotfiles repository only
+  fish           Configure fish shell only
+  docker         Install and configure Docker only
+
+Examples:
+  $(basename "$0")              # Full setup
+  $(basename "$0") system fish  # Install system packages and configure fish
+EOF
+}
+
+main() {
+  has_cmd zypper || die "Only Tumbleweed is supported. Quitting."
+
+  if [ $# -eq 0 ]; then
+    log "Starting tumbleweed shell setup..."
+    system_install
+    dotfiles_install
+    fish_install
+    log "tumbleweed installation complete."
+    return
+  fi
+
+  for arg in "$@"; do
+    case "$arg" in
+    -h | --help | help)
+      help
+      return
+      ;;
+    *)
+      if declare -f "${arg}_install" >/dev/null; then
+        "${arg}_install" || true
+      else
+        error "Unknown command: $arg"
+        help
+        return 1
+      fi
+      ;;
+    esac
+  done
+}
+
+main "$@"

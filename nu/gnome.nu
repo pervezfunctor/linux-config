@@ -37,7 +37,8 @@ def "main flatpaks" [] {
     return
   }
 
-  ui.nu flathub
+  log+ "Adding flathub remote"
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
 
   let flatpaks = [
     "com.mattjakeman.ExtensionManager"
@@ -263,7 +264,7 @@ def "main packages" [] {
 }
 
 def "main" [] {
-  fonts
+  fonts-install
   main packages
   main extensions
   main settings

@@ -490,3 +490,17 @@ export def get-pubkey [ssh_key: string] {
     $ssh_key
   }
 }
+
+export def "fonts-install" [] {
+  if not (has-cmd brew) {
+    brew-install
+  }
+  if not (has-cmd brew) {
+    error+ "brew not installed, cannot install fonts"
+    return
+  }
+
+  ignore-error {||
+    ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
+  }
+}

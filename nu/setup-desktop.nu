@@ -2,21 +2,27 @@
 
 use ./lib.nu *
 
-def "main wallpaper" [] {
+def get-wallpaper [filename: string] {
   let wallpaper_dir = ("~/.config/wallpaper" | path expand)
-  let wallpaper_path = ($wallpaper_dir | path join "green_sea.jpg")
+  let wallpaper_path = ($wallpaper_dir | path join $filename)
 
   if ($wallpaper_path | path exists) {
-    log+ "Main wallpaper already exists"
+    log+ $"wallpaper ($filename) already exists"
     return
   }
 
-  log+ "Downloading main wallpaper"
+  log+ "Downloading wallpaper..."
   mkdir $wallpaper_dir
   http get https://raw.githubusercontent.com/mylinuxforwork/wallpaper/refs/heads/main/green_sea.jpg | save -f $wallpaper_path
 }
 
 def "main wallpapers" [] {
+   get-wallpaper "green_sea.jpg"
+   get-wallpaper "desert-red-sun.jpg"
+   get-wallpaper "colored-silence.jpg"
+}
+
+def "main wallpapers ml4w" [] {
   if (has-cmd brew) {
     ^brew install --cask bazzite-wallpapers aurora-wallpapers
   }
@@ -131,7 +137,7 @@ def wm-install [] {
   stow-package "systemd"
   stow-package "kitty"
   stow-package "xdg"
-  ignore-error {|| main wallpaper }
+  ignore-error {|| main wallpapers }
 
   # xdg-mime default org.gnome.Nautilus.desktop inode/directory`
   # xdg-mime default firefox.desktop x-scheme-handler/http
@@ -436,8 +442,8 @@ def "main help" [] {
   print "  flatpaks         Install flatpak applications"
   print "  zed              Install zed editor and fonts"
   print "  fonts            Install desktop fonts with Homebrew"
-  print "  wallpaper        Download main wallpaper to ~/.config/wallpaper"
-  print "  wallpapers       Install wallpaper collections"
+  print "  wallpapers       Download few wallpapers to ~/.config/wallpaper"
+  print "  wallpapers ml4w  Install wallpaper collection from ml4w"
   print ""
   print "  virt             Install and configure virt-manager/libvirt"
   print "  virt install     Install virt-manager/libvirt packages"

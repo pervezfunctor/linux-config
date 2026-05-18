@@ -35,10 +35,12 @@ def "main wallpapers" [] {
 
 def wm-install [] {
   mut pkgs = [
+    "alacritty"
     "brightnessctl"
     "cups-pk-helper"
     "ddcutil"
     "fprintd"
+    "fuzzel"
     "grim"
     "gvfs"
     "imv"

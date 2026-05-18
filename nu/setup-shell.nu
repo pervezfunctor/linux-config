@@ -12,7 +12,7 @@ def "main docker" [] {
   if (is-tw) or (is-arch) {
     si ["docker" "docker-compose"]
   } else {
-    ^curl -fsSL https://get.docker.com | sh
+    curl -fsSL https://get.docker.com | sh
   }
 
   sudo usermod -aG docker $env.USER
@@ -61,7 +61,7 @@ def "main nix" [] {
   }
 
   log+ "Installing nix..."
-  http get https://install.determinate.systems/nix | ^sh -s -- install --determinate --no-confirm
+  http get https://install.determinate.systems/nix | sh -s -- install --determinate --no-confirm
 
   path add "/nix/var/nix/profiles/default/bin"
 }
@@ -77,7 +77,7 @@ def "main home-manager" [] {
 
   log+ "Setting up home-manager"
   let flake_path = ($env.HOME | path join ".linux-config/home-manager")
-  ^/nix/var/nix/profiles/default/bin/nix run home-manager -- switch --flake $"($flake_path)#($env.USER)" --impure -b backup
+  /nix/var/nix/profiles/default/bin/nix run home-manager -- switch --flake $"($flake_path)#($env.USER)" --impure -b backup
 }
 
 def "main system" [] {
@@ -110,7 +110,7 @@ def "main system" [] {
 
   if (is-non-atomic-linux) {
     log+ "Updating locate database, this may take a while..."
-    do -i { ^sudo updatedb }
+    do -i { sudo updatedb }
   }
 }
 
@@ -153,18 +153,18 @@ def "main pixi packages" [] {
     "zoxide"
   ]
 
-  ^pixi global install ...$pixi_pkgs
+  pixi global install ...$pixi_pkgs
 
   if not (has-cmd tmux) {
-    ^pixi global install tmux
+    pixi global install tmux
   }
 
-  do -i { ^tldr --update }
+  do -i { tldr --update }
 }
 
 def "main git credentials" [] {
   ignore-error {||
-    if (^gh auth setup-git) {
+    if (gh auth setup-git) {
       log+ "Make sure to setup github authentication with: `gh auth login`"
     } else {
       log+ "Failed to setup github credentials: Use `gh auth login` followed by `gh auth setup-git` to fix this"
@@ -189,7 +189,7 @@ def "main rust" [] {
   }
 
   log+ "Installing rustup..."
-  (http get https://sh.rustup.rs) | ^sh
+  (http get https://sh.rustup.rs) | sh
 }
 
 def "main vp" [] {
@@ -199,10 +199,10 @@ def "main vp" [] {
   }
 
   log+ "Installing vite plus..."
-  ^curl -fsSL https://vite.plus | bash
-  let vp = ("~/.vite-plus/bin/vp" | path expand)
-  ^$vp env install latest
-  ^$vp install -g pnpm
+  curl -fsSL https://vite.plus | bash
+  path add $"($env.HOME)/.vite-plus/bin"
+  vp env install latest
+  vp install -g pnpm
 }
 
 def "main nushell config" [] {
@@ -216,7 +216,7 @@ def "main nvim install" [] {
   }
 
   log+ "Installing neovim with pixi..."
-  ^pixi global install nvim
+  pixi global install nvim
 }
 
 def "main nvim astro" [] {
@@ -234,10 +234,10 @@ def "main nvim astro" [] {
   log+ "Configuring AstroNvim..."
   for dir in $dirs {
     if not ($dir | path exists) { continue }
-    ignore-error {|| ^trash $dir }
+    ignore-error {|| trash $dir }
   }
 
-  ^git clone --depth 1 https://github.com/AstroNvim/template $nvim
+  git clone --depth 1 https://github.com/AstroNvim/template $nvim
   rm -rf ($nvim | path join ".git")
   stow-package "nvim"
 }
@@ -257,7 +257,7 @@ def "main fish config" [] {
   stow-package "fish"
 
   log+ "Change default shell to fish"
-  ignore-error {|| ^sudo chsh -s /usr/bin/fish $env.USER }
+  ignore-error {|| sudo chsh -s /usr/bin/fish $env.USER }
 }
 
 def "main fish" [] {
@@ -283,37 +283,17 @@ def "main brew" [] {
   brew-install
 }
 
-def "main bun" [] {
-  if (has-cmd bun) {
-    warn+ "bun already installed. Skipping."
-    return
-  }
-
-  log+ "Installing bun..."
-  ^curl -fsSL https://bun.com/install | bash
-}
-
-def "main volta" [] {
-  if not (has-cmd volta) {
-    log+ "Installing volta..."
-    (http get https://get.volta.sh) | ^bash
-  }
-
-  log+ "Installing latest node with volta..."
-  ^volta install node@latest
-}
-
 def "main uv" [] {
   if (has-cmd uv) {
     log+ "uv already installed"
   } else {
     log+ "Installing uv..."
-    (http get https://astral.sh/uv/install.sh) | ^bash
+    (http get https://astral.sh/uv/install.sh) | bash
   }
 
   if not (has-cmd pipx) {
     log+ "Installing pipx with uv..."
-    ^uv tool install pipx
+    uv tool install pipx
   }
 }
 
@@ -324,7 +304,7 @@ def "main mise" [] {
   }
 
   log+ "Installing mise"
-  (http get https://mise.run) | ^bash
+  (http get https://mise.run) | bash
 }
 
 def "main claude" [] {
@@ -334,7 +314,7 @@ def "main claude" [] {
   }
 
   log+ "Installing claude"
-  (http get https://claude.ai/install.sh) | ^bash
+  (http get https://claude.ai/install.sh) | bash
 }
 
 def "main ai cli" [] {
@@ -345,7 +325,6 @@ def "main ai cli" [] {
 
   let npm_pkgs = [
     "@google/gemini-cli"
-    "@mermaid-js/mermaid-cli"
     "opencode-ai"
     "@openai/codex"
     "@augmentcode/auggie"
@@ -353,7 +332,7 @@ def "main ai cli" [] {
 
   log+ "Installing npm packages"
   for pkg in $npm_pkgs {
-    ^vp install -g $pkg
+    vp install -g $pkg
   }
 }
 
@@ -362,7 +341,6 @@ def "main devtools" [] {
   main uv
   main claude
   main vp
-  main bun
   main ai cli
 }
 
@@ -467,8 +445,6 @@ def "main help" [] {
   print "  rust             Install rustup"
   print "  vp               Install Vite Plus"
   print "  uv               Install uv and pipx"
-  print "  volta            Install Node.js with volta"
-  print "  bun              Install bun"
   print "  mise             Install mise"
   print "  ai cli           Install global npm packages"
 

@@ -14,10 +14,10 @@ Once the repo has been bootstrapped to `~/.linux-config`, you can run the setup 
 
 ```bash
 # Run the interactive shell setup
-nu setup-shell.nu
+setup-shell.nu
 
 # Run the interactive desktop setup
-nu setup-desktop.nu
+setup-desktop.nu
 ```
 
 ## Install IDEs
@@ -25,7 +25,7 @@ nu setup-desktop.nu
 If you don't like `Zed` editor, you could install either VS Code and/or Antigravity using brew. Use the following instructions.
 
 ```bash
-nu ~/.linux-config/nu/setup-shell.nu brew
+setup-shell.nu brew
 brew install --cask visual-studio-code-linux
 brew install --cask antigravity-linux
 ```

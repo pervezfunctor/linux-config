@@ -1,4 +1,30 @@
 {
+  "agent_servers": {
+    "qwen-code": {
+      "type": "registry",
+    },
+    "pi-acp": {
+      "type": "registry",
+    },
+    "opencode": {
+      "type": "registry",
+    },
+    "goose": {
+      "type": "registry",
+    },
+    "glm-acp-agent": {
+      "type": "registry",
+    },
+    "gemini": {
+      "type": "registry",
+    },
+    "codex-acp": {
+      "type": "registry",
+    },
+    "auggie": {
+      "type": "registry",
+    },
+  },
   "session": {
     "trust_all_worktrees": true,
   },
@@ -74,12 +100,17 @@
   },
 
   "languages": {
+    "TypeScript": {
+      "tab_size": 2,
+    },
     "Python": {
+      "tab_size": 2,
       "indent_guides": {
         "enabled": true,
       },
     },
     "C++": {
+      "tab_size": 4,
       "colorize_brackets": true,
     },
     "Rust": {

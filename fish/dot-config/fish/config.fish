@@ -6,7 +6,6 @@ if test -f ~/.fish_profile
 end
 
 set -gx DOT_DIR $HOME/.linux-config
-set -gx VOLTA_HOME $HOME/.volta
 set -gx XDG_DATA_DIRS $HOME/.flatpak/exports/share $XDG_DATA_DIRS
 set -gx NPM_PACKAGES "$HOME/.npm-packages"
 set -gx MANPATH $NPM_PACKAGES/share/man $MANPATH
@@ -19,15 +18,16 @@ fish_add_path --global --move \
     /home/linuxbrew/.linuxbrew/bin \
     $HOME/.local/share/flatpak/exports/bin \
     $DOT_DIR \
+    $DOT_DIR/scripts \
     $DOT_DIR/nu \
     $HOME/.pixi/bin \
     $HOME/bin \
     $HOME/.local/bin \
-    $NPM_PACKAGES/bin \
-    $VOLTA_HOME/bin \
     $HOME/.cargo/bin \
     $HOME/.opencode/bin \
-    $HOME/.local/kitty.app/bin
+    $HOME/.vite-plus/bin \
+    $HOME/.local/kitty.app/bin \
+    $NPM_PACKAGES/bin
 
 function has_cmd
     type -q $argv[1]
@@ -148,10 +148,6 @@ if has_cmd nix
   alias nr 'nix run nixpkgs#'
   alias nds 'devenv shell'
 end
-
-# bun
-set --export BUN_INSTALL "$HOME/.bun"
-set --export PATH $BUN_INSTALL/bin $PATH
 
 if test -f ~/.fedora-config/fish/local.fish
     source ~/.fedora-config/fish/local.fish

@@ -216,11 +216,7 @@ def "main ptyxis" [] {
   }
   if not (has-cmd ptyxis) and not (is-flatpak "org.gnome.Ptyxis") {
     log info "ptyxis not found, Installing..."
-    if (is-atomic) {
-      fpi "org.gnome.Ptyxis"
-    } else {
-      si ["ptyxis"]
-    }
+    si ["ptyxis"]
   }
 
   log info "Configuring Ptyxis"
@@ -243,10 +239,6 @@ def "main ptyxis" [] {
   gsettings set $profile opacity 0.85
   gsettings set $profile palette "Everforest"
 
-  if (is-atomic) {
-    gsettings set $profile custom-command '/usr/bin/fish'
-  }
-
   # is flatpak
   # let profid = (
   #   flatpak run --command=gsettings app.devsuite.Ptyxis \
@@ -264,11 +256,6 @@ def "main ptyxis" [] {
 }
 
 def "main packages" [] {
-  if (is-atomic) {
-    log info "Skipping package installation on atomic"
-    return
-  }
-
   log info "Installing packages..."
   do -i {
     si ["gnome-tweaks"]

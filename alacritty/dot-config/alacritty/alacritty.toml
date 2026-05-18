@@ -1,0 +1,113 @@
+[window]
+padding = { x = 6, y = 6 }
+opacity = 0.8
+dynamic_title = true
+decorations = "Full"
+startup_mode = "Windowed"
+dynamic_padding = false
+decorations_theme_variant = "Dark"
+
+[scrolling]
+history = 10000
+multiplier = 3
+
+[font]
+normal = { family = "JetBrainsMono Nerd Font", style = "Regular" }
+bold = { family = "JetBrainsMono Nerd Font", style = "Bold" }
+italic = { family = "JetBrainsMono Nerd Font", style = "Italic" }
+bold_italic = { family = "JetBrainsMono Nerd Font", style = "Bold Italic" }
+size = 11.0
+builtin_box_drawing = true
+
+[bell]
+duration = 0
+
+[mouse]
+hide_when_typing = true
+
+[[mouse.bindings]]
+mouse = "Middle"
+action = "PasteSelection"
+
+[general]
+import = ["dank-theme.toml"]
+live_config_reload = true
+working_directory = "None"
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[keyboard]
+[[keyboard.bindings]]
+key = "PageUp"
+mods = "Shift"
+mode = "~Alt"
+action = "ScrollPageUp"
+
+[[keyboard.bindings]]
+key = "PageDown"
+mods = "Shift"
+mode = "~Alt"
+action = "ScrollPageDown"
+
+[[keyboard.bindings]]
+key = "Home"
+mods = "Shift"
+mode = "~Alt"
+action = "ScrollToTop"
+
+[[keyboard.bindings]]
+key = "End"
+mods = "Shift"
+mode = "~Alt"
+action = "ScrollToBottom"
+
+[[keyboard.bindings]]
+key = "F"
+mods = "Control|Shift"
+action = "SearchForward"
+
+[[keyboard.bindings]]
+key = "B"
+mods = "Control|Shift"
+action = "SearchBackward"
+
+[[keyboard.bindings]]
+key = "Key0"
+mods = "Control"
+action = "ResetFontSize"
+
+# [[keyboard.bindings]]
+# key = "Paste"
+# action = "Paste"
+
+# [[keyboard.bindings]]
+# key = "Copy"
+# action = "Copy"
+
+# [[keyboard.bindings]]
+# key = "L"
+# mods = "Control"
+# action = "ClearLogNotice"
+
+# [[keyboard.bindings]]
+# key = "L"
+# mods = "Control"
+# mode = "~Vi"
+# chars = "\f"
+
+# [[keyboard.bindings]]
+# key = "C"
+# mods = "Control|Shift"
+# action = "Copy"
+
+# [[keyboard.bindings]]
+# key = "V"
+# mods = "Control|Shift"
+# action = "Paste"
+
+# [[keyboard.bindings]]
+# key = "C"
+# mods = "Control|Shift"
+# mode = "Vi"
+# action = "ClearSelection"

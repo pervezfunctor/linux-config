@@ -14,11 +14,7 @@ def ensure-name [name?: string] {
 def "main install" [] {
   log info "Installing podman and distrobox"
 
-  if (is-atomic) {
-    curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sh -s -- --prefix ~/.local
-  } else {
-    si ["podman" "distrobox"]
-  }
+  si ["podman" "distrobox"]
 }
 
 def "main create" [--image: string, container_name?: string] {

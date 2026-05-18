@@ -372,7 +372,7 @@ export def --env bootstrap [] {
     $"($env.DOT_DIR? | default ($env.HOME | path join ".linux-config"))/bin"
     ".pixi/bin"
     ".opencode/bin"
-    ".volta/bin"
+    ".vite-plus/bin"
   ] {
     path add ($env.HOME | path join $p | path expand)
   }

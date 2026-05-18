@@ -3,38 +3,6 @@
 use std/log
 use ./lib.nu *
 
-const incus_config = path self incus.yml
-
-export def "main install" [] {
-  if (is-atomic) {
-    log error "incus installation is not supported on atomic systems"
-    return
-  }
-
-  log info "Installing incus"
-  si ["incus" "incus-tools"]
-
-  log info "Adding user to incus groups"
-  do -i {
-    sudo usermod -aG incus $env.USER
-    sudo usermod -aG incus-admin $env.USER
-  }
-
-  log info "Enabling incus socket"
-  do -i { sudo systemctl enable --now incus.socket }
-
-  log info "Configuring firewalld for incus"
-  do -i {
-    sudo firewall-cmd --zone=trusted --change-interface=incusbr0 --permanent
-    sudo firewall-cmd --reload
-  }
-
-  log info $"Initializing incus admin with ($incus_config)"
-  do -i { open --raw $incus_config | sg incus-admin -- incus admin init --preseed }
-
-  log info "Incus configured. Reboot your system and use incus.nu script."
-}
-
 def "main list" [] {
   incus list
 }
@@ -133,7 +101,6 @@ def "main restart" [name: string] {
 def "main help" [] {
   print $"Usage: incus.nu <command>
 Commands:
-  install         Install and configure incus
   install post    Steps after installing incus and reboot
 
   list            List running instances

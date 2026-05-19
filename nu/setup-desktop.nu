@@ -3,7 +3,7 @@
 use ./lib.nu *
 
 def get-wallpaper [filename: string] {
-  let wallpaper_dir = ("~/.config/wallpaper" | path expand)
+  let wallpaper_dir = ("~/.config/wallpapers" | path expand)
   let wallpaper_path = ($wallpaper_dir | path join $filename)
 
   if ($wallpaper_path | path exists) {
@@ -13,7 +13,7 @@ def get-wallpaper [filename: string] {
 
   log+ "Downloading wallpaper..."
   mkdir $wallpaper_dir
-  http get https://raw.githubusercontent.com/mylinuxforwork/wallpaper/refs/heads/main/green_sea.jpg | save -f $wallpaper_path
+  http get https://raw.githubusercontent.com/mylinuxforwork/wallpaper/refs/heads/main/($filename) | save -f $wallpaper_path
 }
 
 def "main wallpapers" [] {
@@ -39,7 +39,7 @@ def "main wallpapers ml4w" [] {
   git clone --depth=1 https://github.com/mylinuxforwork/wallpaper.git $ml4w_dir
 }
 
-def wm-install [] {
+def "main wm" [] {
   mut pkgs = [
     "alacritty"
     "brightnessctl"
@@ -178,7 +178,7 @@ def "main niri install" [] {
     return
   }
 
-  wm-install
+  main wm
 
   log+ "Installing niri"
   if (is-pikaos) {
@@ -229,7 +229,7 @@ def "main mangowm install" [] {
     return
   }
 
-  wm-install
+  main wm
 
   log+ "Installing mangowm"
   if (is-pikaos) {

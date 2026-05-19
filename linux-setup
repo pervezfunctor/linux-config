@@ -211,7 +211,7 @@ link() {
     return 0
   fi
 
-  if [ -e "$target" ]; then
+  if [ -e "$target" ] || [ -L "$target" ]; then
     warn "Trashing existing $target, restore with 'trash-restore'..."
     trash "$target"
   fi

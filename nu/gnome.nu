@@ -228,8 +228,8 @@ def "main ptyxis" [] {
   gsettings set org.gnome.Ptyxis use-system-font false
   gsettings set org.gnome.Ptyxis interface-style 'system'
 
-  if (font exists 'JetbrainsMono Nerd Font') {
-    gsettings set org.gnome.Ptyxis font-name 'JetbrainsMono Nerd Font 11'
+  if (font exists 'JetBrainsMono Nerd Font') {
+    gsettings set org.gnome.Ptyxis font-name 'JetBrainsMono Nerd Font 11'
   } else if (font exists '') {
     gsettings set org.gnome.Ptyxis font-name ''
   }

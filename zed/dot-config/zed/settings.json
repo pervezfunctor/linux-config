@@ -53,13 +53,14 @@
     "rust": true,
   },
 
-  "buffer_font_family": ".ZedMono",
+  "buffer_font_family": "JetBrainsMono Nerd Font",
   "buffer_font_size": 15,
+  "ui_font_family": "Adwaita Sans",
   "ui_font_size": 16,
   "theme": {
     "mode": "system",
-    "dark": "Catppuccin Espresso (Blur) [Light]",
-    "light": "Catppuccin Mocha (Blur) [Light]",
+    "light": "Catppuccin Latte (Blur)",
+    "dark": "Catppuccin Mocha (Blur)",
   },
 
   "autosave": "on_focus_change",

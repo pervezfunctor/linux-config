@@ -1,8 +1,17 @@
 #! /usr/bin/env nu
 
+use lib.nu [is-arch]
+
 def main [image: string] {
+  log+ "Starting VM..."
+  log+ "Make sure to install mesa and vulkan-virtio"
+
   let vars_file = $"/home/pervez/.config/libvirt/qemu/nvram/($image)_VARS.fd"
   let disk_file = $"/home/pervez/.local/share/libvirt/images/($image).qcow2"
+
+  if (not ($vars_file | path exists)) and (is-arch) {
+    cp /usr/share/edk2/x64/OVMF_VARS.4m.fd $vars_file
+  }
 
   with-env { GDK_BACKEND: wayland} {
     let args = [

@@ -192,3 +192,11 @@ end
 if has_cmd fastfetch
     fastfetch
 end
+
+if has_cmd eza
+    alias ls  'eza --icons --group-directories-first'
+end
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/home/pervez/.local/bin" $PATH

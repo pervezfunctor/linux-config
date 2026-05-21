@@ -307,24 +307,13 @@ def "main mise" [] {
   (http get https://mise.run) | bash
 }
 
-def "main claude" [] {
-  if (has-cmd claude) {
-    log+ "claude is already installed"
-    return
-  }
-
-  log+ "Installing claude"
-  (http get https://claude.ai/install.sh) | bash
-}
-
 def "main ai cli" [] {
+  path add $"($env.HOME)/.vite-plus/bin"
   if not (has-cmd npm) {
-    error+ "npm not installed. Use 'setup-shell.nu vp' to install."
-    return
+    main vp
   }
 
   let npm_pkgs = [
-    "@google/gemini-cli"
     "opencode-ai"
     "@openai/codex"
     "@augmentcode/auggie"
@@ -334,14 +323,20 @@ def "main ai cli" [] {
   for pkg in $npm_pkgs {
     vp install -g $pkg
   }
+
+  log+ "Installing antigravity cli"
+  curl -fsSL https://antigravity.google/cli/install.sh | bash
+
+  log+ "Installing claude"
+  (http get https://claude.ai/install.sh) | bash
 }
 
 def "main devtools" [] {
-  main mise
   main uv
-  main claude
   main vp
+  main rust
   main ai cli
+  main mise
 }
 
 def "main cpp" [] {
@@ -388,7 +383,7 @@ def "main setup-shell" [] {
 
   $items = $items ++ [
     { description: "Install shell tools", handler: { main shell } }
-    { description: "Install devtools (mise/node/uv/claude)", handler: { main devtools } }
+    { description: "Install devtools (rust/node/uv)", handler: { main devtools } }
     { description: "Install Neovim", handler: { main nvim } }
     { description: "Install rustup", handler: { main rust } }
   ]
@@ -437,7 +432,6 @@ def "main help" [] {
   print "  stow <package>   Stow a single package (example: nushell)"
   print ""
   print "  devtools         Install developer tools and global npm packages"
-  print "  claude           Install claude CLI"
   print ""
   print "  nvim             Install and configure AstroNvim"
   print "  nvim install     Install Neovim only"

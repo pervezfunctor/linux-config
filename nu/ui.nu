@@ -417,12 +417,12 @@ def "main setup-desktop" [] {
 }
 
 def "main help" [] {
-  print "setup-desktop.nu - Linux desktop setup script"
+  print "ui.nu - Linux desktop setup script"
   print ""
   print "Usage:"
-  print "  nu setup-desktop.nu"
-  print "  nu setup-desktop.nu help"
-  print "  nu setup-desktop.nu <command> [args]"
+  print "  nu ui.nu"
+  print "  nu ui.nu help"
+  print "  nu ui.nu <command> [args]"
   print ""
   print "Commands:"
   print "  setup-desktop    Interactive desktop setup (same as running with no command)"

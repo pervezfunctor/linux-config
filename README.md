@@ -17,7 +17,7 @@ Once the repo has been bootstrapped to `~/.linux-config`, you can run the setup 
 setup-shell.nu
 
 # Run the interactive desktop setup
-setup-desktop.nu
+ui.nu
 ```
 
 ## Install IDEs

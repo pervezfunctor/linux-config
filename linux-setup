@@ -299,7 +299,7 @@ main() {
     "$DOT_DIR/nu/setup-shell.nu" "$@"
     ;;
   "desktop")
-    "$DOT_DIR/nu/setup-desktop.nu" "$@"
+    "$DOT_DIR/nu/ui.nu" "$@"
     ;;
   *)
     die "Unknown option: $opt"

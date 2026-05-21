@@ -189,7 +189,7 @@ def "main rust" [] {
   }
 
   log+ "Installing rustup..."
-  (http get https://sh.rustup.rs) | sh
+  (http get https://sh.rustup.rs) | sh -s -- -y
 }
 
 def "main vp" [] {
@@ -331,7 +331,7 @@ def "main ai cli" [] {
   (http get https://claude.ai/install.sh) | bash
 }
 
-def "main devtools" [] {
+def "main dev" [] {
   main uv
   main vp
   main rust
@@ -383,7 +383,7 @@ def "main setup-shell" [] {
 
   $items = $items ++ [
     { description: "Install shell tools", handler: { main shell } }
-    { description: "Install devtools (rust/node/uv)", handler: { main devtools } }
+    { description: "Install devtools (rust/node/uv)", handler: { main dev } }
     { description: "Install Neovim", handler: { main nvim } }
     { description: "Install rustup", handler: { main rust } }
   ]
@@ -421,6 +421,7 @@ def "main help" [] {
   print ""
   print "  system           Install system packages (non-interactive)"
   print "  shell            Install shell tools (pixi packages + brew)"
+  print "  dev              Install developer tools and global npm packages"
   print "  pixi             Install pixi and shell tool packages"
   print "  pixi packages    Install shell tool packages with pixi"
   print "  brew             Install Homebrew"
@@ -430,8 +431,6 @@ def "main help" [] {
   print "  nushell config   Stow Nushell config"
   print "  fish config      Stow fish config and set fish as default shell"
   print "  stow <package>   Stow a single package (example: nushell)"
-  print ""
-  print "  devtools         Install developer tools and global npm packages"
   print ""
   print "  nvim             Install and configure AstroNvim"
   print "  nvim install     Install Neovim only"

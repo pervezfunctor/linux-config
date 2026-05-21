@@ -313,6 +313,7 @@ def "main zed" [] {
   }
 
   main fonts
+  stow-package "zed"
 }
 
 def "main virt config" [] {

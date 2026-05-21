@@ -77,12 +77,15 @@ def "main settings" [] {
   }
 
   do -i {
-    dconf write /org/gnome/shell/extensions/blur-my-shell/panel/blur "false"
+    dconf write /org/gnome/shell/extensions/blur-my-shell/panel/blur false
+    dconf write /org/gnome/shell/extensions/blur-my-shell/applications/blur true
     dconf write /org/gnome/shell/extensions/blur-my-shell/applications/whitelist "['org.gnome.Ptyxis', 'dev.zed.Zed']"
 
     dconf write /org/gnome/shell/extensions/switcher/max-width-percentage "uint32 25"
     dconf write /org/gnome/shell/extensions/switcher/font-size "uint32 16"
     dconf write /org/gnome/shell/extensions/switcher/icon-size "uint32 16"
+    dconf write /org/gnome/shell/extensions/switcher/matching "uint32 1"
+    dconf write /org/gnome/shell/extensions/switcher/activate-by-key "uint32 2"
 
     dconf write /org/gnome/shell/extensions/paperwm/show-workspace-indicator false
     dconf write /org/gnome/shell/extensions/paperwm/show-window-position-bar false
@@ -225,8 +228,8 @@ def "main ptyxis" [] {
   gsettings set org.gnome.Ptyxis use-system-font false
   gsettings set org.gnome.Ptyxis interface-style 'system'
 
-  if (font exists 'Cascadia Mono NF') {
-    gsettings set org.gnome.Ptyxis font-name 'Cascadia Mono NF 11'
+  if (font exists 'JetbrainsMono Nerd Font') {
+    gsettings set org.gnome.Ptyxis font-name 'JetbrainsMono Nerd Font 11'
   } else if (font exists '') {
     gsettings set org.gnome.Ptyxis font-name ''
   }

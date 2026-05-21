@@ -194,7 +194,12 @@ if has_cmd fastfetch
 end
 
 if has_cmd eza
+    alias l   'eza --icons --group-directories-first'
     alias ls  'eza --icons --group-directories-first'
+    alias ll  'eza -l --icons --group-directories-first'
+    alias la  'eza -a --icons --group-directories-first'
+    alias lla 'eza -la --icons --group-directories-first'
+    alias lt  'eza --tree --icons --group-directories-first'
 end
 
 

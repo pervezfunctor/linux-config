@@ -241,7 +241,8 @@ def "main ptyxis" [] {
 
   let profile = $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/"
   gsettings set $profile opacity 0.85
-  gsettings set $profile palette "Everforest"
+  gsettings set $profile palette "Catppuccin Mocha"
+  # gsettings set $profile palette "Everforest"
 
   # is flatpak
   # let profid = (

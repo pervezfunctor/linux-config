@@ -27,7 +27,7 @@ readonly REPO_NAME="linux-config"
 readonly REPO_URL="https://github.com/pervezfunctor/${REPO_NAME}.git"
 readonly DOT_DIR="${HOME}/.${REPO_NAME}"
 
-readonly LOG_DIR="${HOME}/${REPO_NAME}.logs"
+readonly LOG_DIR="${HOME}/.${REPO_NAME}.logs"
 readonly LOG_FILE="${LOG_DIR}/.${REPO_NAME}.log"
 readonly STD_LOG_FILE="${LOG_DIR}/.${REPO_NAME}-std.log"
 readonly ERR_LOG_FILE="${LOG_DIR}/.${REPO_NAME}-err.log"

@@ -275,6 +275,20 @@ def "main gdm" [] {
       gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
       gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
       gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+
+      '{
+          "light-theme": "Catppuccin Latte \ud83c\udf3b.css",
+          "dark-theme": "Catppuccin Mocha \ud83c\udf3f.css",
+          "window-controls": "colored",
+          "modify-gtk3-theme": true,
+          "modify-gnome-shell": true,
+          "run-in-background": true,
+          "firefox-theme": true,
+          "transparency": false,
+          "window": false,
+          "sharp": false,
+          "light-text": false
+      }' | save -f ~/.var/app/io.github.swordpuffin.rewaita/data/prefs.json
     }
   }
 }

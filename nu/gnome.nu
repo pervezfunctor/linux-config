@@ -64,7 +64,7 @@ def "main settings" [] {
 
   gsettings set org.gnome.desktop.input-sources xkb-options "['caps:ctrl_modifier']"
   gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-  gsettings set org.gnome.desktop.interface accent-color 'green'
+  gsettings set org.gnome.desktop.interface accent-color 'blue'
   gsettings set org.gnome.desktop.interface gtk-key-theme "Emacs"
   gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
 

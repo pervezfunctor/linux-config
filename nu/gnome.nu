@@ -260,6 +260,20 @@ def "main ptyxis" [] {
   #   palette "Everforest"
 }
 
+def "main gdm" [] {
+  if (is-arch) {
+    log+ "Installing gdm packages for Arch"
+    si [
+      "gdm"
+      "python-pipx"
+      "archlinux-wallpaper"
+      "gnome-controler-center"
+      "extension-manager"
+      "gnome-power-manager"
+    ]
+  }
+}
+
 def "main packages" [] {
   log info "Installing packages..."
   do -i {
@@ -269,10 +283,13 @@ def "main packages" [] {
 
 def "main" [] {
   fonts-install
-  main packages
+
   main extensions
   main settings
   main keybindings
   main flatpaks
-  main ptyxis
+
+  # main packages
+  # main ptyxis
+  # main gdm
 }

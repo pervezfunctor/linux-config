@@ -269,6 +269,7 @@ def "main gdm" [] {
       "gdm"
       "gnome-control-center"
       "gnome-power-manager"
+      "gnome-system-monitor"
       "python-pipx"
     ]
     do -i {

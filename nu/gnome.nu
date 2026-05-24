@@ -271,6 +271,11 @@ def "main gdm" [] {
       "extension-manager"
       "gnome-power-manager"
     ]
+    do -i {
+      gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+      gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
+      gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+    }
   }
 }
 

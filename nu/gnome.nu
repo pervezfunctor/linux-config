@@ -306,6 +306,10 @@ def "main packages" [] {
 }
 
 def "main" [] {
+  if not (has-cmd pipx) {
+    error+ "pipx not installed. Quitting"
+  }
+
   fonts-install
 
   main extensions

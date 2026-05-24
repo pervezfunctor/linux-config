@@ -264,12 +264,12 @@ def "main gdm" [] {
   if (is-arch) {
     log+ "Installing gdm packages for Arch"
     si [
-      "gdm"
-      "python-pipx"
       "archlinux-wallpaper"
-      "gnome-controler-center"
       "extension-manager"
+      "gdm"
+      "gnome-control-center"
       "gnome-power-manager"
+      "python-pipx"
     ]
     do -i {
       gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
@@ -277,17 +277,17 @@ def "main gdm" [] {
       gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
 
       '{
-          "light-theme": "Catppuccin Latte \ud83c\udf3b.css",
-          "dark-theme": "Catppuccin Mocha \ud83c\udf3f.css",
-          "window-controls": "colored",
-          "modify-gtk3-theme": true,
-          "modify-gnome-shell": true,
-          "run-in-background": true,
-          "firefox-theme": true,
-          "transparency": false,
-          "window": false,
-          "sharp": false,
-          "light-text": false
+  "light-theme": "Catppuccin Latte \ud83c\udf3b.css",
+  "dark-theme": "Catppuccin Mocha \ud83c\udf3f.css",
+  "window-controls": "colored",
+  "modify-gtk3-theme": true,
+  "modify-gnome-shell": true,
+  "run-in-background": true,
+  "firefox-theme": true,
+  "transparency": true,
+  "window": false,
+  "sharp": false,
+  "light-text": false
       }' | save -f ~/.var/app/io.github.swordpuffin.rewaita/data/prefs.json
     }
   }

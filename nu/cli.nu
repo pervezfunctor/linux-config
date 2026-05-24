@@ -132,6 +132,7 @@ def "main pixi packages" [] {
     "gh"
     "go-gum"
     "go-shfmt"
+    "htop"
     "imagemagick"
     "jq"
     "just"

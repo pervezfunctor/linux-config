@@ -270,7 +270,11 @@ def "main gdm" [] {
       "gnome-control-center"
       "gnome-power-manager"
       "gnome-system-monitor"
+      "papers"
       "python-pipx"
+      "imv"
+      "mpv"
+      "gnome-disk-utility"
     ]
     do -i {
       gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"

@@ -98,9 +98,15 @@ def "main settings" [] {
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin 12
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin-bottom 12
 
-    gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
-    gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
-    gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+    if (is-arch) {
+      gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+      gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
+      gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+    } else if (is-resolute) {
+      gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
+      gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
+      gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
+    }
 
     '{
 "light-theme": "Catppuccin Latte \ud83c\udf3b.css",

@@ -97,6 +97,24 @@ def "main settings" [] {
     dconf write /org/gnome/shell/extensions/paperwm/horizontal-margin 12
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin 12
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin-bottom 12
+
+    gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+    gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
+    gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+
+    '{
+"light-theme": "Catppuccin Latte \ud83c\udf3b.css",
+"dark-theme": "Catppuccin Mocha \ud83c\udf3f.css",
+"window-controls": "colored",
+"modify-gtk3-theme": true,
+"modify-gnome-shell": true,
+"run-in-background": true,
+"firefox-theme": true,
+"transparency": true,
+"window": false,
+"sharp": false,
+"light-text": false
+    }' | save -f ~/.var/app/io.github.swordpuffin.rewaita/data/prefs.json
   }
 }
 
@@ -238,6 +256,10 @@ def "main ptyxis" [] {
     gsettings get org.gnome.Ptyxis default-profile-uuid
     | str trim --char "'"
   )
+  if ($profid == "") {
+    log error "No default profile. Open ptyxis and run 'gnome.nu ptyxis'."
+    return
+  }
 
   let profile = $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/"
   gsettings set $profile opacity 0.85
@@ -261,41 +283,44 @@ def "main ptyxis" [] {
 }
 
 def "main gdm" [] {
-  if (is-arch) {
-    log+ "Installing gdm packages for Arch"
-    si [
-      "archlinux-wallpaper"
-      "extension-manager"
+  if not (is-arch) and not (is-fedora) {
+    error+ "Currently only archlinux and fedora supported"
+    return
+  }
+
+  mut pkgs = [
       "gdm"
       "gnome-control-center"
       "gnome-power-manager"
       "gnome-system-monitor"
-      "papers"
-      "python-pipx"
       "imv"
       "mpv"
       "gnome-disk-utility"
-    ]
-    do -i {
-      gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
-      gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
-      gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+      "papers"
+      "gvfs-nfs"
+      "gvfs-smb"
+      "nautilus"
+      "udiskie"
+      "udisks2"
+  ]
 
-      '{
-  "light-theme": "Catppuccin Latte \ud83c\udf3b.css",
-  "dark-theme": "Catppuccin Mocha \ud83c\udf3f.css",
-  "window-controls": "colored",
-  "modify-gtk3-theme": true,
-  "modify-gnome-shell": true,
-  "run-in-background": true,
-  "firefox-theme": true,
-  "transparency": true,
-  "window": false,
-  "sharp": false,
-  "light-text": false
-      }' | save -f ~/.var/app/io.github.swordpuffin.rewaita/data/prefs.json
-    }
+  if (is-arch) {
+    $pkgs = $pkgs ++ [
+      "archlinux-wallpaper"
+      "extension-manager"
+      "python-pipx"
+    ]
+  } else if (is-fedora) {
+    $pkgs = $pkgs ++ [
+      "gnome-extensions-app"
+      "google-noto-color-emoji-fonts"
+      "xdg-utils"
+      "pipx"
+    ]
   }
+
+  log+ "Installing gdm packages..."
+  si $pkgs
 }
 
 def "main packages" [] {

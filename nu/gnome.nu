@@ -295,17 +295,14 @@ def "main gdm" [] {
   }
 
   mut pkgs = [
-      "gdm"
       "gnome-control-center"
+      "gnome-disk-utility"
       "gnome-power-manager"
       "gnome-system-monitor"
       "imv"
       "mpv"
-      "gnome-disk-utility"
-      "papers"
-      "gvfs-nfs"
-      "gvfs-smb"
       "nautilus"
+      "papers"
       "udiskie"
       "udisks2"
   ]
@@ -314,14 +311,29 @@ def "main gdm" [] {
     $pkgs = $pkgs ++ [
       "archlinux-wallpaper"
       "extension-manager"
+      "gdm"
+      "gvfs-nfs"
+      "gvfs-smb"
       "python-pipx"
     ]
   } else if (is-fedora) {
     $pkgs = $pkgs ++ [
+      "gdm"
       "gnome-extensions-app"
       "google-noto-color-emoji-fonts"
-      "xdg-utils"
+      "gvfs-nfs"
+      "gvfs-smb"
       "pipx"
+      "xdg-utils"
+    ]
+  } else if (is-resolute) {
+    $pkgs = $pkgs ++ [
+      "gdm3"
+      "gnome-shell-extension-manager"
+      "gvfs"
+      "gvfs-backends"
+      "pipx"
+      "xdg-utils"
     ]
   }
 

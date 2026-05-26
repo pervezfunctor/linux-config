@@ -5,15 +5,11 @@ use ./lib.nu *
 
 def "main extensions" [] {
   if not (has-cmd gext) {
-    if not (has-cmd pipx) {
-      log error "pipx not found, skipping gnome extensions"
-      return
-    }
     pipx install gnome-extensions-cli --system-site-packages
   }
 
   if not (has-cmd gext) {
-    log error "gext not found, skipping gnome extensions"
+    error+ "gext not found, skipping gnome extensions"
     return
   }
 
@@ -33,7 +29,7 @@ def "main extensions" [] {
 
 def "main flatpaks" [] {
   if not (has-cmd flatpak) {
-    log error "flatpak not found, skipping gnome flatpaks"
+    error+ "flatpak not found, skipping gnome flatpaks"
     return
   }
 
@@ -58,7 +54,7 @@ def "main flatpaks" [] {
 
 def "main settings" [] {
   if not (has-cmd gsettings) {
-    log error "gsettings not found, skipping gnome settings"
+    error+ "gsettings not found, skipping gnome settings"
     return
   }
 
@@ -71,8 +67,18 @@ def "main settings" [] {
   gsettings set org.gnome.mutter dynamic-workspaces false
   gsettings set org.gnome.desktop.wm.preferences num-workspaces 4
 
+  if (is-arch) {
+    gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+    gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
+    gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
+  } else if (is-resolute) {
+    gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
+    gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
+    gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
+  }
+
   if not (has-cmd dconf) {
-    log error "dconf not found, skipping gnome settings"
+    error+ "dconf not found, skipping gnome settings"
     return
   }
 
@@ -98,16 +104,6 @@ def "main settings" [] {
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin 12
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin-bottom 12
 
-    if (is-arch) {
-      gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
-      gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
-      gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
-    } else if (is-resolute) {
-      gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
-      gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
-      gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/vale1ntin0omf-Electric_Veins_of_the_Storm.jpg"
-    }
-
     '{
 "light-theme": "Catppuccin Latte \ud83c\udf3b.css",
 "dark-theme": "Catppuccin Mocha \ud83c\udf3f.css",
@@ -126,7 +122,7 @@ def "main settings" [] {
 
 def "main keybindings" [] {
   if not (has-cmd dconf) {
-    log error "dconf not found, skipping gnome keybindings"
+    error+ "dconf not found, skipping gnome keybindings"
     return
   }
 
@@ -181,8 +177,10 @@ def "main keybindings" [] {
 
   gnome-shortcut.nu create "Terminal" -c "ptyxis -s" -s "<Super>Return"
 
-  # dconf write /org/gnome/shell/extensions/search-light/secondary-shortcut-search "['<Super>d']"
-  # dconf write /org/gnome/shell/extensions/search-light/primary-shortcut-search "['<Super>Space']"
+  if (is-ublue) {
+    dconf write /org/gnome/shell/extensions/search-light/secondary-shortcut-search "['<Super>d']"
+    dconf write /org/gnome/shell/extensions/search-light/primary-shortcut-search "['<Super>Space']"
+  }
 }
 
 def "main jetbrains mono" [] {
@@ -190,6 +188,7 @@ def "main jetbrains mono" [] {
       log+ "JetBrains Mono Nerd Font already installed"
       return
     }
+
     log+ "Installing JetBrains Mono Nerd Font"
     mkdir ~/.local/share/fonts
     rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
@@ -206,24 +205,6 @@ def "main jetbrains mono fix" [] {
   | each {|f| sed -i 's/Cascadia Mono NF/JetBrainsMono Nerd Font/g' $f }
 }
 
-def "main help" [] {
-  print $"Usage: gnome.nu <command>
-  Available commands:
-  extensions     Install GNOME extensions\(paperwm etc\)
-  packages       Install GNOME packages
-  settings       Configure GNOME settings
-  keybindings    Configure GNOME keybindings
-  flatpaks       Manage GNOME flatpaks
-  ptyxis         Configure Ptyxis terminal
-  jetbrains mono Install JetBrains Mono Nerd Font
-  help           Show this help message
-  "
-}
-
-def is-flatpak [name: string] {
-  (flatpak list --columns=application | str contains $name)
-}
-
 def "font exists" [font_name: string] {
   (fc-list : family
   | lines
@@ -233,29 +214,35 @@ def "font exists" [font_name: string] {
   | any {|name| $name == $font_name })
 }
 
+def is-flatpak [name: string] {
+  (flatpak list --columns=application | str contains $name)
+}
+
 def "main ptyxis" [] {
   if not (has-cmd gsettings) {
-    log error "gsettings not found, skipping Ptyxis configuration"
+    error+ "gsettings not found, skipping Ptyxis configuration"
     return
   }
   if not (has-cmd dconf) {
-    log error "dconf not found, skipping Ptyxis configuration"
+    error+ "dconf not found, skipping Ptyxis configuration"
     return
   }
   if not (has-cmd ptyxis) and not (is-flatpak "org.gnome.Ptyxis") {
-    log info "ptyxis not found, Installing..."
-    si ["ptyxis"]
+    if not (is-fedora-atomic) {
+      log+ "ptyxis not found, Installing..."
+      si ["ptyxis"]
+    }
   }
 
-  log info "Configuring Ptyxis"
+  log+ "Configuring Ptyxis"
 
   gsettings set org.gnome.Ptyxis use-system-font false
   gsettings set org.gnome.Ptyxis interface-style 'system'
 
   if (font exists 'JetBrainsMono Nerd Font') {
     gsettings set org.gnome.Ptyxis font-name 'JetBrainsMono Nerd Font 11'
-  } else if (font exists '') {
-    gsettings set org.gnome.Ptyxis font-name ''
+  } else if (font exists 'Cascadia Mono NF') {
+    gsettings set org.gnome.Ptyxis font-name 'Cascadia Mono NF 11'
   }
 
   let profid = (
@@ -263,34 +250,18 @@ def "main ptyxis" [] {
     | str trim --char "'"
   )
   if ($profid == "") {
-    log error "No default profile. Open ptyxis and run 'gnome.nu ptyxis'."
+    error+ "No default profile. Open ptyxis and run 'gnome.nu ptyxis'."
     return
   }
 
   let profile = $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/"
   gsettings set $profile opacity 0.85
   gsettings set $profile palette "Catppuccin Mocha"
-  # gsettings set $profile palette "Everforest"
-
-  # is flatpak
-  # let profid = (
-  #   flatpak run --command=gsettings app.devsuite.Ptyxis \
-  #     get org.gnome.Ptyxis default-profile-uuid
-  #   | str trim --char "'"
-  # )
-
-  # flatpak run --command=gsettings app.devsuite.Ptyxis \
-  #   set $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/" \
-  #   opacity 0.85
-
-  # flatpak run --command=gsettings app.devsuite.Ptyxis \
-  #   set $"org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/($profid)/" \
-  #   palette "Everforest"
 }
 
 def "main gdm" [] {
-  if not (is-arch) and not (is-fedora) {
-    error+ "Currently only archlinux and fedora supported"
+  if not (is-arch) and not (is-fedora) and not (is-resolute) {
+    error+ "Currently only archlinux, fedora and ubuntu 26.04 supported"
     return
   }
 
@@ -341,11 +312,20 @@ def "main gdm" [] {
   si $pkgs
 }
 
-def "main packages" [] {
-  log info "Installing packages..."
-  do -i {
-    si ["gnome-tweaks"]
-  }
+def "main help" [] {
+  print $"Usage: gnome.nu <command>
+
+  Available commands:
+  extensions     Install GNOME extensions\(paperwm etc\)
+  settings       Configure GNOME settings
+  keybindings    Configure GNOME keybindings
+  flatpaks       Manage GNOME flatpaks
+  ptyxis         Configure Ptyxis terminal
+  gdm            Minimal Gnome system with gdm display manager
+  jetbrains mono Install JetBrains Mono Nerd Font
+  help           Show this help message
+
+  "
 }
 
 def "main" [] {
@@ -353,14 +333,11 @@ def "main" [] {
     error+ "pipx not installed. Quitting"
   }
 
-  fonts-install
+  main jetbrains mono
 
   main extensions
   main settings
   main keybindings
   main flatpaks
-
-  # main packages
-  # main ptyxis
-  # main gdm
+  main ptyxis
 }

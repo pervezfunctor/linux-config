@@ -184,19 +184,7 @@ def "main keybindings" [] {
 }
 
 def "main jetbrains mono" [] {
-    if (fc-list | lines | where $it =~ "(?i)jetbrains.*nerd" | is-not-empty) {
-      log+ "JetBrains Mono Nerd Font already installed"
-      return
-    }
-
-    log+ "Installing JetBrains Mono Nerd Font"
-    mkdir ~/.local/share/fonts
-    rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
-    wget -nv https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip -O /tmp/jetbrains-mono.zip
-    unzip -qq -d /tmp/jetbrains-mono -o /tmp/jetbrains-mono.zip
-    glob "/tmp/jetbrains-mono/*.ttf" | each { |f| cp $f ~/.local/share/fonts/ }
-    rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
-    log+ "JetBrains Mono Nerd Font installation done!"
+  jetbrains-mono-install
 }
 
 def "main jetbrains mono fix" [] {
@@ -331,6 +319,7 @@ def "main help" [] {
 def "main" [] {
   if not (has-cmd pipx) {
     error+ "pipx not installed. Quitting"
+    return
   }
 
   main jetbrains mono

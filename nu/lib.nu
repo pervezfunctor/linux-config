@@ -197,7 +197,7 @@ export def add-shell [shell_path: string] {
 
   let shells = open /etc/shells | lines
   if not ($shell_path in $shells) {
-    ^sudo echo $shell_path | ^sudo tee -a /etc/shells
+    sudo echo $shell_path | sudo tee -a /etc/shells
   }
 }
 
@@ -225,7 +225,7 @@ export def group-add [group: string] {
   let group_names = ($groups_output | parse "{name}:x:{gid}:{members}" | get name)
 
   if $group in $group_names {
-    ^sudo usermod -aG $group $env.USER
+    sudo usermod -aG $group $env.USER
     } else {
     warn+ $"($group) group not found, skipping"
   }
@@ -236,15 +236,15 @@ export def si [packages: list<string>]: nothing -> bool {
 
   let exit_code = try {
     if (is-mac) or (is-ublue) {
-      ^brew install ...$packages
+      brew install ...$packages
     } else if (is-fedora) {
-      ^sudo dnf install -y ...$packages
+      sudo dnf install -y ...$packages
     } else if (is-apt) {
-      ^sudo apt install -y ...$packages
+      sudo apt install -y ...$packages
     } else if (is-tw) {
-      ^sudo zypper --non-interactive --quiet install --auto-agree-with-licenses ...$packages
+      sudo zypper --non-interactive --quiet install --auto-agree-with-licenses ...$packages
     } else if (is-arch) {
-      ^sudo pacman -S --quiet --noconfirm ...$packages
+      sudo pacman -S --quiet --noconfirm ...$packages
     } else {
       error+ $"OS not supported. Not installing ($packages | str join ' ')."
       return false
@@ -264,19 +264,19 @@ export def si [packages: list<string>]: nothing -> bool {
 export def update-packages []: nothing -> nothing {
   log+ "Updating packages"
   if (is-mac) or (is-ublue) {
-    ^brew update
-    ^brew upgrade
+    brew update
+    brew upgrade
   } else if (is-fedora) {
-    ^sudo dnf update -y
+    sudo dnf update -y
   } else if (is-apt) {
-    ^sudo apt update
-    ^sudo apt upgrade -y
+    sudo apt update
+    sudo apt upgrade -y
   } else if (is-tw) {
-    ^sudo zypper refresh
-    ^sudo zypper update
+    sudo zypper refresh
+    sudo zypper update
   } else if (is-arch) {
-    ^sudo pacman -Syyu
-    ^sudo pacman -Fy
+    sudo pacman -Syyu
+    sudo pacman -Fy
   } else {
     die "OS not supported for package updates."
   }
@@ -292,8 +292,8 @@ export def brew-install [] {
   log+ "Installing brew"
 
   ignore-error {||
-    ^sudo -v
-    ^bash -c (http get https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | into string)
+    sudo -v
+    bash -c (http get https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | into string)
     path add $brew_path
   }
 
@@ -302,8 +302,7 @@ export def brew-install [] {
       return
   }
 
-  ^brew tap ublue-os/tap
-  ^brew install topgrade
+  brew tap ublue-os/tap
 }
 
 export def paru-install [] {
@@ -316,11 +315,11 @@ export def paru-install [] {
 
   si ["base-devel"]
   do -i { ^rm -rf /tmp/paru }
-  ^git clone https://aur.archlinux.org/paru.git /tmp/paru
+  git clone https://aur.archlinux.org/paru.git /tmp/paru
 
   try {
     cd /tmp/paru
-    ^makepkg --syncdeps --noconfirm --install
+    makepkg --syncdeps --noconfirm --install
   } catch {
     warn+ "Failed to install paru"
   }
@@ -329,10 +328,10 @@ export def paru-install [] {
 }
 
 export def keep-sudo-alive []: nothing -> int {
-    ^sudo -v
+    sudo -v
     job spawn {
         loop {
-            ^sudo -n true
+            sudo -n true
             sleep 55sec
         }
     }
@@ -341,19 +340,19 @@ export def keep-sudo-alive []: nothing -> int {
 export def stop-sudo-alive [job_id: int] {
     do -i {
         job kill $job_id
-        ^sudo -k
+        sudo -k
     }
 }
 
 export def base-install [] {
   log+ "Installing required packages..."
   if (is-mac) {
-    ^xcode-select --install
-    ^/usr/sbin/softwareupdate --install-rosetta --agree-to-license
+    xcode-select --install
+    /usr/sbin/softwareupdate --install-rosetta --agree-to-license
     brew-install
-    ^brew install wget mas stow newt trash zstd zip unzip rclone tmux tar tree visual-studio-code
+    brew install wget mas stow newt trash zstd zip unzip rclone tmux tar tree visual-studio-code
   } else if (is-ublue) {
-    ^brew install stow newt trash-cli
+    brew install stow newt trash-cli
   } else {
     si ["stow" "trash-cli" "whiptail" "unzip"]
   }
@@ -473,7 +472,7 @@ def gum-select-install [options: list<string>, default_installs: list<string> = 
 
   options
   | str join "\n"
-  | ^gum choose --no-limit --selected $defaults
+  | gum choose --no-limit --selected $defaults
   | lines
   | each {|cmd| run-command ($cmd | str trim) }
   | ignore
@@ -483,7 +482,7 @@ export def get-pubkey [ssh_key: string] {
   if ($ssh_key | is-empty) {
     let pubkey_path = $"($env.HOME)/.ssh/id_ed25519.pub"
     if not ($pubkey_path | path exists) {
-      ^ssh-keygen -t ed25519 -f $"($env.HOME)/.ssh/id_ed25519" -q -N ""
+      ssh-keygen -t ed25519 -f $"($env.HOME)/.ssh/id_ed25519" -q -N ""
     }
     open $pubkey_path | str trim
   } else {
@@ -501,6 +500,22 @@ export def "fonts-install" [] {
   }
 
   ignore-error {||
-    ^brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
+    brew install --cask font-jetbrains-mono-nerd-font font-fontawesome font-monaspice-nerd-font
   }
+}
+
+export def "jetbrains-mono-install" [] {
+    if (fc-list | lines | where $it =~ "(?i)jetbrains.*nerd" | is-not-empty) {
+      log+ "JetBrains Mono Nerd Font already installed"
+      return
+    }
+
+    log+ "Installing JetBrains Mono Nerd Font"
+    mkdir ~/.local/share/fonts
+    rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
+    wget -nv https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip -O /tmp/jetbrains-mono.zip
+    unzip -qq -d /tmp/jetbrains-mono -o /tmp/jetbrains-mono.zip
+    glob "/tmp/jetbrains-mono/*.ttf" | each { |f| cp $f ~/.local/share/fonts/ }
+    rm -rf /tmp/jetbrains-mono.zip /tmp/jetbrains-mono
+    log+ "JetBrains Mono Nerd Font installation done!"
 }

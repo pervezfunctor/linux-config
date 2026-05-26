@@ -305,7 +305,7 @@ def "main distrobox" [] {
 }
 
 def "main fonts" [] {
-  fonts-install
+  jetbrains-mono-install
 }
 
 def "main zed" [] {

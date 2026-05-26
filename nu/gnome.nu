@@ -3,6 +3,24 @@
 use std/log
 use ./lib.nu *
 
+def "main vicinae" [] {
+  if not (has-cmd gext) {
+    error+ "Cannot install vicinae extension, gext not available"
+    return
+  }
+
+  if not (has-cmd vicinae) {
+    curl -fsSL https://vicinae.com/install | bash
+  }
+  do -i { systemctl --user enable --now vicinae }
+
+  gext install vicinae@dagimg-dot
+  gext enable vicinae@dagimg-dot
+
+  dconf write /org/gnome/shell/extensions/paperwm/winprops "['{\"wm_class\":\"vicinae\",\"scratch_layer\":true}']"
+  gnome-shortcut.nu create "App Launcher" -c "vicinae toggle" -s "<Super>d"
+}
+
 def "main extensions" [] {
   if not (has-cmd gext) {
     pipx install gnome-extensions-cli --system-site-packages
@@ -18,15 +36,13 @@ def "main extensions" [] {
     "switcher@landau.fi"
     "windowsNavigator@gnome-shell-extensions.gcampax.github.com"
     "blur-my-shell@aunetx"
-    user-theme@gnome-shell-extensions.gcampax.github.com
-    vicinae@dagimg-dot
+    "user-theme@gnome-shell-extensions.gcampax.github.com"
   ]
 
   for ext in $extensions {
     do -i { gext install $ext }
     do -i { gext enable $ext }
   }
-  # do -i { systemctl --user enable --now vicinae }
 }
 
 def "main flatpaks" [] {
@@ -180,9 +196,6 @@ def "main keybindings" [] {
   dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-4 "['<Super>4']"
   dconf write /org/gnome/desktop/wm/preferences/workspace-names "['1', '2', '3', '4']"
 
-  dconf write /org/gnome/shell/extensions/paperwm/winprops "['{\"wm_class\":\"vicinae\",\"scratch_layer\":true}']"
-  gnome-shortcut.nu create "App Launcher" -c "vicinae toggle" -s "<Super>d"
-
   gnome-shortcut.nu create "Terminal" -c "ptyxis -s" -s "<Super>Return"
 }
 
@@ -325,6 +338,7 @@ def "main help" [] {
   gdm             Minimal Gnome system with gdm display manager
   rewaita config  Rewaita defaults for gnome config
   jetbrains mono  Install JetBrains Mono Nerd Font
+  vicinae         Install and setup vicinae for gnome
   help            Show this help message
 
   "

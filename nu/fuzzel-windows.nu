@@ -1,5 +1,16 @@
 #!/usr/bin/env nu
 
+def "main help" [] {
+  print "fuzzel-windows.nu - Interactive niri window switcher using fuzzel"
+  print ""
+  print "Usage:"
+  print "  nu fuzzel-windows.nu"
+  print "  nu fuzzel-windows.nu help"
+  print ""
+  print "Shows a fuzzel dmenu of all niri windows grouped by workspace."
+  print "Selecting one focuses that window."
+}
+
 def main [] {
     let ws_map = niri msg --json workspaces
         | from json

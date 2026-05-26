@@ -1,5 +1,16 @@
 #!/usr/bin/env nu
 
+def "main help" [] {
+  print "greetd-pam-fix.nu - Ensure pam_gnome_keyring is configured in /etc/pam.d/greetd"
+  print ""
+  print "Usage:"
+  print "  nu greetd-pam-fix.nu"
+  print "  nu greetd-pam-fix.nu help"
+  print ""
+  print "Adds or uncomments pam_gnome_keyring auth/session lines in /etc/pam.d/greetd."
+  print "Creates a .bak backup before modifying."
+}
+
 def main [] {
   let pam_file = "/etc/pam.d/greetd"
 

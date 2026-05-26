@@ -1,5 +1,19 @@
 #!/usr/bin/env nu
 
+def "main help" [] {
+  print "split-into.nu - Split first N niri windows evenly on the focused workspace"
+  print ""
+  print "Usage:"
+  print "  nu split-into.nu <n>"
+  print "  nu split-into.nu help"
+  print ""
+  print "Arguments:"
+  print "  n   Number of windows to split (clamped to available window count)"
+  print ""
+  print "Example:"
+  print "  nu split-into.nu 3"
+}
+
 def main [n: int] {
     let ws = (niri msg -j workspaces | from json | where is_focused | get id | first)
 

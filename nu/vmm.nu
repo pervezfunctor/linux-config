@@ -113,6 +113,25 @@ def get-vm-vcpus [name: string] {
   )
 }
 
+def "main help" [] {
+  print "vmm.nu - Start a QEMU/KVM VM with GPU acceleration via virtio"
+  print ""
+  print "Usage:"
+  print "  nu vmm.nu <vm> [--firmware <auto|bios|uefi>]"
+  print "  nu vmm.nu help"
+  print ""
+  print "Arguments:"
+  print "  vm                   Name of the VM (as registered in virsh)"
+  print ""
+  print "Flags:"
+  print "  -f, --firmware       Firmware mode: auto|bios|uefi (default: auto)"
+  print ""
+  print "Examples:"
+  print "  nu vmm.nu my-vm"
+  print "  nu vmm.nu my-vm --firmware uefi"
+  print "  nu vmm.nu my-vm -f bios"
+}
+
 def main [
   vm: string
 

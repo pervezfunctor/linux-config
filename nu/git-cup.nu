@@ -3,7 +3,6 @@
 use ./lib.nu *
 use std/util "path add"
 
-
 const DOTFILES_URL = "https://github.com/pervezfunctor/linux-config.git"
 const DOT_DIR = ($nu.home-dir | path join ".linux-config")
 
@@ -97,9 +96,27 @@ def "main dotfiles clone" [] {
   }
 }
 
+def "main help" [] {
+  print "git-cup.nu - Dotfiles git setup utility"
+  print ""
+  print "Usage:"
+  print "  nu git-cup.nu"
+  print "  nu git-cup.nu help"
+  print "  nu git-cup.nu <command>"
+  print ""
+  print "Commands:"
+  print "  dotfiles         Clone/pull dotfiles repo and configure shells"
+  print "  dotfiles clone   Clone or pull dotfiles (default if no command given)"
+  print "  help             Show this help message"
+}
+
 def "main dotfiles" [] {
   main dotfiles clone
 
-  main nushell config
-  main fish config
+  # main nushell config
+  # main fish config
+}
+
+def main [] {
+  main help
 }

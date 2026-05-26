@@ -2,6 +2,21 @@
 
 use ./lib.nu *
 
+def "main help" [] {
+  print "shell-autostart.nu - Auto-start a shell from another shell's rc file"
+  print ""
+  print "Usage:"
+  print "  nu shell-autostart.nu <shell> <rc>"
+  print "  nu shell-autostart.nu help"
+  print ""
+  print "Arguments:"
+  print "  shell   Shell to start (e.g. fish, zsh)"
+  print "  rc      RC file to inject into (e.g. .bashrc, .bash_profile)"
+  print ""
+  print "Example:"
+  print "  nu shell-autostart.nu fish .bashrc"
+}
+
 def main [shell: string, rc: string] {
   log+ $"Setting ($shell) auto-start in ($rc)"
 

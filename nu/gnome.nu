@@ -26,7 +26,7 @@ def "main extensions" [] {
     do -i { gext install $ext }
     do -i { gext enable $ext }
   }
-  do -i { systemctl --user enable --now vicinae }
+  # do -i { systemctl --user enable --now vicinae }
 }
 
 def "main flatpaks" [] {
@@ -52,6 +52,22 @@ def "main flatpaks" [] {
     flatpak --user override --filesystem=xdg-config/gtk-3.0:rw
     flatpak --user override --filesystem=xdg-config/gtk-4.0:rw
   }
+}
+
+def "rewaita config" [] {
+  '{
+"light-theme": "Catppuccin Latte \ud83c\udf3b.css",
+"dark-theme": "Catppuccin Mocha \ud83c\udf3f.css",
+"window-controls": "colored",
+"modify-gtk3-theme": true,
+"modify-gnome-shell": true,
+"run-in-background": true,
+"firefox-theme": true,
+"transparency": true,
+"window": false,
+"sharp": false,
+"light-text": false
+  }' | save -f ~/.var/app/io.github.swordpuffin.rewaita/data/prefs.json
 }
 
 def "main settings" [] {
@@ -106,20 +122,7 @@ def "main settings" [] {
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin 12
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin-bottom 12
 
-    '{
-"light-theme": "Catppuccin Latte \ud83c\udf3b.css",
-"dark-theme": "Catppuccin Mocha \ud83c\udf3f.css",
-"window-controls": "colored",
-"modify-gtk3-theme": true,
-"modify-gnome-shell": true,
-"run-in-background": true,
-"firefox-theme": true,
-"transparency": true,
-"window": false,
-"sharp": false,
-"light-text": false
-    }' | save -f ~/.var/app/io.github.swordpuffin.rewaita/data/prefs.json
-  }
+    rewaita config
 }
 
 def "main keybindings" [] {
@@ -248,8 +251,8 @@ def "main ptyxis" [] {
 }
 
 def "main gdm" [] {
-  if not (is-arch) and not (is-fedora) and not (is-resolute) {
-    error+ "Currently only archlinux, fedora and ubuntu 26.04 supported"
+  if not (is-arch) and not (is-fedora) and not (is-resolute) and not (is-tw) {
+    error+ "Currently only archlinux, fedora, tumbleweed and ubuntu 26.04 supported"
     return
   }
 
@@ -274,6 +277,16 @@ def "main gdm" [] {
       "gvfs-nfs"
       "gvfs-smb"
       "python-pipx"
+    ]
+  } else if (is-tw) {
+    $pkgs = $pkgs ++ [
+      "extension-manager"
+      "flatpak-xdg-utils"
+      "gdm"
+      "gvfs-backend-samba"
+      "python3-pipx"
+      "xdg-utils"
+      wallpaper-branding-openSUSE
     ]
   } else if (is-fedora) {
     $pkgs = $pkgs ++ [
@@ -304,14 +317,15 @@ def "main help" [] {
   print $"Usage: gnome.nu <command>
 
   Available commands:
-  extensions     Install GNOME extensions\(paperwm etc\)
-  settings       Configure GNOME settings
-  keybindings    Configure GNOME keybindings
-  flatpaks       Manage GNOME flatpaks
-  ptyxis         Configure Ptyxis terminal
-  gdm            Minimal Gnome system with gdm display manager
-  jetbrains mono Install JetBrains Mono Nerd Font
-  help           Show this help message
+  extensions      Install GNOME extensions\(paperwm etc\)
+  settings        Configure GNOME settings
+  keybindings     Configure GNOME keybindings
+  flatpaks        Manage GNOME flatpaks
+  ptyxis          Configure Ptyxis terminal
+  gdm             Minimal Gnome system with gdm display manager
+  rewaita config  Rewaita defaults for gnome config
+  jetbrains mono  Install JetBrains Mono Nerd Font
+  help            Show this help message
 
   "
 }

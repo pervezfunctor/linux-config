@@ -19,12 +19,14 @@ def "main extensions" [] {
     "windowsNavigator@gnome-shell-extensions.gcampax.github.com"
     "blur-my-shell@aunetx"
     user-theme@gnome-shell-extensions.gcampax.github.com
+    vicinae@dagimg-dot
   ]
 
   for ext in $extensions {
     do -i { gext install $ext }
     do -i { gext enable $ext }
   }
+  do -i { systemctl --user enable --now vicinae }
 }
 
 def "main flatpaks" [] {
@@ -175,12 +177,10 @@ def "main keybindings" [] {
   dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-4 "['<Super>4']"
   dconf write /org/gnome/desktop/wm/preferences/workspace-names "['1', '2', '3', '4']"
 
-  gnome-shortcut.nu create "Terminal" -c "ptyxis -s" -s "<Super>Return"
+  dconf write /org/gnome/shell/extensions/paperwm/winprops "['{\"wm_class\":\"vicinae\",\"scratch_layer\":true}']"
+  gnome-shortcut.nu create "App Launcher" -c "vicinae toggle" -s "<Super>d"
 
-  if (is-ublue) {
-    dconf write /org/gnome/shell/extensions/search-light/secondary-shortcut-search "['<Super>d']"
-    dconf write /org/gnome/shell/extensions/search-light/primary-shortcut-search "['<Super>Space']"
-  }
+  gnome-shortcut.nu create "Terminal" -c "ptyxis -s" -s "<Super>Return"
 }
 
 def "main jetbrains mono" [] {

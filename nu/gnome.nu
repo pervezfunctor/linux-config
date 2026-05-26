@@ -56,9 +56,10 @@ def "main flatpaks" [] {
 
   let flatpaks = [
     "com.mattjakeman.ExtensionManager"
+    "io.github.swordpuffin.rewaita"
     "org.gtk.Gtk3theme.adw-gtk3"
     "org.gtk.Gtk3theme.adw-gtk3-dark"
-    "io.github.swordpuffin.rewaita"
+    "page.tesk.Refine"
   ]
   for pkg in $flatpaks {
     do -i { flatpak --user install -y flathub $pkg }

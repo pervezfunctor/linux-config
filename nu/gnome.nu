@@ -140,6 +140,7 @@ def "main settings" [] {
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin-bottom 12
 
     rewaita config
+  }
 }
 
 def "main keybindings" [] {
@@ -271,16 +272,16 @@ def "main gdm" [] {
   }
 
   mut pkgs = [
-      "gnome-control-center"
-      "gnome-disk-utility"
-      "gnome-power-manager"
-      "gnome-system-monitor"
-      "imv"
-      "mpv"
-      "nautilus"
-      "papers"
-      "udiskie"
-      "udisks2"
+    "gnome-control-center"
+    "gnome-disk-utility"
+    "gnome-power-manager"
+    "gnome-system-monitor"
+    "imv"
+    "mpv"
+    "nautilus"
+    "papers"
+    "udiskie"
+    "udisks2"
   ]
 
   if (is-arch) {

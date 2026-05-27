@@ -272,10 +272,11 @@ fresh_install() {
 
 help() {
   echo "Usage: $0 [fresh|brew|shell|desktop]"
-  echo "  fresh                 - Perform a fresh install"
+  echo "  fresh                 - Perform a fresh install (default)"
   echo "  brew                  - Install Homebrew"
   echo "  shell  options...     - Set up shell configuration"
   echo "  desktop options...    - Set up desktop environment"
+  echo "  -h, --help, help      - Show this help message"
 }
 
 main() {
@@ -286,6 +287,11 @@ main() {
 
   local opt="$1"
   shift
+
+  if [ "$opt" = "-h" ] || [ "$opt" = "--help" ] || [ "$opt" = "help" ]; then
+    help
+    return 0
+  fi
 
   if [ "$opt" = "brew" ]; then
     brew_install

@@ -202,6 +202,10 @@ if has_cmd eza
     alias lt  'eza --tree --icons --group-directories-first'
 end
 
-
-# Added by Antigravity CLI installer
-set -gx PATH "/home/pervez/.local/bin" $PATH
+function nu-check
+    if test -z "$argv[1]"
+        echo "Usage: nu-check <file.nu>"
+        return 1
+    end
+    nu -c "source $argv[1]"
+end

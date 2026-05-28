@@ -1,0 +1,272 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SSH_DIR="$HOME/.ssh"
+MANAGED_CONF="$SSH_DIR/gh-config"
+
+usage() {
+  cat <<EOF
+Usage: gh-ssh-key <command> [<args>]
+
+Commands:
+  create <name>       Generate a new SSH key and upload to GitHub
+  install <name>      Install a key from stdin and configure SSH/gh
+  list                List local profiles
+  list-remote         List keys registered on GitHub
+  remove <name>       Remove a profile from GitHub and locally
+  backup [<file>]     Encrypt all profiles (default: gh-ssh-keys.tar.gz.gpg)
+  restore <archive>   Restore profiles from encrypted backup
+                      (optionally filter by trailing names)
+  -h, --help          Show this help
+
+With no arguments, reads key from stdin and saves as profile "github".
+
+Examples:
+  cat ~/.ssh/id_ed25519_github | gh-ssh-key install laptop
+  gh-ssh-key create desktop
+  gh-ssh-key backup my-keys.tar.gz.gpg
+  gh-ssh-key restore my-keys.tar.gz.gpg desktop
+EOF
+  exit 0
+}
+
+profiles() {
+  find "$SSH_DIR" -maxdepth 1 -name 'id_ed25519_*' ! -name '*.pub' -exec basename {} \; \
+    | sed 's/^id_ed25519_//' | sort -u
+}
+
+ensure_gh_auth() {
+  if ! gh auth status 2>/dev/null; then
+    if [[ -n "${GH_TOKEN:-}" ]]; then
+      gh auth login --with-token <<<"$GH_TOKEN"
+    else
+      gh auth login -h github.com -s admin:public_key -s repo -s workflow
+    fi
+  fi
+}
+
+ensure_managed_conf() {
+  mkdir -p "$SSH_DIR"
+  chmod 700 "$SSH_DIR"
+  if ! grep -q "^Include gh-config" "$SSH_DIR/config" 2>/dev/null; then
+    echo "Include gh-config" >> "$SSH_DIR/config"
+    chmod 600 "$SSH_DIR/config"
+  fi
+  if [[ ! -f "$MANAGED_CONF" ]]; then
+    cat > "$MANAGED_CONF" <<'CONF'
+# Managed by gh-ssh-key — do not edit by hand
+Host github.com
+  HostName github.com
+  User git
+  IdentitiesOnly yes
+
+CONF
+  fi
+}
+
+add_identity() {
+  local name="$1"
+  ensure_managed_conf
+  if ! grep -q "IdentityFile ~/.ssh/id_ed25519_$name" "$MANAGED_CONF" 2>/dev/null; then
+    sed -i "/^  IdentitiesOnly yes$/a\  IdentityFile ~/.ssh/id_ed25519_$name" "$MANAGED_CONF"
+  fi
+}
+
+# --- commands ---
+
+cmd_create() {
+  local name="$1"
+  local key_path="$SSH_DIR/id_ed25519_$name"
+  [[ ! -f "$key_path" ]] || { echo "Error: profile '$name' already exists" >&2; exit 1; }
+  ssh-keygen -t ed25519 -f "$key_path" -N "" -C "$(hostname)-$name-$(date +%F)"
+  chmod 600 "$key_path"
+  gh ssh-key add "$key_path.pub" --title "$(hostname)-$name-$(date +%F)"
+  add_identity "$name"
+  echo "✓ Created and uploaded profile '$name'"
+}
+
+cmd_install() {
+  local name="$1"
+  local key_path="$SSH_DIR/id_ed25519_$name"
+  [[ ! -f "$key_path" ]] || { echo "Error: profile '$name' already exists" >&2; exit 1; }
+  mkdir -p "$SSH_DIR"
+  chmod 700 "$SSH_DIR"
+  cat > "$key_path"
+  chmod 600 "$key_path"
+  if [[ ! -f "$key_path.pub" ]]; then
+    ssh-keygen -y -f "$key_path" > "$key_path.pub" 2>/dev/null
+  fi
+  add_identity "$name"
+  ssh-keyscan github.com >> "$SSH_DIR/known_hosts" 2>/dev/null
+  ensure_gh_auth
+  gh config set git_protocol ssh 2>/dev/null || true
+  echo "✓ Installed profile '$name'"
+}
+
+cmd_list() {
+  local ps
+  ps=$(profiles)
+  if [[ -z "$ps" ]]; then
+    echo "No profiles found."
+  else
+    echo "Profiles:"
+    while IFS= read -r p; do
+      fp="$SSH_DIR/id_ed25519_$p.pub"
+      if [[ -f "$fp" ]]; then
+        short=$(cut -d' ' -f2 < "$fp" | head -c 24)
+        echo "  $p  ($short...)"
+      else
+        echo "  $p  (no public key)"
+      fi
+    done <<< "$ps"
+  fi
+}
+
+cmd_remove() {
+  local name="$1"
+  local key_path="$SSH_DIR/id_ed25519_$name"
+  [[ -f "$key_path.pub" ]] || { echo "Error: profile '$name' not found locally" >&2; exit 1; }
+
+  pubkey=$(cut -d' ' -f2 < "$key_path.pub")
+  id=$(gh ssh-key list 2>&1 | grep "$pubkey" | awk '{print $(NF-1)}')
+  if [[ -n "$id" ]]; then
+    gh api -X DELETE "/user/keys/$id"
+    echo "  Removed from GitHub"
+  else
+    echo "  Not found on GitHub"
+  fi
+
+  echo "  Removing local files"
+  rm -f "$key_path" "$key_path.pub"
+
+  sed -i "/IdentityFile ~\/\.ssh\/id_ed25519_$name/d" "$MANAGED_CONF"
+  echo "✓ Removed profile '$name'"
+}
+
+cmd_backup() {
+  local output="${1:-gh-ssh-keys.tar.gz.gpg}"
+  local ps
+  ps=$(profiles)
+  [[ -n "$ps" ]] || { echo "No profiles to back up." >&2; exit 1; }
+  files=()
+  while IFS= read -r p; do
+    files+=(".ssh/id_ed25519_$p" ".ssh/id_ed25519_$p.pub")
+  done <<< "$ps"
+  files+=(".ssh/config" ".ssh/gh-config")
+  if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
+    tar czf - -C "$HOME" "${files[@]}" 2>/dev/null \
+      | gpg --batch --passphrase "$GPG_PASSPHRASE" --symmetric --cipher-algo AES256 --output "$output"
+  else
+    tar czf - -C "$HOME" "${files[@]}" 2>/dev/null \
+      | gpg --symmetric --cipher-algo AES256 --output "$output"
+  fi
+  echo "✓ Backup written to $output"
+}
+
+cmd_restore() {
+  local archive="$1"; shift
+  [[ -f "$archive" ]] || { echo "Error: archive not found: $archive" >&2; exit 1; }
+  local TMPDIR ARCHIVE_DIR
+  TMPDIR=$(mktemp -d)
+  ARCHIVE_DIR="$TMPDIR/.ssh"
+  trap 'rm -rf "$TMPDIR"' EXIT
+
+  echo "==> Decrypting $archive"
+  if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
+    gpg --batch --passphrase "$GPG_PASSPHRASE" --decrypt --output "$TMPDIR/keys.tar.gz" "$archive"
+  else
+    gpg --decrypt --output "$TMPDIR/keys.tar.gz" "$archive"
+  fi
+
+  echo "==> Extracting keys"
+  tar xzf "$TMPDIR/keys.tar.gz" -C "$TMPDIR"
+
+  mkdir -p "$SSH_DIR"
+  chmod 700 "$SSH_DIR"
+
+  restore_one() {
+    local name="$1"
+    local priv="$ARCHIVE_DIR/id_ed25519_$name"
+    local pub="$ARCHIVE_DIR/id_ed25519_$name.pub"
+    if [[ -f "$priv" ]]; then
+      cp "$priv" "$SSH_DIR/id_ed25519_$name"
+      chmod 600 "$SSH_DIR/id_ed25519_$name"
+      if [[ -f "$pub" ]]; then
+        cp "$pub" "$SSH_DIR/id_ed25519_$name.pub"
+        chmod 644 "$SSH_DIR/id_ed25519_$name.pub"
+      fi
+      echo "  Restored profile '$name'"
+    else
+      echo "  Warning: profile '$name' not found in archive" >&2
+    fi
+  }
+
+  if [[ $# -eq 0 ]]; then
+    for f in "$ARCHIVE_DIR"/id_ed25519_*; do
+      [[ -f "$f" && ! "$f" =~ \.pub$ ]] || continue
+      name=$(basename "$f" | sed 's/^id_ed25519_//')
+      restore_one "$name"
+    done
+  else
+    for name; do restore_one "$name"; done
+  fi
+
+  if [[ -f "$ARCHIVE_DIR/config" ]]; then
+    cp "$ARCHIVE_DIR/config" "$SSH_DIR/config"
+    chmod 600 "$SSH_DIR/config"
+  fi
+  if [[ -f "$ARCHIVE_DIR/gh-config" ]]; then
+    cp "$ARCHIVE_DIR/gh-config" "$SSH_DIR/gh-config"
+    chmod 600 "$SSH_DIR/gh-config"
+  fi
+
+  echo "==> Adding github.com to known_hosts"
+  ssh-keyscan github.com >> "$SSH_DIR/known_hosts" 2>/dev/null
+  ensure_gh_auth
+  gh config set git_protocol ssh 2>/dev/null || true
+  ssh -T git@github.com 2>&1 || echo "✓ Restore complete!"
+}
+
+# --- dispatch ---
+
+mkdir -p "$SSH_DIR"
+chmod 700 "$SSH_DIR"
+
+case "${1:-}" in
+  create|install)
+    cmd=${1}; shift
+    name="${1:-}"; [[ -n "$name" ]] || { echo "Usage: gh-ssh-key $cmd <name>" >&2; exit 1; }
+    cmd_$cmd "$name"
+    ;;
+  list)
+    cmd_list
+    ;;
+  list-remote)
+    gh ssh-key list 2>&1
+    ;;
+  backup)
+    shift
+    cmd_backup "${1:-}"
+    ;;
+  remove)
+    shift
+    name="${1:-}"; [[ -n "$name" ]] || { echo "Usage: gh-ssh-key remove <name>" >&2; exit 1; }
+    cmd_remove "$name"
+    ;;
+  restore)
+    shift
+    [[ $# -ge 1 ]] || { echo "Usage: gh-ssh-key restore <archive> [<name>...]" >&2; exit 1; }
+    cmd_restore "$@"
+    ;;
+  -h|--help)
+    usage
+    ;;
+  "")
+    cmd_install "github"
+    ;;
+  *)
+    echo "Unknown command: $1" >&2
+    usage
+    exit 1
+    ;;
+esac

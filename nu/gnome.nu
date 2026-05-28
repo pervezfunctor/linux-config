@@ -60,6 +60,7 @@ def "main flatpaks" [] {
     "org.gtk.Gtk3theme.adw-gtk3"
     "org.gtk.Gtk3theme.adw-gtk3-dark"
     "page.tesk.Refine"
+    "dev.qwery.AddWater" # for firefox dark theme
   ]
   for pkg in $flatpaks {
     do -i { flatpak --user install -y flathub $pkg }
@@ -85,6 +86,8 @@ def "rewaita config" [] {
 "sharp": false,
 "light-text": false
   }' | save -f ~/.var/app/io.github.swordpuffin.rewaita/data/prefs.json
+
+  dconf write /org/gnome/shell/extensions/user-theme/name "'rewaita'"
 }
 
 def "main settings" [] {
@@ -102,7 +105,7 @@ def "main settings" [] {
   gsettings set org.gnome.mutter dynamic-workspaces false
   gsettings set org.gnome.desktop.wm.preferences num-workspaces 4
 
-  if (is-arch) {
+  if (is-cachy) {
     gsettings set org.gnome.desktop.background picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
     gsettings set org.gnome.desktop.background picture-uri-dark "file:///usr/share/backgrounds/archlinux/archwave.png"
     gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/archlinux/archwave.png"
@@ -138,6 +141,10 @@ def "main settings" [] {
     dconf write /org/gnome/shell/extensions/paperwm/horizontal-margin 12
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin 12
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin-bottom 12
+
+    dconf write /org/gnome/desktop/screensaver/restart-enabled true
+    dconf write /org/gnome/desktop/interface/font-antialiasing 'rgba'
+    dconf write /org/gnome/mutter/center-new-windows true
 
     rewaita config
   }
@@ -202,6 +209,11 @@ def "main keybindings" [] {
 }
 
 def "main jetbrains mono" [] {
+  if (is-nixos) {
+    warn+ "jetbrains mono install: nixos not supported"
+    return
+  }
+
   jetbrains-mono-install
 }
 
@@ -352,11 +364,11 @@ def "main" [] {
     return
   }
 
-  main jetbrains mono
-
+  bootstrap
   main extensions
   main settings
   main keybindings
+  main jetbrains mono
   main flatpaks
   main ptyxis
 }

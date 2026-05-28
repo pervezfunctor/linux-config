@@ -154,6 +154,10 @@ export def is-arch []: nothing -> bool {
     (($os_info.ID? | default "") == "arch") or ($os_info.ID_LIKE? | default "" | str contains "arch")
 }
 
+export def is-nixos []: nothing -> bool {
+    has-cmd nixos-version
+}
+
 export def is-pikaos []: nothing -> bool {
   has-cmd pikman
 }

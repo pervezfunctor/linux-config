@@ -124,6 +124,7 @@ def "main settings" [] {
     dconf write /org/gnome/shell/extensions/blur-my-shell/panel/blur false
     dconf write /org/gnome/shell/extensions/blur-my-shell/applications/blur true
     dconf write /org/gnome/shell/extensions/blur-my-shell/applications/whitelist "['org.gnome.Ptyxis', 'dev.zed.Zed']"
+    dconf write /org/gnome/shell/extensions/paperwm/winprops "['{\"wm_class\":\"dev.zed.Zed\",\"preferredWidth\":\"67%\"}', '{\"wm_class\":\"org.gnome.Ptyxis\",\"preferredWidth\":\"33%\"}', '{\"wm_class\":\"vicinae\",\"scratch_layer\":true}', '{\"wm_class\":\"*\",\"preferredWidth\":\"50%\"}']"
 
     dconf write /org/gnome/shell/extensions/switcher/max-width-percentage "uint32 25"
     dconf write /org/gnome/shell/extensions/switcher/font-size "uint32 16"

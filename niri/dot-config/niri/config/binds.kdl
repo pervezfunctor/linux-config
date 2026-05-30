@@ -139,7 +139,7 @@ binds {
     Mod+Shift+S { spawn-sh "flatpak run com.spotify.Client"; }
 
     Mod+Alt+Return {
-        spawn-sh "~/.fedora-config/scripts/quick-cmd.bash";
+        spawn-sh "~/.linux-config/scripts/quick-cmd.bash";
     }
     Mod+Shift+Return {
         spawn-sh "kitten quick-access-terminal";

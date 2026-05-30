@@ -2,7 +2,7 @@
 
 set -Eeuo pipefail
 
-readonly REPO_NAME="fedora-config"
+readonly REPO_NAME="linux-config"
 readonly DOT_DIR="$HOME/.${REPO_NAME}"
 
 log() {
@@ -96,7 +96,7 @@ dotfiles_install() {
     log "Cloning dotfiles repository..."
     has_cmd git || die "git is required but not installed"
 
-    git clone https://github.com/pervezfunctor/fedora-config "$DOT_DIR" ||
+    git clone https://github.com/pervezfunctor/linux-config "$DOT_DIR" ||
       die "git clone failed"
   fi
 }

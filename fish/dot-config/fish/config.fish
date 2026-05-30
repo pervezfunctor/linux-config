@@ -143,14 +143,14 @@ else if has_cmd rpm-ostree
 end
 
 if has_cmd nix
-  alias hms 'nix run home-manager -- switch --flake ~/.fedora-config/home-manager#$USER --impure'
+  alias hms 'nix run home-manager -- switch --flake ~/.linux-config/home-manager#$USER --impure'
   alias ngc 'nix-garbage-collect -d'
   alias nr 'nix run nixpkgs#'
   alias nds 'devenv shell'
 end
 
-if test -f ~/.fedora-config/fish/local.fish
-    source ~/.fedora-config/fish/local.fish
+if test -f ~/.linux-config/fish/local.fish
+    source ~/.linux-config/fish/local.fish
 end
 
 function docker-purge
@@ -208,4 +208,32 @@ function nu-check
         return 1
     end
     nu -c "source $argv[1]"
+end
+
+function update-all
+    sudo pacman -Syyu
+    if has_cmd brew
+      brew update && brew upgrade
+    end
+    if has_cmd pixi
+      pixi self-update
+      pixi global update
+    end
+    if has_cmd vp
+      vp update -g
+    end
+    if has_cmd rustup
+      rustup update stable
+    end
+    if has_cmd nix
+      hms
+    end
+    if has_cmd uv
+      uv self update
+    end
+    if has_cmd mise
+      mise self-update
+      mise plugins update
+      mise upgrade --bump
+    end
 end

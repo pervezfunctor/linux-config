@@ -117,26 +117,43 @@ def "main help" [] {
   print "vmm.nu - Start a QEMU/KVM VM with GPU acceleration via virtio"
   print ""
   print "Usage:"
-  print "  nu vmm.nu <vm> [--firmware <auto|bios|uefi>]"
+  print "  nu vmm.nu [vm] [--firmware <auto|bios|uefi>]"
   print "  nu vmm.nu help"
   print ""
   print "Arguments:"
-  print "  vm                   Name of the VM (as registered in virsh)"
+  print "  vm                   Name of the VM (as registered in virsh, omit for fzf picker)"
   print ""
   print "Flags:"
   print "  -f, --firmware       Firmware mode: auto|bios|uefi (default: auto)"
   print ""
   print "Examples:"
+  print "  nu vmm.nu              # pick a VM via fzf"
   print "  nu vmm.nu my-vm"
   print "  nu vmm.nu my-vm --firmware uefi"
   print "  nu vmm.nu my-vm -f bios"
 }
 
 def main [
-  vm: string
+  vm: string = ""
 
   --firmware(-f): string = "auto" # auto|bios|uefi
 ] {
+  let vm = (
+    if ($vm | is-empty) {
+      let vms = (virsh list --name --all | lines | where ($it | is-not-empty))
+      if ($vms | is-empty) {
+        error make { msg: "No VMs found" }
+      }
+      let selected = ($vms | str join (char newline) | fzf --prompt="Select VM> ")
+      if ($selected | is-empty) {
+        return
+      }
+      $selected
+    } else {
+      $vm
+    }
+  )
+
   log+ $"Starting VM '($vm)'..."
   log+ "Make sure mesa, virglrenderer and vulkan-virtio are installed"
 
@@ -155,6 +172,16 @@ def main [
   let memory_mib = (get-vm-memory-mib $vm)
   let cpus = (get-vm-vcpus $vm)
 
+  let all_vms = (virsh list --name --all | lines | where ($it | is-not-empty) | sort)
+  let vm_idx = (
+    $all_vms
+    | enumerate
+    | where item == $vm
+    | first
+    | get index
+  )
+  let ssh_port = 2222 + $vm_idx
+
   mut args = [
     "-enable-kvm"
     "-M" "q35"
@@ -162,7 +189,7 @@ def main [
     "-smp" ($cpus | into string)
     "-m" $"($memory_mib)M"
 
-    "-netdev" "user,id=net0,hostfwd=tcp::2222-:22"
+    "-netdev" $"user,id=net0,hostfwd=tcp::($ssh_port)-:22"
     "-device" "virtio-net-pci,netdev=net0"
 
     "-device" "virtio-sound-pci,audiodev=audio0"
@@ -198,9 +225,10 @@ def main [
 
   log+ $"Firmware: ($firmware)"
   log+ $"Disk: ($disk_file)"
+  log+ $"SSH: ssh -p ($ssh_port) user@localhost"
 
   let final_args = $args
   with-env { GDK_BACKEND: "wayland" } {
-    qemu-system-x86_64 ...$final_args
+    ^setsid --fork qemu-system-x86_64 ...$final_args out> /dev/null
   }
 }

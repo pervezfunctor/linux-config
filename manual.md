@@ -81,7 +81,6 @@ sudo dnf install -y fish
 and set as default with the following commands.
 
 ```bash
-printf '%s\n' "$(command -v fish)" | sudo tee -a /etc/shells
 chsh -s $(command -v fish)
 ```
 

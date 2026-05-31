@@ -102,4 +102,34 @@ Few modern shell tools
 brew install trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom htop
 ```
 
-If this is too cumbersome, use my script to setup what you need from this repo`s [README](https://github.com/pervezfunctor/linux-config)
+## dotfiles
+
+You could also get a slightly better configuration setting up manually dotfiles from this repository.
+
+First clone this repository
+
+```bash
+git clone https://github.com/pervezfunctor/linux-config.git ~/.linux-config
+```
+
+Setup fish with the following
+
+```bash
+trash ~/.config/fish/config.fish
+cp ~/linux-config/fish/dot-config/fish/config.fish ~/.config/fish/config.fish
+```
+
+Setup kitty with the following
+
+```bash
+trash ~/.config/kitty/kitty.conf
+cp ~/linux-config/kitty/dot-config/kitty/kitty.conf ~/.config/kitty/kitty.conf
+```
+
+Setup zed editor with
+```bash
+trash ~/.config/zed/settings.json
+cp ~/linux-config/zed/dot-config/zed/settings.json ~/.config/zed/settings.json
+```
+
+If all of this is too cumbersome, use my script to setup what you need using [README](https://github.com/pervezfunctor/linux-config)

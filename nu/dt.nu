@@ -43,7 +43,7 @@ def "main arch" [container_name = "arch"] {
 }
 
 def "main ubuntu" [container_name = "ubuntu"] {
-  main create --image quay.io/toolbx/ubuntu-toolbox:26.04 $container_name
+  main create --image ubuntu:26.04 $container_name
 }
 
 def "main debian" [container_name = "debian"] {

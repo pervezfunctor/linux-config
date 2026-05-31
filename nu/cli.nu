@@ -41,9 +41,6 @@ def "main incus config" [] {
     }
   }
 
-  log+ "Initializing incus admin"
-  do -i { sg incus-admin -- incus admin init --minimal }
-
   log+ "Incus configured. Reboot your system and use incus.nu script."
 }
 

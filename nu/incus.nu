@@ -78,12 +78,7 @@ def "main destroy" [name: string] {
 }
 
 def "main install post" [] {
-  do -i { sudo systemctl enable --now incus.socket }
   do -i { incus admin init }
-  do -i {
-    sudo firewall-cmd --zone=trusted --change-interface=incusbr0 --permanent
-    sudo firewall-cmd --reload
-  }
 }
 
 def "main start" [name: string] {

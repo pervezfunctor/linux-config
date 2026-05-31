@@ -77,7 +77,7 @@ def "main destroy" [name: string] {
   incus delete $name
 }
 
-def "main install post" [] {
+def "main init" [] {
   do -i { incus admin init }
 }
 
@@ -96,7 +96,7 @@ def "main restart" [name: string] {
 def "main help" [] {
   print $"Usage: incus.nu <command>
 Commands:
-  install post    Steps after installing incus and reboot
+  init            Steps after installing incus and reboot
 
   list            List running instances
   list images     List available cloud images

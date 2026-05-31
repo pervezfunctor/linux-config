@@ -55,6 +55,8 @@ def "main incus" [] {
   }
 
   main incus config
+
+  log+ "Incus installed. After reboot, use 'incus.nu init' to complete the installation."
 }
 
 def "main nix" [] {
@@ -340,7 +342,6 @@ def "main dev" [] {
   main vp
   main rust
   main ai cli
-  main mise
 }
 
 def "main cpp" [] {
@@ -359,7 +360,7 @@ def "main cpp" [] {
     $pkgs ++= ["ninja-build"]
   }
 
-  if (is-fedora) or (is-resolute) {
+  if (is-fedora) {
     $pkgs ++= ["clang-tools-extra"]
   } else {
     $pkgs ++= ["clang-tools"]
@@ -390,6 +391,7 @@ def "main setup-shell" [] {
     { description: "Install devtools (rust/node/uv)", handler: { main dev } }
     { description: "Install Neovim", handler: { main nvim } }
     { description: "Install rustup", handler: { main rust } }
+    { description: "Install incus", handler: { main incus } }
   ]
 
   if not (is-fedora-atomic) {

@@ -45,7 +45,11 @@ Install jetbrains mono font with brew
 brew install --cask font-jetbrains-mono-nerd-font
 ```
 
-Use `Catppuccin Mocha` theme and `Jetbrains Mono Nerd Font` font in ghostty terminal and vscode editor.
+If you prefer `vscode`, install with
+
+```bash
+brew install --cask visual-studio-code-linux
+```
 
 ## Terminal
 
@@ -58,6 +62,8 @@ sudo apt install -y kitty
 ```bash
 sudo dnf install -y kitty
 ```
+
+Use `Catppuccin Mocha` theme and `Jetbrains Mono Nerd Font` font in kitty terminal and vscode editor.
 
 ## Python
 

@@ -73,6 +73,18 @@ Use `uv` for all python development. Install with
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+## C++
+
+Install the following packages
+
+```bash
+sudo apt install -y clang cmake entr gcc make pkg-config clang-tools-extra
+```
+
+```bash
+sudo dnf install -y clang cmake entr gcc make pkg-config clang-tools-extra
+```
+
 ## Shell
 
 Install and set fish as the default shell. This is an excellent interactive shell with near perfect defaults.

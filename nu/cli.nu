@@ -20,34 +20,40 @@ def "main docker" [] {
 }
 
 def "main incus config" [] {
-  log info "Adding user to incus groups"
+  log+ "Adding user to incus groups"
   do -i {
     sudo usermod -aG incus $env.USER
     sudo usermod -aG incus-admin $env.USER
   }
 
-  log info "Enabling incus socket"
+  log+ "Enabling incus socket"
   do -i { sudo systemctl enable --now incus.socket }
 
-  log info "Configuring firewalld for incus"
+  log+ "Configuring firewalld for incus"
   do -i {
-    sudo firewall-cmd --zone=trusted --change-interface=incusbr0 --permanent
-    sudo firewall-cmd --reload
+    if (has-cmd firewall-cmd) {
+      sudo firewall-cmd --zone=trusted --change-interface=incusbr0 --permanent
+      sudo firewall-cmd --reload
+    } else if(has-cmd ufw) {
+      sudo ufw allow in on incusbr0
+      sudo ufw route allow in on incusbr0
+      sudo ufw route allow out on incusbr0
+    }
   }
 
-  log info "Initializing incus admin"
+  log+ "Initializing incus admin"
   do -i { sg incus-admin -- incus admin init --minimal }
 
-  log info "Incus configured. Reboot your system and use incus.nu script."
+  log+ "Incus configured. Reboot your system and use incus.nu script."
 }
 
 def "main incus" [] {
-  log info "Installing incus"
+  log+ "Installing incus"
   if (is-apt) {
     si ["incus" "incus-extra"]
   } else if (is-fedora) {
     si ["incus" "incus-tools"]
-  } else if (is-tw ) {
+  } else if ((is-tw) or (is-arch)) {
     si ["incus" "incus-tools" "incus-ui"]
   }
 

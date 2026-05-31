@@ -7,6 +7,7 @@ Update your system
 ```bash
 sudo apt update && sudo apt upgrade -y # ubuntu
 ```
+
 ```bash
 sudo dnf update # fedora
 ```
@@ -14,7 +15,7 @@ sudo dnf update # fedora
 Install essential packages
 
 ```bash
-sudo apt install -y curl git-core wget trash-cli build-essential 
+sudo apt install -y curl git-core wget trash-cli build-essential
 ```
 
 ```bash
@@ -29,6 +30,7 @@ Install homebrew, the most popular package manager on macos(similar to apt on ub
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew tap ublue-os/tap
 ```
+
 ## Editor
 
 `zed` editor is pretty good. Install with
@@ -74,6 +76,7 @@ Install using
 ```bash
 sudo apt install -y fish
 ```
+
 ```bash
 sudo dnf install -y fish
 ```
@@ -127,9 +130,17 @@ cp ~/linux-config/kitty/dot-config/kitty/kitty.conf ~/.config/kitty/kitty.conf
 ```
 
 Setup zed editor with
+
 ```bash
 trash ~/.config/zed/settings.json
 cp ~/linux-config/zed/dot-config/zed/settings.json ~/.config/zed/settings.json
+```
+
+Setup tmux with
+
+```bash
+trash ~/.tmux.conf
+cp ~/linux-config/tmux/dot-config/tmux.conf ~/.tmux.conf
 ```
 
 If all of this is too cumbersome, use my script to setup what you need using [README](https://github.com/pervezfunctor/linux-config)

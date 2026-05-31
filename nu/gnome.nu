@@ -18,7 +18,10 @@ def "main vicinae" [] {
   gext enable vicinae@dagimg-dot
 
   dconf write /org/gnome/shell/extensions/paperwm/winprops "['{\"wm_class\":\"vicinae\",\"scratch_layer\":true}']"
-  gnome-shortcut.nu create "App Launcher" -c "vicinae toggle" -s "<Super>d"
+
+  if (has-cmd ~/.linux-config/nu/gnome-shortcut.nu) {
+    ~/.linux-config/nu/gnome-shortcut.nu create "App Launcher" -c "vicinae toggle" -s "<Super>d"
+  }
 }
 
 def "main extensions" [] {
@@ -206,7 +209,9 @@ def "main keybindings" [] {
   dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-4 "['<Super>4']"
   dconf write /org/gnome/desktop/wm/preferences/workspace-names "['1', '2', '3', '4']"
 
-  gnome-shortcut.nu create "Terminal" -c "ptyxis -s" -s "<Super>Return"
+  if (has-cmd ~/.linux-config/nu/gnome-shortcut.nu) {
+    ~/.linux-config/nu/gnome-shortcut.nu create "Terminal" -c "ptyxis -s" -s "<Super>Return"
+  }
 }
 
 def "main jetbrains mono" [] {

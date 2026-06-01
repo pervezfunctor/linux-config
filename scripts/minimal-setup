@@ -1,25 +1,8 @@
 #!/usr/bin/env bash
-#
 # setup.sh — Idempotent dev environment bootstrap
-#
-# Detects Ubuntu/Debian or Fedora then installs and configures:
-#   system packages, fish, starship, uv, C++ tools, Homebrew,
-#   modern CLI tools, Zed, Alacritty, JetBrains Mono Nerd Font,
-#   and dotfiles (fish, alacritty, zed, tmux) + Neovim (AstroNvim).
-#
-# Usage:
-#   ./setup.sh
-#
-# Requirements:
-#   - ~/.linux-config already cloned (or symlinked) at script location
-#   - sudo access
-#
 
 set -euo pipefail
 
-# ---------------------------------------------------------------------------
-# Colors (no-op when not a TTY)
-# ---------------------------------------------------------------------------
 setup_colors() {
   if [[ -t 1 ]]; then
     BOLD='\033[1m'
@@ -40,9 +23,6 @@ info() { printf "${BOLD}${GREEN}[INFO]${NC}  %s\n" "$*"; }
 warn() { printf "${BOLD}${YELLOW}[WARN]${NC}  %s\n" "$*"; }
 error() { printf "${BOLD}${RED}[ERROR]${NC} %s\n" "$*" >&2; }
 
-# ---------------------------------------------------------------------------
-# OS detection — sets global OS to "ubuntu" or "fedora"
-# ---------------------------------------------------------------------------
 detect_os() {
   if command -v apt &>/dev/null; then
     OS="ubuntu"
@@ -55,9 +35,6 @@ detect_os() {
   info "Detected OS: ${OS}"
 }
 
-# ---------------------------------------------------------------------------
-# Ensure we have sudo upfront
-# ---------------------------------------------------------------------------
 ensure_sudo() {
   if [[ $EUID -ne 0 ]]; then
     info "Elevating privileges…"
@@ -68,11 +45,6 @@ ensure_sudo() {
   fi
 }
 
-# ===========================================================================
-# Installation steps (all idempotent)
-# ===========================================================================
-
-# -- 1. System update -------------------------------------------------------
 update_system() {
   info "Updating system packages…"
   case "${OS}" in
@@ -81,23 +53,18 @@ update_system() {
   esac
 }
 
-# -- 2. OS packages ---------------------------------------------------------
 install_os_packages() {
   info "Installing OS packages…"
   case "${OS}" in
   ubuntu)
     sudo apt install -y \
-      curl git-core wget trash-cli build-essential tar unzip zip \
-      fish \
-      clang cmake entr gcc make pkg-config clang-tools \
-      alacritty
+      curl git-core wget trash-cli build-essential tar unzip zip fish \
+      clang cmake entr gcc make pkg-config clang-tools alacritty
     ;;
   fedora)
     sudo dnf install -y \
-      curl git-core wget trash-cli gcc make tar unzip zip \
-      fish \
-      clang cmake entr gcc make pkg-config clang-tools-extra \
-      alacritty
+      curl git-core wget trash-cli gcc make tar unzip zip fish \
+      clang cmake entr gcc make pkg-config clang-tools-extra alacritty
     ;;
   esac
 }
@@ -111,60 +78,48 @@ set_fish_default() {
     info "fish is already the default shell."
     return 0
   fi
+
   info "Setting fish as the default shell…"
   sudo chsh -s "${fish_path}" "${USER}"
   warn "Log out and back in (or reboot) for the change to take effect."
 }
 
-# -- 3. Starship prompt -----------------------------------------------------
-install_starship() {
-  if command -v starship &>/dev/null; then
-    info "starship already installed, skipping."
-    return 0
-  fi
-  info "Installing starship prompt…"
-  case "${OS}" in
-  ubuntu) sudo apt install -y starship ;;
-  fedora) brew install starship ;;
-  esac
-}
-
-# -- 4. uv (Python) ---------------------------------------------------------
 install_uv() {
   if command -v uv &>/dev/null; then
     info "uv already installed, skipping."
     return 0
   fi
+
   info "Installing uv (Python package manager)…"
   curl -LsSf https://astral.sh/uv/install.sh | sh
   uv tool install pipx
 }
 
-# -- 5. Homebrew ------------------------------------------------------------
 install_homebrew() {
   if command -v brew &>/dev/null; then
     info "Homebrew already installed, skipping."
     return 0
   fi
+
   info "Installing Homebrew…"
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 }
 
-# -- 6. Packages via Homebrew -----------------------------------------------
 install_brew_packages() {
   info "Installing packages via Homebrew…"
   brew install \
-    trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom \
+    starship trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom \
     neovim luarocks imagemagick tectonic mermaid-cli lazygit
+
   brew install --cask font-jetbrains-mono-nerd-font
 }
 
-# -- 7. Zed editor ----------------------------------------------------------
 install_zed() {
   if command -v zed &>/dev/null || command -v zed-editor &>/dev/null; then
     info "Zed editor already installed, skipping."
     return 0
   fi
+
   info "Installing Zed editor…"
   curl -f https://zed.dev/install.sh | sh
 }
@@ -196,50 +151,38 @@ setup_dotfiles() {
   cp "${repo_dir}/tmux/dot-config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf"
 }
 
-# -- 9. Neovim + AstroNvim -------------------------------------------------
-setup_neovim() {
-  local repo_dir nvim_dir
-  repo_dir="${HOME}/.linux-config"
-  nvim_dir="${HOME}/.config/nvim"
-
-  if [[ -f "${nvim_dir}/lua/community.lua" ]]; then
-    info "AstroNvim configuration already exists, skipping."
+install_docker() {
+  if command -v docker &>/dev/null; then
+    info "Docker already installed, skipping."
     return 0
   fi
 
-  info "Setting up AstroNvim…"
-  mkdir -p "${nvim_dir}"
-  rm -rf "${nvim_dir}"
-  mkdir -p "${nvim_dir}"
-  git clone --depth 1 https://github.com/AstroNvim/template "${nvim_dir}"
-  rm -rf "${nvim_dir}/.git"
-  cp "${repo_dir}/nvim/dot-config/nvim/lua/community.lua" "${nvim_dir}/lua/community.lua"
-  cp -r "${repo_dir}/nvim/dot-config/nvim/lua/plugins/" "${nvim_dir}/lua/plugins/"
+  info "Installing Docker via official script…"
+  curl -fsSL https://get.docker.com | sh
+  info "Adding ${USER} to the docker group…"
+  sudo usermod -aG docker "${USER}"
+  warn "Log out and back in (or reboot) for docker group to take effect."
 }
 
-# ===========================================================================
-# Main
-# ===========================================================================
 main() {
   export PATH="$HOME/.local/bin:/home/linuxbrew/.linuxbrew/bin:${PATH}"
 
   setup_colors
   detect_os
 
-  info "Starting idempotent dev-environment setup (alacritty + zed)…"
+  info "Starting setup (alacritty + zed)…"
   echo ""
 
   ensure_sudo
   update_system
   install_os_packages
+  install_docker
   set_fish_default
-  install_starship
+
   install_uv
   install_homebrew
   install_brew_packages
   install_zed
-  setup_dotfiles
-  setup_neovim
 
   echo ""
   info "All done! Restart your terminal to enjoy your new environment."

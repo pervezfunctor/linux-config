@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+info() { printf "\033[0;32m[INFO]\033[0m  %s\n" "$*"; }
+warn() { printf "\033[0;33m[WARN]\033[0m  %s\n" "$*"; }
+error() { printf "\033[0;31m[ERROR]\033[0m %s\n" "$*" >&2; }
+
+DOT_DIR="${HOME}/.linux-config"
+if [[ ! -d "${DOT_DIR}" ]]; then
+  error "Repository not found at ${DOT_DIR}. Clone it first:"
+  error "  git clone https://github.com/pervezfunctor/linux-config.git ~/.linux-config"
+  exit 1
+fi
+
+scp="${DOT_DIR}/scripts/scp-file"
+
+info "Setting up fish configuration…"
+$scp "${DOT_DIR}/fish/dot-config/fish/config.fish" "${HOME}/.config/fish/config.fish"
+
+info "Setting up Alacritty configuration…"
+$scp "${DOT_DIR}/alacritty/dot-config/alacritty/alacritty.toml" "${HOME}/.config/alacritty/alacritty.toml"
+
+info "Setting up Zed editor configuration…"
+$scp "${DOT_DIR}/zed/dot-config/zed/settings.json" "${HOME}/.config/zed/settings.json"
+
+info "Setting up tmux configuration…"
+$scp "${DOT_DIR}/tmux/dot-config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf"
+
+info "Setting up Neovim configuration…"
+NVIM_DIR="${HOME}/.config/nvim"
+
+rm -rf "${NVIM_DIR}"
+mkdir -p "${NVIM_DIR}"
+git clone --depth 1 https://github.com/AstroNvim/template "${NVIM_DIR}"
+rm -rf "${NVIM_DIR}/.git"
+
+$scp "${DOT_DIR}/nvim/dot-config/nvim/lua/community.lua" "${NVIM_DIR}/lua/community.lua"
+$scp "${DOT_DIR}/nvim/dot-config/nvim/lua/plugins/" "${NVIM_DIR}/lua/plugins/"

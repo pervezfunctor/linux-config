@@ -102,7 +102,7 @@ brew tap ublue-os/tap
 Install few modern shell tools
 
 ```bash
-brew install trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom
+brew install trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom opencode
 ```
 
 Add '/home/linuxbrew/.linuxbrew/bin' to your PATH in `~/.config/fish/config.fish`
@@ -164,6 +164,22 @@ cp ~/.linux-config/nvim/dot-config/nvim/lua/community.lua ~/.config/nvim/lua/com
 cp -r ~/.linux-config/nvim/dot-config/nvim/lua/plugins/ ~/.config/nvim/lua/plugins/
 ```
 
+## Docker
+
+Install Docker using the official script.
+
+```bash
+curl -fsSL https://get.docker.com | sh
+```
+
+Add your user to the `docker` group to run containers without sudo.
+
+```bash
+sudo usermod -aG docker "$USER"
+```
+
+Log out and back in (or reboot) for the group change to take effect.
+
 ## dotfiles
 
 You could also get a slightly better configuration setting up manually dotfiles from this repository.
@@ -220,4 +236,4 @@ You can now delete ~/.linux-config
 rm -rf ~/.linux-config
 ```
 
-If all of this is too cumbersome, use my script to setup what you need using [README](https://github.com/pervezfunctor/linux-config)
+If all of this is too cumbersome, use my [setup scripts](https://github.com/pervezfunctor/linux-config)

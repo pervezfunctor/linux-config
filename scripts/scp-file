@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ $# -ne 2 ]]; then
+  echo "Usage: $0 <source> <destination>" >&2
+  exit 1
+fi
+
+src=$1
+dst=$2
+
+if [[ ! -e $src ]]; then
+  echo "Error: source does not exist: $src" >&2
+  exit 1
+fi
+
+dst_dir=$(dirname -- "$dst")
+
+if [[ ! -d $dst_dir ]]; then
+  mkdir -p -- "$dst_dir"
+fi
+
+remove_existing() {
+  if command -v trash &>/dev/null; then
+    trash -- "$1"
+  else
+    rm -rf -- "$1"
+  fi
+}
+
+if [[ -d $src ]]; then
+  if [[ -e $dst ]] && [[ ! -d $dst ]]; then
+    echo "Error: destination is not a directory: $dst" >&2
+    exit 1
+  fi
+  mkdir -p -- "$dst"
+  for item in "$src"/*; do
+    if [[ ! -e $item ]] && [[ ! -L $item ]]; then
+      continue
+    fi
+    target="$dst/$(basename -- "$item")"
+    if [[ -e $target ]] || [[ -L $target ]]; then
+      remove_existing "$target"
+    fi
+    cp -r -- "$item" "$target"
+  done
+elif [[ -e $dst ]]; then
+  remove_existing "$dst"
+  cp -- "$src" "$dst"
+else
+  cp -- "$src" "$dst"
+fi

@@ -129,14 +129,14 @@ brew install --cask visual-studio-code-linux
 Use Alacritty or Kitty. Use your OS package manager
 
 ```bash
-sudo apt install -y kitty
+sudo apt install -y alacritty
 ```
 
 ```bash
-sudo dnf install -y kitty
+sudo dnf install -y alacritty
 ```
 
-Use `Catppuccin Mocha` theme and `Jetbrains Mono Nerd Font` font in kitty terminal and vscode editor.
+**Suggestion**: Use `Catppuccin Mocha` theme and `Jetbrains Mono Nerd Font` font in your terminal and editor.
 
 ## Neovim
 
@@ -175,12 +175,12 @@ trash ~/.config/fish/config.fish 2>/dev/null
 cp ~/.linux-config/fish/dot-config/fish/config.fish ~/.config/fish/config.fish
 ```
 
-Setup kitty with the following
+Setup alacritty with the following
 
 ```bash
-mkdir -p ~/.config/kitty
-trash ~/.config/kitty/kitty.conf 2>/dev/null
-cp ~/.linux-config/kitty/dot-config/kitty/kitty.conf ~/.config/kitty/kitty.conf
+mkdir -p ~/.config/alacritty
+trash ~/.config/alacritty/alacritty.toml 2>/dev/null
+cp ~/.linux-config/alacritty/dot-config/alacritty/alacritty.toml ~/.config/alacritty/alacritty.toml
 ```
 
 Setup zed editor with

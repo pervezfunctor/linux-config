@@ -211,7 +211,7 @@ function nu-check
 end
 
 function update-all
-    sudo pacman -Syyu
+    u
     if has_cmd brew
       brew update && brew upgrade
     end

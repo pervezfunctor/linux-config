@@ -81,29 +81,24 @@ update_system() {
   esac
 }
 
-# -- 2. Essential packages --------------------------------------------------
-install_essentials() {
-  info "Installing essential packages…"
+# -- 2. OS packages ---------------------------------------------------------
+install_os_packages() {
+  info "Installing OS packages…"
   case "${OS}" in
   ubuntu)
-    sudo apt install -y curl git-core wget trash-cli build-essential tar unzip zip
+    sudo apt install -y \
+      curl git-core wget trash-cli build-essential tar unzip zip \
+      fish \
+      clang cmake entr gcc make pkg-config clang-tools \
+      alacritty
     ;;
   fedora)
-    sudo dnf install -y curl git-core wget trash-cli gcc make tar unzip zip
+    sudo dnf install -y \
+      curl git-core wget trash-cli gcc make tar unzip zip \
+      fish \
+      clang cmake entr gcc make pkg-config clang-tools-extra \
+      alacritty
     ;;
-  esac
-}
-
-# -- 3. Fish shell ----------------------------------------------------------
-install_fish() {
-  if command -v fish &>/dev/null; then
-    info "fish already installed, skipping."
-    return 0
-  fi
-  info "Installing fish shell…"
-  case "${OS}" in
-  ubuntu) sudo apt install -y fish ;;
-  fedora) sudo dnf install -y fish ;;
   esac
 }
 
@@ -121,7 +116,7 @@ set_fish_default() {
   warn "Log out and back in (or reboot) for the change to take effect."
 }
 
-# -- 4. Starship prompt -----------------------------------------------------
+# -- 3. Starship prompt -----------------------------------------------------
 install_starship() {
   if command -v starship &>/dev/null; then
     info "starship already installed, skipping."
@@ -130,11 +125,11 @@ install_starship() {
   info "Installing starship prompt…"
   case "${OS}" in
   ubuntu) sudo apt install -y starship ;;
-  fedora) curl -sS https://starship.rs/install.sh | sh ;;
+  fedora) brew install starship ;;
   esac
 }
 
-# -- 5. uv (Python) ---------------------------------------------------------
+# -- 4. uv (Python) ---------------------------------------------------------
 install_uv() {
   if command -v uv &>/dev/null; then
     info "uv already installed, skipping."
@@ -142,22 +137,10 @@ install_uv() {
   fi
   info "Installing uv (Python package manager)…"
   curl -LsSf https://astral.sh/uv/install.sh | sh
+  uv tool install pipx
 }
 
-# -- 6. C++ tools -----------------------------------------------------------
-install_cpp_tools() {
-  info "Installing C/C++ development tools…"
-  case "${OS}" in
-  ubuntu)
-    sudo apt install -y clang cmake entr gcc make pkg-config clang-tools
-    ;;
-  fedora)
-    sudo dnf install -y clang cmake entr gcc make pkg-config clang-tools-extra
-    ;;
-  esac
-}
-
-# -- 7. Homebrew ------------------------------------------------------------
+# -- 5. Homebrew ------------------------------------------------------------
 install_homebrew() {
   if command -v brew &>/dev/null; then
     info "Homebrew already installed, skipping."
@@ -167,22 +150,16 @@ install_homebrew() {
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 }
 
-# -- 8. Modern CLI tools via brew -------------------------------------------
-install_brew_tools() {
-  info "Installing modern CLI tools via Homebrew…"
-  local tools
-  tools="trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom htop"
-  local tool
-  for tool in ${tools}; do
-    if command -v "${tool}" &>/dev/null; then
-      info "${tool} already installed, skipping."
-    else
-      brew install "${tool}"
-    fi
-  done
+# -- 6. Packages via Homebrew -----------------------------------------------
+install_brew_packages() {
+  info "Installing packages via Homebrew…"
+  brew install \
+    trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom \
+    neovim luarocks imagemagick tectonic mermaid-cli lazygit
+  brew install --cask font-jetbrains-mono-nerd-font
 }
 
-# -- 9. Zed editor ----------------------------------------------------------
+# -- 7. Zed editor ----------------------------------------------------------
 install_zed() {
   if command -v zed &>/dev/null || command -v zed-editor &>/dev/null; then
     info "Zed editor already installed, skipping."
@@ -192,30 +169,7 @@ install_zed() {
   curl -f https://zed.dev/install.sh | sh
 }
 
-# -- 10. JetBrains Mono Nerd Font -------------------------------------------
-install_font() {
-  if brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
-    info "JetBrains Mono Nerd Font already installed, skipping."
-    return 0
-  fi
-  info "Installing JetBrains Mono Nerd Font…"
-  brew install --cask font-jetbrains-mono-nerd-font
-}
-
-# -- 11. Alacritty terminal -------------------------------------------------
-install_alacritty() {
-  if command -v alacritty &>/dev/null; then
-    info "Alacritty already installed, skipping."
-    return 0
-  fi
-  info "Installing Alacritty terminal…"
-  case "${OS}" in
-  ubuntu) sudo apt install -y alacritty ;;
-  fedora) sudo dnf install -y alacritty ;;
-  esac
-}
-
-# -- 12. Dotfiles (must happen AFTER brew so fish_add_path works) -----------
+# -- 8. Dotfiles (must happen AFTER brew so fish_add_path works) -----------
 setup_dotfiles() {
   local repo_dir
   repo_dir="${HOME}/.linux-config"
@@ -242,16 +196,7 @@ setup_dotfiles() {
   cp "${repo_dir}/tmux/dot-config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf"
 }
 
-# -- 13. Neovim + AstroNvim -------------------------------------------------
-install_neovim() {
-  if command -v nvim &>/dev/null; then
-    info "Neovim already installed, skipping."
-    return 0
-  fi
-  info "Installing Neovim…"
-  brew install neovim
-}
-
+# -- 9. Neovim + AstroNvim -------------------------------------------------
 setup_neovim() {
   local repo_dir nvim_dir
   repo_dir="${HOME}/.linux-config"
@@ -276,7 +221,7 @@ setup_neovim() {
 # Main
 # ===========================================================================
 main() {
-  export PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
+  export PATH="$HOME/.local/bin:/home/linuxbrew/.linuxbrew/bin:${PATH}"
 
   setup_colors
   detect_os
@@ -286,19 +231,14 @@ main() {
 
   ensure_sudo
   update_system
-  install_essentials
-  install_fish
+  install_os_packages
   set_fish_default
   install_starship
   install_uv
-  install_cpp_tools
   install_homebrew
-  install_brew_tools
+  install_brew_packages
   install_zed
-  install_font
-  install_alacritty
   setup_dotfiles
-  install_neovim
   setup_neovim
 
   echo ""

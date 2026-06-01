@@ -74,6 +74,7 @@ Use `uv` for all python development. Install with
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
+uv tool install pipx
 ```
 
 ## C++
@@ -101,7 +102,7 @@ brew tap ublue-os/tap
 Install few modern shell tools
 
 ```bash
-brew install trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom htop
+brew install trash-cli fzf eza zoxide bat gh ripgrep tealdeer direnv fd jq bottom
 ```
 
 Add '/home/linuxbrew/.linuxbrew/bin' to your PATH in `~/.config/fish/config.fish`
@@ -149,7 +150,7 @@ sudo dnf install -y alacritty
 Install neovim with brew
 
 ```bash
-brew install neovim
+brew install neovim luarocks imagemagick tectonic mermaid-cli lazygit
 ```
 
 Setup neovim with the following

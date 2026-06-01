@@ -56,6 +56,12 @@ On fedora, use the following command to install starship.
 curl -sS https://starship.rs/install.sh | sh
 ```
 
+You could also use brew
+
+```bash
+brew install starship
+```
+
 Add starship to `~/.config/fish/config.fish` with
 
 ```fish
@@ -205,6 +211,12 @@ Setup tmux with
 mkdir -p ~/.config/tmux
 trash ~/.config/tmux/tmux.conf 2>/dev/null
 cp ~/.linux-config/tmux/dot-config/tmux/tmux.conf ~/.config/tmux/tmux.conf
+```
+
+You can now delete ~/.linux-config
+
+```bash
+rm -rf ~/.linux-config
 ```
 
 If all of this is too cumbersome, use my script to setup what you need using [README](https://github.com/pervezfunctor/linux-config)

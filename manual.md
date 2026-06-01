@@ -183,6 +183,14 @@ trash ~/.config/alacritty/alacritty.toml 2>/dev/null
 cp ~/.linux-config/alacritty/dot-config/alacritty/alacritty.toml ~/.config/alacritty/alacritty.toml
 ```
 
+Or setup kitty with the following
+
+```bash
+mkdir -p ~/.config/kitty
+trash ~/.config/kitty/kitty.conf 2>/dev/null
+cp ~/.linux-config/kitty/dot-config/kitty/kitty.conf ~/.config/kitty/kitty.conf
+```
+
 Setup zed editor with
 
 ```bash

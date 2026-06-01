@@ -138,6 +138,25 @@ sudo dnf install -y kitty
 
 Use `Catppuccin Mocha` theme and `Jetbrains Mono Nerd Font` font in kitty terminal and vscode editor.
 
+## Neovim
+
+Install neovim with brew
+
+```bash
+brew install neovim
+```
+
+Setup neovim with the following
+
+```bash
+mkdir -p ~/.config/nvim
+trash ~/.config/nvim/ 2>/dev/null
+git clone --depth 1 https://github.com/AstroNvim/template ~/.config/nvim
+rm -rf ~/.config/nvim/.git
+cp ~/.linux-config/nvim/dot-config/nvim/lua/community.lua ~/.config/nvim/lua/community.lua
+cp -r ~/.linux-config/nvim/dot-config/nvim/lua/plugins/ ~/.config/nvim/lua/plugins/
+```
+
 ## dotfiles
 
 You could also get a slightly better configuration setting up manually dotfiles from this repository.

@@ -237,3 +237,7 @@ function update-all
     mise upgrade --bump
   end
 end
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/home/pervez/.local/bin" $PATH

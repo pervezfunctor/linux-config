@@ -302,7 +302,7 @@ main() {
 
   case "$opt" in
   "shell")
-    "$DOT_DIR/nu/setup-shell.nu" "$@"
+    "$DOT_DIR/nu/cli.nu" "$@"
     ;;
   "desktop")
     "$DOT_DIR/nu/ui.nu" "$@"

@@ -414,12 +414,12 @@ def "main stow" [package: string] {
 }
 
 def "main help" [] {
-  print "setup-shell.nu - Linux shell setup script"
+  print "cli.nu - Linux shell setup script"
   print ""
   print "Usage:"
-  print "  nu setup-shell.nu"
-  print "  nu setup-shell.nu help"
-  print "  nu setup-shell.nu <command> [args]"
+  print "  nu cli.nu"
+  print "  nu cli.nu help"
+  print "  nu cli.nu <command> [args]"
   print ""
   print "Commands:"
   print "  setup-shell      Interactive shell setup (same as running with no command)"

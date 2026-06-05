@@ -14,7 +14,7 @@ Once the repo has been bootstrapped to `~/.linux-config`, you can run the setup 
 
 ```bash
 # Run the interactive shell setup
-setup-shell.nu
+cli.nu
 
 # Run the interactive desktop setup
 ui.nu
@@ -25,7 +25,7 @@ ui.nu
 If you don't like `Zed` editor, you could install either VS Code and/or Antigravity using brew. Use the following instructions.
 
 ```bash
-setup-shell.nu brew
+ui.nu brew
 brew install --cask visual-studio-code-linux
 brew install --cask antigravity-linux
 ```

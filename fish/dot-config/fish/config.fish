@@ -15,26 +15,26 @@ set -gx MANPATH $NPM_PACKAGES/share/man $MANPATH
 # XDG_DATA_DIRS
 
 fish_add_path --global --move \
-    /home/linuxbrew/.linuxbrew/bin \
-    $HOME/.local/share/flatpak/exports/bin \
-    $DOT_DIR \
-    $DOT_DIR/scripts \
-    $DOT_DIR/nu \
-    $HOME/.pixi/bin \
-    $HOME/bin \
-    $HOME/.local/bin \
-    $HOME/.cargo/bin \
-    $HOME/.opencode/bin \
-    $HOME/.vite-plus/bin \
-    $HOME/.local/kitty.app/bin \
-    $NPM_PACKAGES/bin
+  /home/linuxbrew/.linuxbrew/bin \
+  $HOME/.local/share/flatpak/exports/bin \
+  $DOT_DIR \
+  $DOT_DIR/scripts \
+  $DOT_DIR/nu \
+  $HOME/.pixi/bin \
+  $HOME/bin \
+  $HOME/.local/bin \
+  $HOME/.cargo/bin \
+  $HOME/.opencode/bin \
+  $HOME/.vite-plus/bin \
+  $HOME/.local/kitty.app/bin \
+  $NPM_PACKAGES/bin
 
 function has_cmd
-    type -q $argv[1]
+  type -q $argv[1]
 end
 
 if has_cmd ~/.local/bin/mise
-    ~/.local/bin/mise activate fish | source
+  ~/.local/bin/mise activate fish | source
 end
 
 if ! status is-interactive
@@ -46,7 +46,7 @@ function kitty-theme
 end
 
 function reinit
-    source $HOME/.config/fish/config.fish
+  ~/.config/fish/config.fish | source
 end
 
 function fish_greeting
@@ -109,37 +109,37 @@ if has_cmd /home/linuxbrew/.linuxbrew/bin/brew
 end
 
 if has_cmd zypper
-    alias i 'sudo zypper install'
-    alias r 'sudo zypper remove'
-    alias s 'zypper search'
-    alias u 'sudo zypper update'
+  alias i 'sudo zypper install'
+  alias r 'sudo zypper remove'
+  alias s 'zypper search'
+  alias u 'sudo zypper update'
 else if has_cmd dnf
-    alias i 'sudo dnf install'
-    alias r 'sudo dnf remove'
-    alias s 'dnf search'
-    alias u 'sudo dnf update'
+  alias i 'sudo dnf install'
+  alias r 'sudo dnf remove'
+  alias s 'dnf search'
+  alias u 'sudo dnf update'
 else if has_cmd pikman
-    alias i 'pikman install'
-    alias r 'pikman remove'
-    alias s 'pikman search'
-    alias u 'pikman update; and pikman upgrade'
+  alias i 'pikman install'
+  alias r 'pikman remove'
+  alias s 'pikman search'
+  alias u 'pikman update; and pikman upgrade'
 else if has_cmd apt
-    alias i 'sudo apt install'
-    alias r 'sudo apt remove'
-    alias s 'apt search'
-    alias u 'sudo apt update; and sudo apt upgrade'
+  alias i 'sudo apt install'
+  alias r 'sudo apt remove'
+  alias s 'apt search'
+  alias u 'sudo apt update; and sudo apt upgrade'
 else if has_cmd paru
-    alias i 'paru -S'
-    alias r 'paru -R'
-    alias s 'paru -Ss'
-    alias u 'paru -Syyu'
+alias i 'paru -S'
+  alias r 'paru -R'
+  alias s 'paru -Ss'
+  alias u 'paru -Syyu'
 else if has_cmd pacman
-    alias i 'sudo pacman -S'
-    alias r 'sudo pacman -R'
-    alias s 'pacman -Ss'
-    alias u 'sudo pacman -Syyu'
+  alias i 'sudo pacman -S'
+  alias r 'sudo pacman -R'
+  alias s 'pacman -Ss'
+  alias u 'sudo pacman -Syyu'
 else if has_cmd rpm-ostree
-    alias u 'sudo rpm-ostree update'
+  alias u 'sudo rpm-ostree update'
 end
 
 if has_cmd nix
@@ -154,86 +154,86 @@ if test -f ~/.linux-config/fish/local.fish
 end
 
 function docker-purge
-    docker system prune -a --volumes
+  docker system prune -a --volumes
 end
 
 function docker-fresh
-    docker stop (docker ps -aq) 2>/dev/null
-    docker rm (docker ps -aq) 2>/dev/null
-    docker rmi (docker images -q) 2>/dev/null
-    echo "All Docker containers and images removed."
+  docker stop (docker ps -aq) 2>/dev/null
+  docker rm (docker ps -aq) 2>/dev/null
+  docker rmi (docker images -q) 2>/dev/null
+  echo "All Docker containers and images removed."
 end
 
 if test -f ~/.vite-plus/env.fish
-    source ~/.vite-plus/env.fish
+  source ~/.vite-plus/env.fish
 end
 
 if test -n "$FISH_SIMPLE"
-    return
+  return
 end
 
 if has_cmd zoxide
-    zoxide init fish | source
+  zoxide init fish | source
 end
 
 if has_cmd fzf
-    fzf --fish | source
+  fzf --fish | source
 end
 
 if has_cmd starship
-    starship init fish | source
+  starship init fish | source
 end
 
 if has_cmd carapace
-    set -gx CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
-    carapace _carapace | source
+  set -gx CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense' # optional
+  carapace _carapace | source
 end
 
 if has_cmd fastfetch
-    fastfetch
+  fastfetch
 end
 
 if has_cmd eza
-    alias l   'eza --icons --group-directories-first'
-    alias ls  'eza --icons --group-directories-first'
-    alias ll  'eza -l --icons --group-directories-first'
-    alias la  'eza -a --icons --group-directories-first'
-    alias lla 'eza -la --icons --group-directories-first'
-    alias lt  'eza --tree --icons --group-directories-first'
+  alias l   'eza --icons --group-directories-first'
+  alias ls  'eza --icons --group-directories-first'
+  alias ll  'eza -l --icons --group-directories-first'
+  alias la  'eza -a --icons --group-directories-first'
+  alias lla 'eza -la --icons --group-directories-first'
+  alias lt  'eza --tree --icons --group-directories-first'
 end
 
 function nu-check
-    if test -z "$argv[1]"
-        echo "Usage: nu-check <file.nu>"
-        return 1
-    end
-    nu -c "source $argv[1]"
+  if test -z "$argv[1]"
+    echo "Usage: nu-check <file.nu>"
+    return 1
+  end
+  nu -c "source $argv[1]"
 end
 
 function update-all
-    u
-    if has_cmd brew
-      brew update && brew upgrade
-    end
-    if has_cmd pixi
-      pixi self-update
-      pixi global update
-    end
-    if has_cmd vp
-      vp update -g
-    end
-    if has_cmd rustup
-      rustup update stable
-    end
-    if has_cmd nix
-      hms
-    end
-    if has_cmd uv
-      uv self update
-    end
-    if has_cmd mise
-      mise self-update
-      mise plugins update
-      mise upgrade --bump
-    end
+  u
+  if has_cmd brew
+    brew update && brew upgrade
+  end
+  if has_cmd pixi
+    pixi self-update
+    pixi global update
+  end
+  if has_cmd vp
+    vp update -g
+  end
+  if has_cmd rustup
+    rustup update stable
+  end
+  if has_cmd nix
+    hms
+  end
+  if has_cmd uv
+    uv self update
+  end
+  if has_cmd mise
+    mise self-update
+    mise plugins update
+    mise upgrade --bump
+  end
 end

@@ -147,7 +147,7 @@ def "main settings" [] {
     dconf write /org/gnome/shell/extensions/paperwm/vertical-margin-bottom 12
 
     dconf write /org/gnome/desktop/screensaver/restart-enabled true
-    dconf write /org/gnome/desktop/interface/font-antialiasing 'rgba'
+    dconf write /org/gnome/desktop/interface/font-antialiasing "'rgba'"
     dconf write /org/gnome/mutter/center-new-windows true
 
     rewaita config

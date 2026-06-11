@@ -138,6 +138,8 @@ def main [
 
   --firmware(-f): string = "auto" # auto|bios|uefi
 ] {
+  $env.LIBVIRT_DEFAULT_URI = "qemu:///session"
+
   let vm = (
     if ($vm | is-empty) {
       let vms = (virsh list --name --all | lines | where ($it | is-not-empty))

@@ -120,8 +120,8 @@ def "main wm" [] {
   si $pkgs
 
   if (is-arch) {
-    paru-install
-    ^paru -S bibata-cursor-theme
+    yay-install
+    ^yay -S bibata-cursor-theme
   }
 
   main fonts
@@ -237,7 +237,7 @@ def "main mangowm install" [] {
   if (is-pikaos) {
     ^pikman install mangowm
   } else if (is-arch) {
-    ^paru -S mangowm dms-shell
+    ^yay -S mangowm dms-shell
   } else if (is-fedora) {
     if (prompt-yn "need terra repository for installing mango. This is NOT stable. Still enable it?") {
       ^sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release

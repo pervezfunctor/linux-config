@@ -128,11 +128,11 @@ else if has_cmd apt
   alias r 'sudo apt remove'
   alias s 'apt search'
   alias u 'sudo apt update; and sudo apt upgrade'
-else if has_cmd paru
-alias i 'paru -S'
-  alias r 'paru -R'
-  alias s 'paru -Ss'
-  alias u 'paru -Syyu'
+else if has_cmd yay
+alias i 'yay -S'
+alias r 'yay -R'
+alias s 'yay -Ss'
+alias u 'yay -Syyu'
 else if has_cmd pacman
   alias i 'sudo pacman -S'
   alias r 'sudo pacman -R'

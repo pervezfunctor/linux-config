@@ -122,16 +122,16 @@ export def dir-exists [path: string]: nothing -> bool {
 export def is-fedora []: nothing -> bool {
   if (is-fedora-atomic) { return false }
   if not ("/etc/redhat-release" | path exists) { return false }
-  let content = (open /etc/redhat-release | str downcase)
+  let content = (open /etc/redhat-release | str lowercase)
   $content =~ "fedora"
 }
 
 export def is-trixie []: nothing -> bool {
-    (os-release | str downcase) =~ "trixie"
+    (os-release | str lowercase) =~ "trixie"
 }
 
 export def is-resolute []: nothing -> bool {
-    (os-release | str downcase) =~ "resolute"
+    (os-release | str lowercase) =~ "resolute"
 }
 
 export def is-tw []: nothing -> bool {
@@ -309,26 +309,27 @@ export def brew-install [] {
   brew tap ublue-os/tap
 }
 
-export def paru-install [] {
-  if (has-cmd paru) {
-    log+ "paru is already installed"
+export def yay-install [] {
+  if (has-cmd yay) {
+    log+ "yay is already installed"
     return
   }
 
-  log+ "Installing paru"
+  log+ "Installing yay"
 
   si ["base-devel"]
-  do -i { ^rm -rf /tmp/paru }
-  git clone https://aur.archlinux.org/paru.git /tmp/paru
+
+  do -i { ^rm -rf /tmp/yay }
+  git clone https://aur.archlinux.org/yay.git /tmp/yay
 
   try {
-    cd /tmp/paru
+    cd /tmp/yay
     makepkg --syncdeps --noconfirm --install
   } catch {
-    warn+ "Failed to install paru"
+    warn+ "Failed to install yay"
   }
 
-  do -i { ^rm -rf /tmp/paru }
+  do -i { ^rm -rf /tmp/yay }
 }
 
 export def keep-sudo-alive []: nothing -> int {

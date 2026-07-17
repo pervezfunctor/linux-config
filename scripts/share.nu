@@ -157,7 +157,7 @@ def scan_smb_server [server: string] {
   if $smb_result.exit_code != 0 {
     let stderr = ($smb_result.stderr | str trim)
     let stdout = ($smb_result.stdout | str trim)
-    if (($stdout | str downcase | str starts-with "session setup failed") or ($stderr | str contains "NT_STATUS_ACCESS_DENIED") or ($stderr | str contains "NT_STATUS_LOGON_FAILURE")) {
+    if (($stdout | str lowercase | str starts-with "session setup failed") or ($stderr | str contains "NT_STATUS_ACCESS_DENIED") or ($stderr | str contains "NT_STATUS_LOGON_FAILURE")) {
       print "    (requires authentication)"
     } else if ($stderr | str length) > 0 {
       for el in ($stderr | lines | find -v "^$" | find "NT_STATUS") {

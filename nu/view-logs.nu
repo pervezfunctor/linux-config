@@ -176,7 +176,7 @@ def show-logs [
     pattern: string = ".*"
 ] {
     let valid_levels = ["all" "info" "error" "warning" "warn" "debug" "trace"]
-    if not (($level | str downcase) in $valid_levels) {
+    if not (($level | str lowercase) in $valid_levels) {
         print -e $"Invalid level: ($level). Valid levels are: ($valid_levels | str join ', ')"
         return
     }
@@ -199,7 +199,7 @@ def show-logs [
     }
 
     if $target != null {
-        display-log $target.name ($level | str downcase) $pattern
+        display-log $target.name ($level | str lowercase) $pattern
     }
 }
 

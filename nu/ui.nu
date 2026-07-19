@@ -111,10 +111,12 @@ def "main wm" [] {
       "cups-pk-helper"
       "gvfs-smb"
       "gvfs-nfs"
+      "inter-font"
       "kimageformats"
       "libsecret"
       "matugen"
       "nautilus"
+      "ttf-fira-code"
     ]
   }
   si $pkgs

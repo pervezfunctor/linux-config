@@ -168,10 +168,13 @@ def "main greetd" [] {
 }
 
 def tw-add-repo [repo_url: string, repo_alias: string] {
-  if not (zypper lr -a | lines | any {|l| $l | str contains $repo_alias }) {
-    ^sudo zypper addrepo $repo_url
-    ^sudo zypper refresh
+  let repo_alias_und = ($repo_alias | str replace --all ":" "_")
+  if (zypper lr -a | lines | any {|l| ($l | str contains $repo_alias) or ($l | str contains $repo_alias_und) }) {
+    log+ $"Repository ($repo_alias) already exists, skipping"
+    return
   }
+  ^sudo zypper addrepo $repo_url
+  ^sudo zypper refresh
 }
 
 def "main niri install" [] {

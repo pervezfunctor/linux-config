@@ -1,4 +1,5 @@
 [window]
+dimensions = { columns = 124, lines = 32 }
 padding = { x = 6, y = 6 }
 opacity = 0.8
 dynamic_title = true

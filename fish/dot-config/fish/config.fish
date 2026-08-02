@@ -189,10 +189,6 @@ if has_cmd carapace
   carapace _carapace | source
 end
 
-if has_cmd fastfetch
-  fastfetch
-end
-
 if has_cmd eza
   alias l   'eza --icons --group-directories-first'
   alias ls  'eza --icons --group-directories-first'
@@ -238,6 +234,6 @@ function update-all
   end
 end
 
-
-# Added by Antigravity CLI installer
-set -gx PATH "/home/pervez/.local/bin" $PATH
+# if has_cmd fastfetch
+#   fastfetch
+# end

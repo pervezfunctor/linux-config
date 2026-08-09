@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: restore-gh-keys [<archive>]
+
+Restore GitHub SSH keys from an encrypted backup created by
+'gh-ssh-key backup'. Defaults to ~/Documents/gh-ssh-keys.tar.gz.gpg.
+
+Requires gh-ssh-key and gpg to be available.
+EOF
+  exit 0
+}
+
+case "${1:-}" in
+  -h|--help|help)
+    usage
+    ;;
+esac
+
+archive="${1:-$HOME/Documents/gh-ssh-keys.tar.gz.gpg}"
+
+if [[ ! -f "$archive" ]]; then
+  echo "Error: archive not found: $archive" >&2
+  echo "Run 'gh-ssh-key backup' first." >&2
+  exit 1
+fi
+
+gh-ssh-key restore "$archive"
+
+repo_remote=$(git -C "$HOME/.linux-config" remote get-url origin 2>/dev/null || true)
+if [[ "$repo_remote" == https://github.com/* ]]; then
+  echo "==> Switching linux-config remote to SSH"
+  git -C "$HOME/.linux-config" remote set-url origin \
+    "git@github.com:${repo_remote#https://github.com/}"
+fi
+
+echo "✓ Done. Testing GitHub access..."
+ssh -T git@github.com 2>&1 | sed 's/^/  /'

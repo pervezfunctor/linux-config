@@ -315,9 +315,14 @@ main() {
 
 export PATH="$HOME/.pixi/bin:$PATH"
 init_logs
-system_update
-has_cmd sed || si sed
-cmd_check sed
+
+if [ "${1:-}" = "help" ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  :
+else
+  system_update
+  has_cmd sed || si sed
+  cmd_check sed
+fi
 
 exec > >(tee -a "$STD_LOG_FILE" | tee -a "$COMBINED_LOG_FILE") \
 2> >(tee -a "$ERR_LOG_FILE" | tee -a "$COMBINED_LOG_FILE" >&2)

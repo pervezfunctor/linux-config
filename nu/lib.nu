@@ -14,6 +14,10 @@ export def init-log-file [] {
 }
 
 def log-to-file [level: string, msg: string] {
+    let dir = ($env.LOG_FILE | path dirname)
+    if not ($dir | path exists) {
+        mkdir $dir
+    }
     $"(date now | format date '%m-%d %H:%M:%S') [($level)] ($msg)\n"
     | save --append $env.LOG_FILE
 }

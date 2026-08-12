@@ -62,7 +62,7 @@
   "ui_font_family": "Adwaita Sans",
   "ui_font_size": 16,
   "theme": {
-    "mode": "light",
+    "mode": "system",
     "light": "Ayu Light",
     "dark": "Ayu Dark",
   },

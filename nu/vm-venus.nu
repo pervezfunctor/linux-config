@@ -134,7 +134,7 @@ def main [
     "-audiodev" "pipewire,id=audio0"
 
     "-device" "virtio-vga-gl,hostmem=4G,blob=true,venus=true"
-    "-display" "gtk,gl=on,grab-on-hover=on"
+    "-display" "sdl,gl=on"
 
     "-usb"
     "-device" "usb-tablet"

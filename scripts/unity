@@ -1,0 +1,346 @@
+#!/usr/bin/env bash
+#
+# Robust, idempotent installer for Unity Hub and Unity CLI.
+#
+# Docs:
+#   https://docs.unity.com/en-us/hub/install-hub-linux
+#   https://docs.unity.com/en-us/unity-cli/use-unity-cli
+#
+# Supports:
+#   - Debian/Ubuntu  (apt + gpg keyring)
+#   - Fedora/RHEL/CentOS  (dnf + yum repo)
+#
+# Idempotent: each step short-circuits when already done, so it is safe to
+# re-run. Use CHANNEL=beta to install beta/unstable builds.
+
+set -Eeuo pipefail
+
+trap 'echo "ERROR rc=$? line=$LINENO cmd=$BASH_COMMAND" >&2' ERR
+
+# Stable is the default; set CHANNEL=beta to track the unstable repos.
+readonly CHANNEL="${CHANNEL:-stable}"
+
+log() {
+  printf "\033[1;34m🚀 %s\033[0m\n" "$*"
+}
+
+error() {
+  printf "\033[1;31m🔥 %s\033[0m\n" "$*" >&2
+}
+
+die() {
+  error "$*"
+  exit 1
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Detect the package family. We prefer dpkg/apt first, then dnf/yum/rpm, so a
+# Fedora box that happens to also have dpkg is still handled by its native dnf.
+detect_family() {
+  if has_cmd apt-get && has_cmd dpkg; then
+    echo "debian"
+  elif has_cmd dnf; then
+    echo "rhel"
+  elif has_cmd yum; then
+    echo "rhel"
+  else
+    echo ""
+  fi
+}
+
+ensure_root() {
+  if [ "$(id -u)" -ne 0 ]; then
+    has_cmd sudo || die "sudo is required (or re-run as root)"
+    SUDO="sudo"
+  else
+    SUDO=""
+  fi
+}
+
+ensure_curl() {
+  if has_cmd curl; then
+    return 0
+  fi
+
+  log "curl not found; installing it first"
+  local family
+  family="$(detect_family)"
+  case "$family" in
+  debian)
+    $SUDO apt-get update -y
+    $SUDO apt-get install -y curl gpg ca-certificates
+    ;;
+  rhel)
+    $SUDO dnf install -y curl
+    ;;
+  *)
+    die "curl is required and could not be installed (unsupported distro)"
+    ;;
+  esac
+
+  has_cmd curl || die "curl install failed"
+}
+
+hub_installed() {
+  # unityhub is the package name on both apt and dnf repos; on PATH once installed.
+  has_cmd unityhub || dpkg -s unityhub >/dev/null 2>&1 || rpm -q unityhub >/dev/null 2>&1
+}
+
+cli_installed() {
+  # The CLI binary is 'unity'. The package is 'unity-cli' on apt/dnf.
+  has_cmd unity || dpkg -s unity-cli >/dev/null 2>&1 || rpm -q unity-cli >/dev/null 2>&1
+}
+
+###################
+### Unity Hub  ####
+###################
+
+# The apt repo suite depends on the channel: stable -> stable, beta -> unstable.
+hub_deb_suite() {
+  if [ "$CHANNEL" = "beta" ]; then
+    echo "unstable"
+  else
+    echo "stable"
+  fi
+}
+
+install_hub_debian() {
+  local suite keyring list_file
+  suite="$(hub_deb_suite)"
+  keyring="/etc/apt/keyrings/unityhub.gpg"
+  list_file="/etc/apt/sources.list.d/unityhub.list"
+
+  log "Setting up Unity Hub apt repository (suite=$suite)"
+
+  # 1. Download the public signing key into a dearmored keyring.
+  $SUDO install -d -m 0755 /etc/apt/keyrings
+  curl -fsSL https://hub.unity3d.com/linux/keys/public |
+    $SUDO gpg --dearmor --yes -o "$keyring"
+  [ -s "$keyring" ] || die "failed to write Unity Hub GPG keyring"
+
+  # 2. Register the repository (overwrite to keep it in sync with the channel).
+  echo "deb [arch=amd64 signed-by=$keyring] https://hub.unity3d.com/linux/repos/deb $suite main" |
+    $SUDO tee "$list_file" >/dev/null
+
+  # 3. Update and install.
+  $SUDO apt-get update -y
+  $SUDO apt-get install -y unityhub
+}
+
+install_hub_rhel() {
+  local repo_file suite baseurl
+  repo_file="/etc/yum.repos.d/unityhub.repo"
+  suite="stable"
+  [ "$CHANNEL" = "beta" ] && suite="unstable"
+  baseurl="https://hub.unity3d.com/linux/repos/rpm/$suite"
+
+  log "Setting up Unity Hub dnf repository (suite=$suite)"
+
+  # Write the repo definition. This overwrites any prior file so channel
+  # changes take effect cleanly on re-runs.
+  $SUDO tee "$repo_file" >/dev/null <<EOF
+[unityhub]
+name=Unity Hub
+baseurl=$baseurl
+enabled=1
+gpgcheck=1
+gpgkey=$baseurl/repodata/repomd.xml.key
+repo_gpgcheck=1
+EOF
+
+  # Refresh metadata (may warn when nothing changed) and install.
+  $SUDO dnf install -y unityhub
+}
+
+install_hub() {
+  hub_installed && {
+    log "Unity Hub is already installed. Skipping."
+    return 0
+  }
+
+  local family
+  family="$(detect_family)"
+
+  case "$family" in
+  debian) install_hub_debian ;;
+  rhel) install_hub_rhel ;;
+  *) die "Unsupported distro for Unity Hub (need apt or dnf/yum)" ;;
+  esac
+
+  hub_installed || die "Unity Hub installation did not complete"
+  log "Unity Hub installed successfully"
+}
+
+###################
+### Unity CLI ####
+###################
+
+# The CLI can be installed three ways. We prefer the system package manager so
+# it stays in sync with Unity Hub updates; otherwise we fall back to Homebrew
+# and finally the standalone install script in ~/.local/bin.
+install_cli_debian() {
+  local keyring sources_file
+  keyring="/usr/share/keyrings/Unity_Technologies_ApS.gpg"
+  sources_file="/etc/apt/sources.list.d/unity-cli.sources"
+
+  log "Setting up Unity CLI apt repository (suite=unstable)"
+
+  # The CLI currently ships only from the unstable suite on all distros.
+  $SUDO install -d -m 0755 "$(dirname "$keyring")"
+  curl -fsSL https://hub.unity3d.com/linux/keys/public |
+    $SUDO gpg --dearmor --yes -o "$keyring"
+  [ -s "$keyring" ] || die "failed to write Unity CLI GPG keyring"
+
+  $SUDO tee "$sources_file" >/dev/null <<EOF
+Types: deb
+URIs: https://hub.unity3d.com/linux/repos/deb
+Suites: unstable
+Components: main
+Signed-By: $keyring
+EOF
+
+  $SUDO apt-get update -y
+  $SUDO apt-get install -y unity-cli
+}
+
+install_cli_rhel() {
+  local repo_file baseurl
+  repo_file="/etc/yum.repos.d/unity-cli.repo"
+  baseurl="https://hub.unity3d.com/linux/repos/rpm/unstable"
+
+  log "Setting up Unity CLI dnf repository (suite=unstable)"
+
+  $SUDO tee "$repo_file" >/dev/null <<EOF
+[unity-cli]
+name=Unity CLI
+baseurl=$baseurl
+enabled=1
+gpgcheck=1
+gpgkey=$baseurl/repodata/repomd.xml.key
+repo_gpgcheck=1
+EOF
+
+  $SUDO dnf install -y unity-cli
+}
+
+install_cli_script() {
+  # Standalone binary installer; lands in ~/.local/bin/unity.
+  # Idempotent: the script overwrites the existing binary on re-run.
+  log "Installing Unity CLI via official install script (~/.local/bin/unity)"
+  mkdir -p "$HOME/.local/bin"
+  curl -fsSL https://public-cdn.cloud.unity3d.com/hub/prod/cli/install.sh |
+    UNITY_CLI_CHANNEL=beta bash
+}
+
+install_cli_brew() {
+  has_cmd brew || {
+    error "Homebrew not found; falling back to install script"
+    return 1
+  }
+  log "Installing Unity CLI via Homebrew"
+  brew install --cask unity-cli
+}
+
+install_cli() {
+  cli_installed && {
+    log "Unity CLI is already installed. Skipping."
+    return 0
+  }
+
+  local family
+  family="$(detect_family)"
+
+  # Prefer the system package manager so updates ride along with the OS.
+  case "$family" in
+  debian) install_cli_debian ;;
+  rhel) install_cli_rhel ;;
+  *)
+    # Non-apt/dnf distro: try Homebrew, then the standalone script.
+    install_cli_brew || install_cli_script
+    ;;
+  esac
+
+  # Ensure ~/.local/bin (script install path) is usable for this session.
+  case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+  esac
+
+  cli_installed || die "Unity CLI installation did not complete"
+  log "Unity CLI installed successfully"
+}
+
+###################
+### Commands ######
+###################
+
+cmd_hub() {
+  install_hub
+}
+
+cmd_cli() {
+  install_cli
+}
+
+cmd_all() {
+  install_hub
+  install_cli
+}
+
+cmd_status() {
+  log "Unity Hub:   $(hub_installed && echo "installed ✓" || echo "missing")"
+  log "Unity CLI:   $(cli_installed && echo "installed ✓" || echo "missing")"
+  if cli_installed; then
+    unity --version 2>/dev/null || true
+  fi
+}
+
+print_help() {
+  cat <<EOF
+Usage: unity <command>
+
+Install and manage Unity Hub and Unity CLI (experimental).
+
+Environment:
+  CHANNEL=stable   Set to 'beta' to track the unstable/beta repositories.
+
+Commands:
+  hub       Install Unity Hub
+  cli       Install Unity CLI
+  status    Show install status of Hub and CLI
+  help      Show this help message
+
+Run without arguments to install both Hub and CLI.
+
+Examples:
+  unity                 # install Hub + CLI (stable)
+  CHANNEL=beta unity    # install both from beta/unstable repos
+  unity status          # check what is installed
+EOF
+}
+
+main() {
+  export PATH="$HOME/.local/bin:$PATH"
+
+  local cmd="${1:-}"
+
+  case "$cmd" in
+  "" ) cmd_all ;;
+  hub) cmd_hub ;;
+  cli) cmd_cli ;;
+  status) cmd_status ;;
+  help | -h | --help) print_help ;;
+  *)
+    error "Unknown command: $cmd"
+    print_help
+    exit 1
+    ;;
+  esac
+}
+
+ensure_root
+ensure_curl
+main "$@"

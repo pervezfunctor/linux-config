@@ -191,7 +191,7 @@ end
 
 if has_cmd eza
   alias l   'eza --icons --group-directories-first'
-  alias ls  'eza --icons --group-directories-first'
+  # alias ls  'eza --icons --group-directories-first'
   alias ll  'eza -l --icons --group-directories-first'
   alias la  'eza -a --icons --group-directories-first'
   alias lla 'eza -la --icons --group-directories-first'
@@ -237,3 +237,10 @@ end
 # if has_cmd fastfetch
 #   fastfetch
 # end
+
+# opencode
+fish_add_path /home/pervez/.opencode/bin
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/home/pervez/.local/bin" $PATH

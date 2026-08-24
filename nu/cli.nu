@@ -314,27 +314,30 @@ def "main mise" [] {
 }
 
 def "main ai cli" [] {
-  path add $"($env.HOME)/.vite-plus/bin"
-  if not (has-cmd npm) {
-    main vp
+  if not (has-cmd opencode) {
+    log+ "Installing opencode.ai cli"
+    (http get https://opencode.ai/install | bash)
   }
 
-  let npm_pkgs = [
-    "opencode-ai"
-    "@openai/codex"
-    "@augmentcode/auggie"
-  ]
-
-  log+ "Installing npm packages"
-  for pkg in $npm_pkgs {
-    vp install -g $pkg
+  if not (has-cmd codex) {
+    log+ "Installing chatgpt codex cli"
+    (http get https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 bash)
   }
 
-  log+ "Installing antigravity cli"
-  curl -fsSL https://antigravity.google/cli/install.sh | bash
+  if not (has-cmd agy) {
+    log+ "Installing antigravity cli"
+    (http get https://antigravity.google/cli/install.sh | bash)
+  }
 
-  log+ "Installing claude"
-  (http get https://claude.ai/install.sh) | bash
+  if not (has-cmd claude) {
+    log+ "Installing claude"
+    (http get https://claude.ai/install.sh) | bash
+  }
+
+  if not (has-cmd pi) {
+    log+ "Installing pi"
+    (http get https://pi.dev/install.sh) | sh
+  }
 }
 
 def "main dev" [] {
